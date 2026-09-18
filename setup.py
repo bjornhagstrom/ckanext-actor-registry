@@ -12,6 +12,13 @@ setup(
     description="Reusable actors and contact points for CKAN metadata",
     long_description=(HERE / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
+    author="Bjorn Hagstrom",
+    author_email="bjorn@hagstrom.nu",
+    url="https://github.com/bjornhagstrom/ckanext-actor-registry",
+    project_urls={
+        "Changelog": "https://github.com/bjornhagstrom/ckanext-actor-registry/blob/master/CHANGELOG.md",
+        "Issue Tracker": "https://github.com/bjornhagstrom/ckanext-actor-registry/issues",
+    },
     packages=find_namespace_packages(include=["ckanext.*"]),
     include_package_data=True,
     license="MIT",

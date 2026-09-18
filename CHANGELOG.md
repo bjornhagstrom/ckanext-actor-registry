@@ -16,12 +16,22 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 - documented RDF and interoperability design decisions;
 - cross-registry validation preventing actors and contact points from sharing a
   URI.
+- a GitHub Actions CI workflow running the automated test suite and the
+  dependency-free JS regression tests on every push and pull request;
+- a README section documenting how to activate the extension on an existing
+  installation that already has datasets (the `/actors` worklist and the
+  inline per-dataset fix-it prompt);
+- `setup.py` project metadata (`url`, `author`, `project_urls`) now that the
+  project has a public repository.
 
 ### Changed
 
 - telephone URI normalization is shared by HTML helpers and RDF serialization;
 - controlled theme and publisher-type URIs are explicitly typed as
-  `skos:Concept` in RDF output.
+  `skos:Concept` in RDF output;
+- `CONTRIBUTING.md`'s development priorities no longer list a full Action API;
+  see `docs/BACKLOG.md` for why that was deliberately deprioritized rather
+  than deferred.
 
 ## [0.1.0] - Unreleased
 
@@ -43,8 +53,10 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 ### Known limitations
 
 - automated verification currently covers CKAN 2.11.6 only;
-- no registry Action API yet; browser and multi-version compatibility tests
-  remain work for a later release.
+- browser and multi-version compatibility tests and a formal security review
+  remain work for a later release. A full registry Action API was
+  deliberately deprioritized rather than deferred -- see
+  `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/OWNER/ckanext-actor-registry/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/OWNER/ckanext-actor-registry/releases/tag/v0.1.0
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.1.0

@@ -135,6 +135,39 @@ depends on the complete dataset schema, validation and profile configuration.
 - deleting registry records is not exposed in 0.1.0; records can be made
   inactive instead.
 
+## Activating on an existing installation with datasets
+
+Enabling this extension on a CKAN instance that already has datasets does not
+retroactively link anything: every existing dataset starts out with no
+publisher and no contact point in the registry, because those are new,
+separate fields the extension adds via Scheming (see "Scheming integration"
+above). Two features exist specifically to help you find and fix these
+datasets afterwards; neither runs automatically, so plan to use them as a
+one-time cleanup pass after activation.
+
+**A worklist on `/actors`.** The registry management page lists every active
+dataset that has *neither* a publisher *nor* any contact point under
+"Datasets without an actor link (N)", with a direct link to each one. A
+dataset that has only one of the two set (for example a publisher but no
+contact point) will not appear in this list -- it is meant to surface
+datasets nobody has touched yet, not to enforce that every field is filled
+in.
+
+**An inline fix on the dataset's own page.** Opening any dataset that is
+missing a publisher and/or a contact point shows a warning box near the top
+of the page with the same selector widgets (including "create new...") used
+in the full dataset edit form, so editors recognize the control instead of
+having to find the right field inside the advanced edit view. Saving it
+performs a partial update -- only the field(s) you actually filled in are
+touched, the rest of the dataset is left alone -- and requires the normal
+`package_update` permission for that dataset, not sysadmin. This prompt
+reacts to either field being empty (so it can appear even for a dataset that
+already has one of the two set), which is why its trigger condition is
+looser than the `/actors` worklist above.
+
+Both features rely on `ckanext-scheming`'s own `read.html` template chain, so
+they only appear for dataset types managed by Scheming.
+
 ## Upgrade note for the prototype
 
 The migration history retains the table name
