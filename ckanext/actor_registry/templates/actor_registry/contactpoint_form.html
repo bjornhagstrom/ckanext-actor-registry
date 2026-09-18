@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block subtitle %}{{ _('New contact point') if is_new else _('Edit contact point') }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index') }}">{{ _('Contact points') }}</a></li><li class="active">{{ _('New') if is_new else _('Edit') }}</li>{% endblock %}
+{% block primary_content_inner %}
+  <h1 class="page-heading">{{ _('New contact point') if is_new else _('Edit contact point') }}</h1>
+  <form method="post" class="dataset-form">
+    {{ h.csrf_input() }}
+    <div class="form-group"><label class="form-label" for="cp-name">{{ _('Name or role') }} <span class="control-required">*</span></label><input class="form-control" id="cp-name" name="name" required value="{{ item.name }}"></div>
+    <div class="form-group"><label class="form-label" for="cp-actor">{{ _('Belongs to actor') }}</label><select class="form-control" id="cp-actor" name="actor_id"><option value="">{{ _('No link') }}</option>{% for actor in actors %}<option value="{{ actor.id }}" {% if item.actor_id == actor.id %}selected{% endif %}>{{ actor.name }}</option>{% endfor %}</select><p class="help-block">{{ _('Optional link to the organization or person this contact point represents.') }}</p></div>
+    <div class="form-group"><label class="form-label" for="cp-email">{{ _('Email') }}</label><input class="form-control" id="cp-email" name="email" type="email" value="{{ item.email or '' }}"></div>
+    <div class="form-group"><label class="form-label" for="cp-phone">{{ _('Phone') }}</label><input class="form-control" id="cp-phone" name="phone" type="tel" placeholder="+46910123456" value="{{ item.phone or '' }}"><p class="help-block">{{ _('Include the country code, e.g. +46, for correct DCAT-AP-SE export.') }}</p></div>
+    <div class="form-group"><label class="form-label" for="cp-url">{{ _('URL') }}</label><input class="form-control" id="cp-url" name="url" type="url" value="{{ item.url or '' }}"></div>
+    <div class="form-group"><label class="form-label" for="cp-uri">{{ _('Persistent URI') }}</label><input class="form-control" id="cp-uri" name="uri" type="url" value="{{ item.uri or '' }}"><p class="help-block">{{ _('Leave blank when creating the record to get a URI from the catalog.') }}</p></div>
+    <div class="form-check mb-3"><input class="form-check-input" id="cp-active" name="active" type="checkbox" {% if item.active or is_new %}checked{% endif %}><label class="form-check-label" for="cp-active">{{ _('Active and selectable') }}</label></div>
+    <div class="form-actions"><a class="btn btn-secondary" href="{{ h.url_for('actor_registry.contactpoints_index') }}">{{ _('Cancel') }}</a><button class="btn btn-primary" type="submit">{{ _('Save contact point') }}</button></div>
+  </form>
+{% endblock %}

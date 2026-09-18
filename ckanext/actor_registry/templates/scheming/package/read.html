@@ -1,0 +1,14 @@
+{% ckan_extends %}
+
+{#
+  Show the missing-actor-link prompt right after the description, near
+  the top of the page -- not down by "Mer information" where it first
+  went. Björn's explicit feedback, 2026-09-15: going through many
+  datasets, you don't want to scroll for it. {{ super() }} + content
+  added strictly AFTER it is safe here (append, not nested injection) --
+  see claude-session-konventioner.md's note on {{ super() }}.
+#}
+{% block package_notes %}
+{{ super() }}
+{% snippet "actor_registry/snippets/dataset_actor_link_prompt.html", pkg=pkg %}
+{% endblock %}

@@ -1,0 +1,30 @@
+scheming_version: 2
+dataset_type: dataset
+
+dataset_fields:
+- field_name: title
+  preset: title
+  required: true
+- field_name: name
+  preset: dataset_slug
+- field_name: notes
+  required: true
+- field_name: owner_org
+  preset: dataset_organization
+  required: true
+- field_name: publisher_actor_id
+  required: true
+- field_name: contact_point_ids
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+- field_name: theme
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+
+resource_fields:
+- field_name: url
+  preset: resource_url_upload
+- field_name: name
+- field_name: description
+- field_name: format
+  preset: resource_format_autocomplete

@@ -1,0 +1,25 @@
+{% ckan_extends %}
+
+{#
+  Adds Actors/Contact points as proper tabs inside CKAN's own
+  Administration area (/ckan-admin), alongside core's Sysadmins/Config/
+  Trash tabs -- the current (CKAN 2.11+) recommended pattern for a
+  plugin to integrate with /ckan-admin (the older, programmatic
+  toolkit.add_ckan_admin_tab() helper was removed in 2.11). See
+  docs/I18N_PLAN.md for the research/sources behind this.
+
+  {{ super() }} + append is the safe case of the {{ super() }}
+  CSS-scoping fallgrop documented in claude-session-konventioner.md:
+  core's content_primary_nav block is a flat list of build_nav_icon()
+  calls, nothing nested to land inside of.
+
+  The main site header (ckanext-skelleftea's header.html) still has its
+  own shortcuts to these same pages too, deliberately, for now -- Björn
+  asked to keep both in parallel while testing, so they're already both
+  in place and either can be removed independently whenever ready.
+#}
+{% block content_primary_nav %}
+  {{ super() }}
+  {{ h.build_nav_icon('actor_registry.actors_index', _('Actors'), icon='building') }}
+  {{ h.build_nav_icon('actor_registry.contactpoints_index', _('Contact points'), icon='address-book') }}
+{% endblock %}

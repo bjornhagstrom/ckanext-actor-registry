@@ -1,0 +1,33 @@
+{#
+  Shown near the top of the dataset read page when the dataset is
+  missing a publisher and/or contact-point actor link -- lets an editor
+  fix it right there, with the same picker/quick-create controls as the
+  dataset edit form (compact=true here: no field-level/DCAT help text,
+  per Björn's request 2026-09-15 -- that belongs in the advanced edit
+  view, not this quick-fix prompt: "Det ska man ha koll på om man är
+  inne i denna avancerade vy.").
+#}
+{% set missing_publisher = not pkg.publisher_actor_id %}
+{% set missing_contact = not pkg.contact_point_ids %}
+{% if missing_publisher or missing_contact %}
+{% set schema = h.scheming_get_dataset_schema(pkg.type) %}
+<div class="alert alert-warning" data-dataset-actor-link-prompt>
+  <strong><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ _('Actor link missing.') }}</strong>
+  {% if h.check_access('package_update', {'id': pkg.id}) %}
+    <form method="post" action="{{ h.url_for('actor_registry.dataset_actor_link', package_id=pkg.id) }}" class="mt-2">
+      {{ h.csrf_input() }}
+      {% if missing_publisher %}
+        {% set field = h.scheming_field_by_name(schema.dataset_fields, 'publisher_actor_id') %}
+        {% snippet 'scheming/form_snippets/actors_multiple_select.html', field=field, data={}, errors={}, compact=true %}
+      {% endif %}
+      {% if missing_contact %}
+        {% set field = h.scheming_field_by_name(schema.dataset_fields, 'contact_point_ids') %}
+        {% snippet 'scheming/form_snippets/contactpoints_multiple_select.html', field=field, data={}, errors={}, compact=true %}
+      {% endif %}
+      <button type="submit" class="btn btn-primary btn-sm">{{ _('Save') }}</button>
+    </form>
+  {% else %}
+    <span>{{ _('Log in with permission to edit the dataset to link an actor.') }}</span>
+  {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,21 @@
+quick-create:
+  output: contactpoints/%(version)s_quick-create.js
+  contents:
+    - js/quick-create.js
+  extra:
+    preload:
+      - base/main
+actor-quick-create:
+  output: actor_registry/%(version)s_actor-quick-create.js
+  contents:
+    - js/actor-quick-create.js
+  extra:
+    preload:
+      - base/main
+actor-merge-select:
+  output: actor_registry/%(version)s_actor-merge-select.js
+  contents:
+    - js/actor-merge-select.js
+  extra:
+    preload:
+      - base/main

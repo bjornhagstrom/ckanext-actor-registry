@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block subtitle %}{{ _('Contact points') }}{% endblock %}
+{% block breadcrumb_content %}<li class="active">{{ _('Contact points') }}</li>{% endblock %}
+{% block primary_content_inner %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="page-heading mb-0">{{ _('Contact points') }}</h1>
+    <a class="btn btn-primary" href="{{ h.url_for('actor_registry.contactpoints_new') }}"><i class="fa fa-plus"></i> {{ _('New contact point') }}</a>
+  </div>
+  <p>{{ _('Contact points are managed here and can be reused by multiple datasets. Changes take effect everywhere without editing each dataset.') }}</p>
+  <table class="table table-striped">
+    <thead><tr><th>{{ _('Name or role') }}</th><th>{{ _('Email') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td><td>{{ item.email or '–' }}</td>
+          <td>{{ _('Active') if item.active else _('Inactive') }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-secondary" href="{{ h.url_for('actor_registry.contactpoints_edit', item_id=item.id) }}">{{ _('Edit') }}</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">{{ _('There are no contact points yet.') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+{% block secondary_content %}
+  <section class="module module-narrow module-shallow"><h2 class="module-heading">{{ _('Central management') }}</h2><div class="module-content"><p>{{ _('Deactivate a contact point when it should no longer be selectable. Existing references keep working.') }}</p></div></section>
+{% endblock %}

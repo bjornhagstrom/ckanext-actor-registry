@@ -1,0 +1,79 @@
+{% import 'macros/form.html' as form %}
+{% set compact = compact|default(false) %}
+
+{% macro help_text() %}
+  {%- snippet 'scheming/form_snippets/help_text.html', field=field -%}
+{% endmacro %}
+
+{% macro contact_option(contact, selected_values) -%}
+  <option value="{{ contact.id }}"
+      data-email="{{ contact.email or '' }}"
+      data-phone="{{ contact.phone or '' }}"
+      data-url="{{ contact.url or '' }}"
+      {{ "selected " if contact.id in selected_values }}>{{ contact.name }}</option>
+{%- endmacro %}
+
+{% asset 'actor_registry/quick-create' %}
+
+<div data-contactpoints-widget
+     data-endpoint="{{ h.url_for('actor_registry.contactpoints_quick_create') }}"
+     data-edit-endpoint-template="{{ h.url_for('actor_registry.contactpoints_quick_edit', item_id='__ID__') }}"
+     data-i18n-edit="{{ _('Edit') }}"
+     data-i18n-email-label="{{ _('Email') }}"
+     data-i18n-phone-label="{{ _('Phone') }}"
+     data-i18n-url-label="{{ _('URL') }}"
+     data-i18n-select-hint="{{ _('Select a contact point to see its details here.') }}"
+     data-i18n-create-title="{{ _('New contact point') }}"
+     data-i18n-edit-title="{{ _('Edit contact point') }}"
+     data-i18n-save-create="{{ _('Save and select') }}"
+     data-i18n-save-edit="{{ _('Save changes') }}"
+     data-i18n-name-required="{{ _('Name or role is required.') }}"
+     data-i18n-session-expired="{{ _('Your session has expired. Open a new tab, log in again and try again.') }}"
+     data-i18n-unexpected-response="{{ _('The server responded unexpectedly. Reload the page and try again.') }}"
+     data-i18n-save-failed="{{ _('The contact point could not be saved.') }}">
+{%- call form.input_block(
+    "field-" + field.field_name,
+    label=h.scheming_language_text(field.label),
+    classes=field.classes if 'classes' in field else ['control-full'],
+    error=errors[field.field_name],
+    is_required=h.scheming_field_required(field),
+    extra_html='' if compact else help_text()
+    ) -%}
+  {%- set groups = h.contactpoints_grouped_choices() -%}
+  {%- set selected_values = data.get(field.field_name, []) -%}
+  <select multiple
+      id="field-{{ field.field_name }}" name="{{ field.field_name }}"
+      class="form-control" data-module="autocomplete"
+      data-module-placeholder="{{ _('Search and select contact point…') }}">
+    {%- if groups.recent -%}
+      <optgroup label="{{ _('Recently used') }}">
+        {%- for contact in groups.recent -%}{{ contact_option(contact, selected_values) }}{%- endfor -%}
+      </optgroup>
+    {%- endif -%}
+    <optgroup label="{{ _('Other contact points (A-Z)') if groups.recent else _('All contact points (A-Z)') }}">
+      {%- for contact in groups.alphabetical -%}{{ contact_option(contact, selected_values) }}{%- endfor -%}
+    </optgroup>
+  </select>
+  <div class="mt-2" data-contactpoints-preview aria-live="polite"><p class="help-block">{{ _('Select a contact point to see its details here.') }}</p></div>
+
+  {% if c.userobj %}
+    <button type="button" class="btn btn-secondary btn-sm mt-2" data-contactpoints-toggle>
+      <i class="fa fa-plus" aria-hidden="true"></i> {{ _('Create new contact point') }}
+    </button>
+    <div class="well mt-2" data-contactpoints-panel hidden>
+      <h3 data-contactpoints-panel-title>{{ _('New contact point') }}</h3>
+      <div data-contactpoints-form>
+        {{ h.csrf_input() }}
+        <div class="alert alert-danger" data-contactpoints-error hidden></div>
+        <div class="form-group"><label class="form-label">{{ _('Name or role') }} *</label><input class="form-control" data-field="name"></div>
+        <div class="form-group"><label class="form-label">{{ _('Email') }}</label><input class="form-control" data-field="email" type="email"></div>
+        <div class="form-group"><label class="form-label">{{ _('Phone') }}</label><input class="form-control" data-field="phone" type="tel" placeholder="+46910123456"><p class="help-block">{{ _('Include the country code, e.g. +46.') }}</p></div>
+        <div class="form-group"><label class="form-label">{{ _('URL') }}</label><input class="form-control" data-field="url" type="url"></div>
+        <button class="btn btn-primary btn-sm" type="button" data-contactpoints-save>{{ _('Save and select') }}</button>
+        <button class="btn btn-link btn-sm" type="button" data-contactpoints-cancel>{{ _('Cancel') }}</button>
+        <p class="help-block mt-2 mb-0">{{ _('Editing here updates the contact point everywhere it is used, not just in this dataset.') }}</p>
+      </div>
+    </div>
+  {% endif %}
+{%- endcall -%}
+</div>

@@ -1,0 +1,22 @@
+FROM ckan/ckan-base:2.11
+
+USER root
+
+RUN pip install --no-cache-dir "ckanext-dcat==2.4.4" && \
+    pip install --no-cache-dir \
+      "https://github.com/ckan/ckanext-scheming/archive/refs/tags/release-3.0.0.tar.gz"
+
+COPY . /srv/app/src_extensions/ckanext-actor-registry
+WORKDIR /srv/app/src_extensions/ckanext-actor-registry
+
+RUN pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir -r dev-requirements.txt && \
+    mkdir -p /srv/app/test-data && \
+    wget -q \
+      https://semiceu.github.io/DCAT-AP/releases/3.0.1/shacl/dcat-ap-SHACL.ttl \
+      -O /srv/app/test-data/dcat-ap-3.0.1-SHACL.ttl
+
+USER ckan
+
+ENTRYPOINT ["python", "-m", "pytest"]
+CMD ["--ckan-ini=/srv/app/src/ckan/test-core.ini", "ckanext/actor_registry/tests"]

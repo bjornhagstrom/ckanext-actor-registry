@@ -1,0 +1,6 @@
+pytest>=7,<9
+beautifulsoup4>=4.12
+factory-boy>=3.3
+Faker>=26
+pytest-factoryboy>=2.7
+pyshacl>=0.30,<0.31

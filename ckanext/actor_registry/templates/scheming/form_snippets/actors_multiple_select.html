@@ -1,0 +1,31 @@
+{% import 'macros/form.html' as form %}
+{% set compact = compact|default(false) %}
+{% macro help_text() %}{%- snippet 'scheming/form_snippets/help_text.html', field=field -%}{% endmacro %}
+{% asset 'actor_registry/actor-quick-create' %}
+{% set saved_value = data.get(field.field_name, '') %}
+{% set preferred_value = h.preferred_publisher_actor_id() if not data.get('id') and not saved_value else '' %}
+{% set selected_value = saved_value or preferred_value %}
+<div data-actors-widget data-endpoint="{{ h.url_for('actor_registry.actors_quick_create') }}" data-edit-endpoint-template="{{ h.url_for('actor_registry.actors_quick_edit', item_id='__ID__') }}"
+     data-i18n-edit="{{ _('Edit') }}"
+     data-i18n-kind-label="{{ _('Kind') }}"
+     data-i18n-kind-person="{{ _('Person') }}"
+     data-i18n-kind-organization="{{ _('Organization') }}"
+     data-i18n-identifier-label="{{ _('Identifier') }}"
+     data-i18n-description-label="{{ _('Description') }}"
+     data-i18n-url-label="{{ _('URL') }}"
+     data-i18n-create-title="{{ _('New publisher') }}"
+     data-i18n-edit-title="{{ _('Edit publisher') }}"
+     data-i18n-save-create="{{ _('Save and select') }}"
+     data-i18n-save-edit="{{ _('Save changes') }}"
+     data-i18n-name-required="{{ _('Name is required.') }}"
+     data-i18n-session-expired="{{ _('Your session has expired. Open a new tab, log in again and try again.') }}"
+     data-i18n-unexpected-response="{{ _('The server responded unexpectedly. Reload the page and try again.') }}"
+     data-i18n-save-failed="{{ _('The publisher could not be saved.') }}">
+{%- call form.input_block("field-" + field.field_name, label=h.scheming_language_text(field.label), classes=field.classes if 'classes' in field else ['control-full'], error=errors[field.field_name], is_required=h.scheming_field_required(field), extra_html='' if compact else help_text()) -%}
+{% set choices = [] %}{% for c in h.scheming_field_choices(field) %}{% do choices.append((c.value, h.scheming_language_text(c.label))) %}{% endfor %}{% if field.get('sorted_choices') %}{% set choices = choices|sort(case_sensitive=false, attribute=1) %}{% endif %}
+<select id="field-{{ field.field_name }}" name="{{ field.field_name }}" class="form-control" data-module="autocomplete" data-module-placeholder="{{ _('Search and select publisher…') }}"><option value="">{{ _('Select publisher…') }}</option>
+{% for val, label in choices %}{% set details = h.actors_resolve([val]) %}{% set actor = details[0] if details else {} %}<option value="{{ val }}" data-kind="{{ actor.kind or '' }}" data-identifier="{{ actor.identifier or '' }}" data-identifier-scheme="{{ actor.identifier_scheme or '' }}" data-url="{{ actor.url or '' }}" data-description="{{ actor.description or '' }}" {{ 'selected ' if val == selected_value }}>{{ label }}</option>{% endfor %}
+</select><div class="mt-2" data-actors-preview aria-live="polite"></div>
+{% if preferred_value %}<p class="help-block"><i class="fa fa-history" aria-hidden="true"></i> {{ _('Preselected from the publisher you used last. You can change the choice.') }}</p>{% endif %}
+{% if c.userobj %}<button type="button" class="btn btn-secondary btn-sm mt-2" data-actors-toggle><i class="fa fa-plus"></i> {{ _('Create new publisher') }}</button><div class="well mt-2" data-actors-panel hidden><h3 data-actors-panel-title>{{ _('New publisher') }}</h3><div data-actors-form>{{ h.csrf_input() }}<div class="alert alert-danger" data-actors-error hidden></div><div class="form-group"><label class="form-label">{{ _('Name') }} *</label><input class="form-control" data-field="name"></div><div class="form-group"><label class="form-label">{{ _('Kind') }}</label><select class="form-control" data-field="actor_kind"><option value="organization">{{ _('Organization') }}</option><option value="person">{{ _('Person') }}</option></select></div><div class="form-group"><label class="form-label">{{ _('Identifier') }}</label><input class="form-control" data-field="identifier"></div><div class="form-group"><label class="form-label">{{ _('Identifier scheme') }}</label><input class="form-control" data-field="identifier_scheme"></div><div class="form-group"><label class="form-label">{{ _('URL') }}</label><input class="form-control" data-field="url" type="url"></div><button class="btn btn-primary btn-sm" type="button" data-actors-save>{{ _('Save and select') }}</button><button class="btn btn-link btn-sm" type="button" data-actors-cancel>{{ _('Cancel') }}</button><p class="help-block mt-2 mb-0">{{ _('Editing here updates the publisher everywhere it is used, not just in this dataset.') }}</p></div></div>{% endif %}
+{%- endcall -%}</div>
