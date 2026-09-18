@@ -41,6 +41,24 @@ organizations continue to control dataset ownership and permissions.
 - validation that prevents an actor and a contact point from sharing the same
   RDF URI.
 
+## Screenshots
+
+Merging two duplicate actors -- select exactly two, choose which value wins
+per field, confirm, and the actor that isn't kept is soft-retired and points
+to the remaining record:
+
+![Merging two actors: selecting them, comparing fields, and the result](docs/images/actor-merge-flow.gif)
+
+The inline prompt on a dataset's own page when it is missing a publisher
+and/or a contact point (here: publisher already set, contact point missing),
+using the same picker widgets as the full edit form:
+
+![A dataset missing a contact point shows an inline "Actor link missing" prompt with a contact-point picker](docs/images/actor-link-prompt-before.jpg)
+
+Saving it resolves the warning immediately, without leaving the page:
+
+![After saving, the prompt is replaced by the resolved contact point value](docs/images/actor-link-prompt-after.jpg)
+
 ## Requirements and compatibility
 
 - CKAN 2.11; 0.1.0 has been manually tested on CKAN 2.11.6 only;
