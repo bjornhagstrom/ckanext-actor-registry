@@ -46,8 +46,16 @@ it.
 ## Development priorities for 0.2
 
 - automated model, authorization, form and RDF serialization tests;
-- Action API support with explicit authorization functions;
 - CKAN 2.10, 2.11 and 2.12 compatibility testing;
 - documented import and export workflows.
+
+A full `ckan.logic.action` CRUD API for registry management (create/read/
+update/delete actors and contact points programmatically) was considered and
+deliberately deprioritized: it is uncommon among comparable CKAN registry/
+metadata extensions, and the admin GUI plus the existing
+`actor_registry_actor_merge` action already cover this extension's actual
+use cases. See `docs/BACKLOG.md` for the full rationale. This is an
+intentional design decision, not an open gap -- please raise it in an issue
+first if you think it should be revisited.
 
 All contributors must follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
