@@ -5,12 +5,11 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-09-21
 
 The first tagged release. It follows the initial source-only snapshot (0.1.0, below) and contains
 breaking changes: translation keys changed with the UI text ("actor" is now "publisher"), migration
-`006` adds a unique index, and CKAN 2.11.0 and older are not supported. Set the release date here
-when tagging (see `docs/PUBLISHING.md`).
+`006` adds a unique index, and CKAN 2.11.0 and older are not supported.
 
 ### Added
 
