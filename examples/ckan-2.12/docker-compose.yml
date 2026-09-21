@@ -1,0 +1,95 @@
+# EXAMPLE: run CKAN + ckanext-scheming + ckanext-actor-registry with Docker Compose.
+# An integration example, not a production deployment (no HTTPS, no backups, no
+# DataStore/DataPusher). See README.md in this directory.
+#
+#   ./setup.sh                     # once: creates .env with random secrets
+#   docker compose up -d --build
+#
+# Use CKAN_VERSION=2.11 (in .env) to run the same example on CKAN 2.11.
+name: actor-registry-example
+
+services:
+  ckan:
+    build:
+      context: ../..            # the repository root, so the extension is installed from this checkout
+      dockerfile: examples/ckan-2.12/Dockerfile
+      args:
+        CKAN_VERSION: ${CKAN_VERSION:-2.12}
+        SCHEMING_SPEC: ${SCHEMING_SPEC:-ckanext-scheming==3.1.0}
+    platform: linux/amd64        # the CKAN images are amd64-only; needed on Apple silicon
+    depends_on:
+      db:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${CKAN_PORT:-5000}:5000"
+    environment:
+      CKAN_SITE_URL: ${CKAN_SITE_URL:-http://localhost:5000}
+      CKAN_SQLALCHEMY_URL: postgresql://ckan:${POSTGRES_PASSWORD}@db/ckan
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_STORAGE_PATH: /var/lib/ckan
+      CKAN_SYSADMIN_NAME: ${CKAN_SYSADMIN_NAME:-admin}
+      CKAN_SYSADMIN_PASSWORD: ${CKAN_SYSADMIN_PASSWORD}
+      CKAN_SYSADMIN_EMAIL: ${CKAN_SYSADMIN_EMAIL:-admin@example.org}
+      # `envvars` must be the LAST plugin. scheming_datasets provides the dataset
+      # form fields; actor_registry provides the registry itself.
+      CKAN__PLUGINS: "actor_registry scheming_datasets image_view text_view envvars"
+      CKAN__LOCALE_DEFAULT: en
+      CKAN__LOCALES_OFFERED: "en sv sv_SE"
+      CKAN___BEAKER__SESSION__SECRET: ${SESSION_SECRET}
+      CKAN___API_TOKEN__JWT__ENCODE__SECRET: string:${JWT_SECRET}
+      CKAN___API_TOKEN__JWT__DECODE__SECRET: string:${JWT_SECRET}
+    volumes:
+      - ckan_storage:/var/lib/ckan
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://localhost:5000/api/action/status_show', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ckan
+      POSTGRES_DB: ckan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ckan -d ckan"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  solr:
+    image: ckan/ckan-solr:${SOLR_VERSION:-${CKAN_VERSION:-2.12}}-solr9
+    platform: linux/amd64
+    volumes:
+      - solr_data:/var/solr
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8983/solr/ckan/admin/ping >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  ckan_storage:
+  pg_data:
+  solr_data:

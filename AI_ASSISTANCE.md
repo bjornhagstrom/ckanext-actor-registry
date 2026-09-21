@@ -1,7 +1,8 @@
 # AI assistance disclosure
 
-The initial implementation and documentation of ckanext-actor-registry were
-developed by Björn Hagström with assistance from OpenAI's ChatGPT and Codex.
+The implementation and documentation of ckanext-actor-registry were developed by
+Björn Hagström with assistance from OpenAI's ChatGPT and Codex and, from version
+0.2.0, from Anthropic's Claude Code.
 
 AI tools assisted with research, design discussion, code drafting, refactoring,
 documentation and operational verification. Product decisions, deployment

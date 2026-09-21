@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
+{% block subtitle %}{{ _('Delete publisher') }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li><a href="{{ h.url_for('actor_registry.actors_show', item_id=item.id) }}">{{ item.name }}</a></li><li class="active">{{ _('Delete') }}</li>{% endblock %}
+{% block primary_content_inner %}
+<h1 class="page-heading">{{ _('Delete "{name}"?').format(name=item.name) }}</h1>
+
+{% if not item.active %}
+<div class="alert alert-warning">
+  {{ _('This publisher is already merged and retired. It is kept around today only so its web address (URI) keeps resolving, in case anything outside this catalogue already links to it or has it cached. Deleting it removes that address for good -- do this only once you are confident nothing depends on it any more.') }}
+</div>
+{% endif %}
+
+{% set has_publisher_links = linked.publisher.total > 0 %}
+{% set has_owned_contacts = owned_contact_points|length > 0 %}
+{% set has_chained = chained_actors|length > 0 %}
+
+{% if has_publisher_links or has_owned_contacts or has_chained %}
+<div class="alert alert-danger">
+<strong>{{ _('This will affect other records:') }}</strong>
+<ul>
+  {% if has_publisher_links %}<li>{{ _('{n} dataset(s) have this publisher. Their publisher will be cleared, not reassigned.').format(n=linked.publisher.total) }}</li>{% endif %}
+  {% if has_owned_contacts %}<li>{{ _('{n} contact point(s) belong to this publisher and will become standalone (not deleted, just no longer linked to an organization/person).').format(n=owned_contact_points|length) }}</li>{% endif %}
+  {% if has_chained %}<li>{{ _('{n} other publisher(s) were previously merged into this one. Their "merged with" pointer will stop resolving once this record is gone.').format(n=chained_actors|length) }}</li>{% endif %}
+</ul>
+</div>
+{% else %}
+<div class="alert alert-info">{{ _('No datasets, contact points, or other publishers currently depend on this publisher.') }}</div>
+{% endif %}
+
+{% if has_publisher_links %}
+<h2>{{ _('Datasets with this publisher') }}</h2>
+{{ dl.dataset_list(linked.publisher, h.url_for('actor_registry.actors_datasets', item_id=item.id, link='publisher'), '') }}
+{% endif %}
+
+{% if has_owned_contacts %}
+<h2>{{ _('Contact points owned by this publisher') }}</h2>
+<ul class="dataset-list">{% for contact in owned_contact_points %}<li><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=contact.id) }}">{{ contact.name }}</a></li>{% endfor %}</ul>
+{% endif %}
+
+{% if has_chained %}
+<h2>{{ _('Publishers previously merged into this one') }}</h2>
+<ul class="dataset-list">{% for chained in chained_actors %}<li>{{ chained.name }}</li>{% endfor %}</ul>
+{% endif %}
+
+<form method="post" class="dataset-form">
+{{ h.csrf_input() }}
+<div class="form-actions">
+<a class="btn btn-secondary" href="{{ h.url_for('actor_registry.actors_show', item_id=item.id) }}">{{ _('Cancel') }}</a>
+<button class="btn btn-danger" type="submit">{{ _('Yes, permanently delete this publisher') }}</button>
+</div>
+</form>
+{% endblock %}

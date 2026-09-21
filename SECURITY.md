@@ -3,7 +3,7 @@
 ## Supported versions
 
 Until a later release is available, security fixes are made only on the latest
-0.1.x release. Version 0.1 is alpha software and has not received a formal
+0.2.x release. Version 0.2 is alpha software and has not received a formal
 security audit.
 
 ## Reporting a vulnerability

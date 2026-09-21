@@ -13,10 +13,13 @@ dataset_fields:
   preset: dataset_organization
   required: true
 - field_name: publisher_actor_id
+  display_snippet: actor.html
   required: true
+  validators: scheming_required actor_registry_actor_exists
 - field_name: contact_point_ids
+  display_snippet: contactpoints.html
   preset: multiple_text
-  validators: ignore_missing scheming_multiple_text
+  validators: ignore_missing scheming_multiple_text actor_registry_contactpoints_exist
 - field_name: theme
   preset: multiple_text
   validators: ignore_missing scheming_multiple_text

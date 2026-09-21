@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
+{% block subtitle %}{{ _('Delete contact point') }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index') }}">{{ _('Contact points') }}</a></li><li><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=item.id) }}">{{ item.name }}</a></li><li class="active">{{ _('Delete') }}</li>{% endblock %}
+{% block primary_content_inner %}
+<h1 class="page-heading">{{ _('Delete "{name}"?').format(name=item.name) }}</h1>
+
+{% if not item.active %}
+<div class="alert alert-warning">
+  {{ _('This contact point is already inactive. It is kept around today only so its web address (URI) keeps resolving, in case anything outside this catalogue already links to it or has it cached. Deleting it removes that address for good -- do this only once you are confident nothing depends on it any more.') }}
+</div>
+{% endif %}
+
+{% if owning_actor %}
+<div class="alert alert-info">{{ _('This contact point belongs to {actor}. That publisher is not affected by deleting this contact point.').format(actor=owning_actor.name) }}</div>
+{% endif %}
+
+{% if linked_datasets.total > 0 %}
+<div class="alert alert-danger">
+<strong>{{ _('This will affect other records:') }}</strong>
+<ul>
+  <li>{{ _('{n} dataset(s) list this contact point. It will be removed from their contact points, not reassigned.').format(n=linked_datasets.total) }}</li>
+</ul>
+</div>
+<h2>{{ _('Datasets listing this contact point') }}</h2>
+{{ dl.dataset_list(linked_datasets, h.url_for('actor_registry.contactpoints_datasets', item_id=item.id), '') }}
+{% else %}
+<div class="alert alert-info">{{ _('No datasets currently reference this contact point.') }}</div>
+{% endif %}
+
+<form method="post" class="dataset-form">
+{{ h.csrf_input() }}
+<div class="form-actions">
+<a class="btn btn-secondary" href="{{ h.url_for('actor_registry.contactpoints_show', item_id=item.id) }}">{{ _('Cancel') }}</a>
+<button class="btn btn-danger" type="submit">{{ _('Yes, permanently delete this contact point') }}</button>
+</div>
+</form>
+{% endblock %}

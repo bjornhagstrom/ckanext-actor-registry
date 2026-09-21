@@ -39,7 +39,9 @@
         var strong = document.createElement('strong');
         strong.textContent = label + ': ';
         safe.appendChild(strong);
-        if (href) {
+        // Only web, mail and phone links are made clickable; a stored value with any
+        // other scheme (e.g. javascript:) is shown as plain text.
+        if (href && /^(https?:|mailto:|tel:)/i.test(href)) {
           var link = document.createElement('a');
           link.href = href;
           link.textContent = value;
@@ -115,6 +117,8 @@
         form.querySelector('[data-field="email"]').value = option.dataset.email || '';
         form.querySelector('[data-field="phone"]').value = option.dataset.phone || '';
         form.querySelector('[data-field="url"]').value = option.dataset.url || '';
+        var actorField = form.querySelector('[data-field="actor_id"]');
+        if (actorField) actorField.value = option.dataset.actorId || '';
         panel.hidden = false;
         toggle.hidden = true;
         form.querySelector('[data-field="name"]').focus();
@@ -181,12 +185,14 @@
               existing.dataset.email = contact.email || '';
               existing.dataset.phone = contact.phone || '';
               existing.dataset.url = contact.url || '';
+              existing.dataset.actorId = contact.actor_id || '';
             }
           } else {
             var option = new Option(contact.name, contact.id, true, true);
             option.dataset.email = contact.email || '';
             option.dataset.phone = contact.phone || '';
             option.dataset.url = contact.url || '';
+            option.dataset.actorId = contact.actor_id || '';
             select.appendChild(option);
           }
           if (window.jQuery) window.jQuery(select).trigger('change');

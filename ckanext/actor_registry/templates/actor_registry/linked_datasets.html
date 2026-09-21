@@ -1,0 +1,31 @@
+{#- Paginated "show all" page of datasets: those a publisher publishes
+    (kind 'actor'), those a contact point is linked to (kind 'contact_point'),
+    or those with neither a publisher nor a contact point (kind 'unlinked').
+    ``data`` is {"rows": [...], "total": n}; see views._linked_datasets. -#}
+{% extends "admin/base.html" %}
+{% if kind == 'unlinked' %}
+  {% set title = _('Publishers') %}
+  {% set detail_url = h.url_for('actor_registry.actors_index', missing=missing) %}
+  {# ``heading`` comes from the view (it depends on the chosen ``missing`` filter) #}
+{% elif kind == 'actor' %}
+  {% set title = item.name %}
+  {% set detail_url = h.url_for('actor_registry.actors_show', item_id=item.id) %}
+  {% set heading = _('Publisher for {n} dataset(s)').format(n=data.total) %}
+{% else %}
+  {% set title = item.name %}
+  {% set detail_url = h.url_for('actor_registry.contactpoints_show', item_id=item.id) %}
+  {% set heading = _('Linked to {n} dataset(s)').format(n=data.total) %}
+{% endif %}
+{% block subtitle %}{{ title }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ detail_url }}">{{ title }}</a></li><li class="active">{{ _('Datasets') }}</li>{% endblock %}
+{% block primary_content_inner %}
+<h1 class="page-heading">{{ title }}</h1>
+<h2>{{ heading }}</h2>
+{% if data.rows %}
+<ul class="dataset-list">{% for dataset in data.rows %}<li><a href="{{ h.url_for('dataset.read', id=dataset.name) }}">{{ dataset.title }}</a></li>{% endfor %}</ul>
+{{ pager.pager() }}
+{% else %}
+<p>{{ _('No datasets to show.') }}</p>
+{% endif %}
+<p><a href="{{ detail_url }}">{{ _('Back to') }} {{ title }}</a></p>
+{% endblock %}

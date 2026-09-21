@@ -1,0 +1,12 @@
+{#- Shared list of datasets linked to a registry record. ``data`` is
+    {"rows": [{"name", "title"}], "total": n} from views._linked_datasets;
+    when there are more datasets than rows, a "Show all" link is offered.
+    Import with context: {% import '...dataset_list.html' as dl with context %} -#}
+{% macro dataset_list(data, more_url, empty_text) -%}
+{% if data.rows %}
+<ul class="dataset-list">{% for dataset in data.rows %}<li><a href="{{ h.url_for('dataset.read', id=dataset.name) }}">{{ dataset.title }}</a></li>{% endfor %}</ul>
+{% if data.total > data.rows|length %}<p><a href="{{ more_url }}">{{ _('Show all {n}').format(n=data.total) }}</a></p>{% endif %}
+{% else %}
+<p>{{ empty_text }}</p>
+{% endif %}
+{%- endmacro %}

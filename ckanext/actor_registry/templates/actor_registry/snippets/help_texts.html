@@ -1,0 +1,31 @@
+{#-
+  Single source for the short field help texts of the actor and contact
+  point forms. Used by BOTH the admin forms (actor_form.html,
+  contactpoint_form.html) and the inline create/edit dialogs in
+  scheming/form_snippets/, so the wording -- and its translations -- can
+  never drift apart. Import with context so the gettext lookup runs per request:
+
+    {% import 'actor_registry/snippets/help_texts.html' as ht with context %}
+    <p class="help-block">{{ ht.text('identifier') }}</p>
+-#}
+{% macro text(key) -%}
+{%- if key == 'actors_intro' -%}
+{{ _('A publisher is the organization or person responsible for making a dataset available. Register it once and reuse it across datasets.') }}
+{%- elif key == 'contactpoints_intro' -%}
+{{ _('A contact point is the function or person users can contact with questions about a dataset. Prefer a functional contact over an individual when the responsibility is long-term.') }}
+{%- elif key == 'belongs_to' -%}
+{{ _('Optional link to the organization or person this contact point represents.') }}
+{%- elif key == 'kind' -%}
+{{ _('Choose Organization for authorities, companies and departments, and Person for an individual.') }}
+{%- elif key == 'identifier' -%}
+{{ _('A unique value for this organization or person, such as a Swedish organisation number or an ORCID. Enter it together with an identifier scheme.') }}
+{%- elif key == 'identifier_scheme' -%}
+{{ _('Specifies how the identifier should be interpreted, for example SE:ORGNR or ORCID. Enter it together with an identifier.') }}
+{%- elif key == 'url' -%}
+{{ _('A full web address, for example https://www.example.org.') }}
+{%- elif key == 'email' -%}
+{{ _('An address where questions can be sent. A shared functional mailbox is better than a personal one.') }}
+{%- elif key == 'phone' -%}
+{{ _('Include the country code, e.g. +46, for correct DCAT-AP-SE export.') }}
+{%- endif -%}
+{%- endmacro %}

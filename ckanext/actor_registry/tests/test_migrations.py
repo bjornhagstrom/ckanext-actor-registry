@@ -50,7 +50,7 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
     ckan_model.Session.commit()
 
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_005 (head)"
+    assert current_revision("actor_registry") == "actor_registry_006 (head)"
 
     tables = _table_names()
     assert {
@@ -85,4 +85,4 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
 
     # Running the current migration again must be harmless during restarts.
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_005 (head)"
+    assert current_revision("actor_registry") == "actor_registry_006 (head)"

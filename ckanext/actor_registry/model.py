@@ -2,8 +2,54 @@ from datetime import datetime
 
 from ckan import model
 from ckan.plugins import toolkit
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, bindparam, text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, bindparam, inspect, text
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT as PG_TEXT
+
+
+# The two scheming fields the registry links datasets through. Only these keys
+# may be interpolated into SQL below.
+_EXTRA_KEYS = ("publisher_actor_id", "contact_point_ids")
+_extras_are_a_column = None
+
+
+def _extras_in_package_column():
+    """Where a dataset's extras live in this CKAN.
+
+    CKAN 2.12 keeps them in a jsonb column, ``package.extras``. CKAN 2.11
+    keeps them in the ``package_extra`` table (one row per key). The registry
+    supports both, so the SQL that reads them is built from
+    :func:`extra_text` / :func:`extra_present` instead of naming either layout.
+    """
+    global _extras_are_a_column
+    if _extras_are_a_column is None:
+        columns = {column["name"] for column in inspect(model.meta.engine).get_columns("package")}
+        _extras_are_a_column = "extras" in columns
+    return _extras_are_a_column
+
+
+def extra_text(key):
+    """SQL for a package's extra ``key`` as text (NULL when absent).
+
+    Meant to be used inside a query ``FROM package``.
+    """
+    assert key in _EXTRA_KEYS, key
+    if _extras_in_package_column():
+        return "(extras ->> '%s')" % key
+    return (
+        "(SELECT pe.value FROM package_extra pe "
+        "WHERE pe.package_id = package.id AND pe.key = '%s' AND pe.state = 'active')" % key
+    )
+
+
+def extra_present(key):
+    """SQL that is true when a package has an extra called ``key``."""
+    assert key in _EXTRA_KEYS, key
+    if _extras_in_package_column():
+        return "(extras ? '%s')" % key
+    return (
+        "EXISTS (SELECT 1 FROM package_extra pe "
+        "WHERE pe.package_id = package.id AND pe.key = '%s' AND pe.state = 'active')" % key
+    )
 
 
 class Actor(toolkit.BaseModel):
@@ -120,6 +166,39 @@ def all_actors(include_inactive=False):
     return query.order_by(Actor.name.asc()).all()
 
 
+def find_active_actor_by_identifier(identifier_scheme, identifier, exclude_actor_id=None):
+    """The active actor already using this (scheme, identifier) pair, if any."""
+    if not identifier_scheme or not identifier:
+        return None
+    query = model.Session.query(Actor).filter(
+        Actor.active.is_(True),
+        Actor.identifier_scheme == identifier_scheme,
+        Actor.identifier == identifier,
+    )
+    if exclude_actor_id:
+        query = query.filter(Actor.id != exclude_actor_id)
+    return query.first()
+
+
+def actors_merged_into(actor_id):
+    """Actors whose ``merged_into_id`` points at ``actor_id``.
+
+    Used by the delete flow (``actor_registry_actor_delete``) to warn a
+    sysadmin before they permanently delete an actor that one or more
+    other, already-merged actors still redirect to. Deleting the target
+    doesn't fail -- ``merged_into_id`` is ``ondelete=SET NULL`` -- but
+    those other actors' "merged with X" pointers silently go stale, so
+    the caller needs to know about it up front rather than after the
+    fact.
+    """
+    return (
+        model.Session.query(Actor)
+        .filter(Actor.merged_into_id == actor_id)
+        .order_by(Actor.name.asc())
+        .all()
+    )
+
+
 def datasets_for_actor(actor_id):
     """Active dataset ids linked to this actor, split by link type.
 
@@ -131,9 +210,8 @@ def datasets_for_actor(actor_id):
       points in ``contact_point_ids`` (scheming multi-select field) --
       an indirect link, via ``ContactPoint.actor_id``.
 
-    Both scheming fields live in ``package.extras`` (a jsonb column; there
-    is no separate ``package_extra`` table in this CKAN version -- verified
-    empirically, see aktorsregister-sammanslagning-plan.md). SQLAlchemy
+    Both scheming fields live in the dataset's extras -- a jsonb column on CKAN
+    2.12, the ``package_extra`` table on 2.11 (see ``extra_text``). SQLAlchemy
     query direct against that column rather than Solr, so results are
     correct independently of indexing/lag. ``publisher_actor_id`` is
     stored as a plain JSON string; ``contact_point_ids`` is stored as a
@@ -153,8 +231,8 @@ def datasets_for_actor(actor_id):
             """
             SELECT id FROM package
             WHERE state = 'active'
-              AND extras ->> 'publisher_actor_id' = :actor_id
-            """
+              AND {publisher} = :actor_id
+            """.format(publisher=extra_text("publisher_actor_id"))
         ),
         {"actor_id": actor_id},
     )
@@ -171,14 +249,118 @@ def datasets_for_actor(actor_id):
             """
             SELECT id FROM package
             WHERE state = 'active'
-              AND extras ? 'contact_point_ids'
-              AND (extras ->> 'contact_point_ids')::jsonb ?| :contact_point_ids
-            """
+              AND {present}
+              AND {contacts}::jsonb ?| :contact_point_ids
+            """.format(present=extra_present("contact_point_ids"), contacts=extra_text("contact_point_ids"))
         ).bindparams(bindparam("contact_point_ids", type_=ARRAY(PG_TEXT)))
         contact_rows = session.execute(stmt, {"contact_point_ids": contact_point_ids})
         via_contact_point_ids = [row.id for row in contact_rows]
 
     return {"publisher": publisher_ids, "contact_point": via_contact_point_ids}
+
+
+def datasets_for_contact_point(contact_point_id):
+    """Active dataset ids that list this exact contact point in
+    ``contact_point_ids`` (a scheming multi-select field, double-encoded --
+    see ``datasets_for_actor`` above for the storage details).
+
+    This is the direct counterpart to ``datasets_for_actor``'s
+    "contact_point" bucket, but keyed by a specific contact point id rather
+    than by the actor that owns it -- used when deleting a contact point
+    directly (``actor_registry_contactpoint_delete``), independent of
+    whether it belongs to an actor at all.
+    """
+    session = model.Session
+    stmt = text(
+        """
+        SELECT id FROM package
+        WHERE state = 'active'
+          AND {present}
+          AND {contacts}::jsonb ? :contact_point_id
+        """.format(present=extra_present("contact_point_ids"), contacts=extra_text("contact_point_ids"))
+    )
+    rows = session.execute(stmt, {"contact_point_id": contact_point_id})
+    return [row.id for row in rows]
+
+
+# Modes of ``linked_datasets`` that list datasets that MISS something (no subject ids needed):
+# both a publisher and a contact point ("none"), only the publisher, only the contact
+# point, or either one.
+MISSING_MODES = ("none", "no_publisher", "no_contact_point", "either")
+
+
+def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, per_page=10):
+    """One page of the datasets linked to registry records, plus the total.
+
+    Reads straight from the database (the source of truth; the search index
+    can hold stale documents) and returns ``(rows, total)``, ``rows`` being
+    ``{"id", "name", "title"}`` dicts sorted by title, A-Z.
+
+    ``link`` is ``"publisher"`` (``publisher_actor_id`` equals one of
+    ``subject_ids``) or ``"contact_point"`` (``contact_point_ids`` lists one
+    of them). See ``datasets_for_actor`` for how both scheming fields are
+    stored. ``"none"`` lists the datasets with NEITHER a publisher NOR a
+    contact point (the same definition as ``datasets_without_actor_link``);
+    ``"no_publisher"`` those without a publisher, ``"no_contact_point"`` those without
+    a contact point and ``"either"`` those missing at least one of the two. For all four
+    ``subject_ids`` is ignored.
+
+    Only ``active`` datasets are returned. Visibility is enforced HERE, in
+    the same query that counts and pages: private datasets are included
+    only for sysadmins or when the dataset's organisation is in ``org_ids``
+    (the viewer's organisations). The caller must never post-filter.
+    """
+    subject_ids = [str(item) for item in subject_ids if item]
+    if link not in MISSING_MODES and not subject_ids:
+        return [], 0
+    publisher = extra_text("publisher_actor_id")
+    contacts = extra_text("contact_point_ids")
+    if link in MISSING_MODES:
+        publisher_missing = "({publisher} IS NULL OR {publisher} = '')".format(publisher=publisher)
+        contact_points_missing = (
+            "(NOT {present} OR {contacts} IS NULL OR {contacts} = '' OR {contacts}::jsonb = '[]'::jsonb)"
+        ).format(present=extra_present("contact_point_ids"), contacts=contacts)
+        link_clause = {
+            "none": "{p} AND {c}",
+            "no_publisher": "{p}",
+            "no_contact_point": "{c}",
+            "either": "({p} OR {c})",
+        }[link].format(p=publisher_missing, c=contact_points_missing)
+    elif link == "publisher":
+        link_clause = "{publisher} = ANY(:subject_ids)".format(publisher=publisher)
+    elif link == "contact_point":
+        link_clause = "{present} AND {contacts}::jsonb ?| :subject_ids".format(
+            present=extra_present("contact_point_ids"), contacts=contacts
+        )
+    else:
+        raise ValueError("link must be 'publisher', 'contact_point' or one of %s" % (MISSING_MODES,))
+
+    where = (
+        "state = 'active' AND (" + link_clause + ") "
+        "AND (:all_visible OR private = false OR owner_org = ANY(:org_ids))"
+    )
+    array = ARRAY(PG_TEXT)
+    params = {"all_visible": bool(is_sysadmin), "org_ids": [str(item) for item in org_ids]}
+    if link not in MISSING_MODES:
+        params["subject_ids"] = subject_ids
+
+    def statement(sql):
+        binds = [bindparam("org_ids", type_=array)]
+        if link not in MISSING_MODES:
+            binds.append(bindparam("subject_ids", type_=array))
+        return text(sql).bindparams(*binds)
+
+    session = model.Session
+    total = session.execute(statement("SELECT count(*) FROM package WHERE " + where), params).scalar()
+    page = max(int(page), 1)
+    rows = session.execute(
+        statement(
+            "SELECT id, name, title FROM package WHERE " + where
+            + " ORDER BY lower(coalesce(nullif(title, ''), name)), name LIMIT :limit OFFSET :offset"
+        ),
+        dict(params, limit=per_page, offset=(page - 1) * per_page),
+    )
+    return [{"id": r.id, "name": r.name, "title": r.title or r.name} for r in rows], total
 
 
 def datasets_without_actor_link():
@@ -204,15 +386,18 @@ def datasets_without_actor_link():
             """
             SELECT id FROM package
             WHERE state = 'active'
-              AND (extras ->> 'publisher_actor_id' IS NULL
-                   OR extras ->> 'publisher_actor_id' = '')
+              AND ({publisher} IS NULL OR {publisher} = '')
               AND (
-                NOT (extras ? 'contact_point_ids')
-                OR extras ->> 'contact_point_ids' IS NULL
-                OR extras ->> 'contact_point_ids' = ''
-                OR (extras ->> 'contact_point_ids')::jsonb = '[]'::jsonb
+                NOT {present}
+                OR {contacts} IS NULL
+                OR {contacts} = ''
+                OR {contacts}::jsonb = '[]'::jsonb
               )
-            """
+            """.format(
+                publisher=extra_text("publisher_actor_id"),
+                present=extra_present("contact_point_ids"),
+                contacts=extra_text("contact_point_ids"),
+            )
         )
     )
     return [row.id for row in rows]

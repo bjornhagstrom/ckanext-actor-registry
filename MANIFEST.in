@@ -1,6 +1,8 @@
 recursive-include ckanext/actor_registry/templates *
 recursive-include ckanext/actor_registry/assets *
 recursive-include ckanext/actor_registry/migration *
+recursive-include ckanext/actor_registry/i18n *
+recursive-include ckanext/actor_registry/examples *.yaml
 recursive-include ckanext/actor_registry/tests/fixtures *.yaml
 include README.md LICENSE CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md AI_ASSISTANCE.md
 recursive-include docs *.md

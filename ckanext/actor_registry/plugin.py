@@ -4,7 +4,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan import model as ckan_model
 
-from ckanext.actor_registry import actions, auth, helpers, model, views
+from ckanext.actor_registry import actions, auth, helpers, model, validators, views
 
 
 class ActorRegistryPlugin(plugins.SingletonPlugin):
@@ -15,23 +15,20 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.ITranslation)
+    plugins.implements(plugins.IValidators)
 
     def update_config(self, config):
         toolkit.add_template_directory(config, "templates")
         toolkit.add_resource("assets", "actor_registry")
 
-    # ITranslation -- same mechanism ckanext-skelleftea already uses
-    # (gettext/.po/.mo catalog compiled via pybabel, see
-    # docs/I18N_PLAN.md). Unlike skelleftea's catalog (a small, hand-
-    # written override of CKAN core's own English vocabulary),
-    # actor_registry's own templates/Python had zero _() markers before
-    # this, so its catalog is a real pybabel-extracted one: English is
-    # the source language here, Swedish is the compiled translation.
+    # ITranslation. English is the source language of every user-facing string
+    # (wrapped in _()); the Swedish catalogues (sv, and sv_SE as a copy of sv) are
+    # compiled from the .po files in i18n/. See docs/TRANSLATIONS.md.
     def i18n_directory(self):
         return os.path.join(os.path.dirname(__file__), "i18n")
 
     def i18n_locales(self):
-        return ["sv"]
+        return ["sv", "sv_SE"]
 
     def i18n_domain(self):
         return "ckanext-actor-registry"
@@ -47,17 +44,29 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
             "contactpoints_grouped_choices": helpers.contactpoints_grouped_choices,
             "actors_choices": helpers.actors_choices,
             "actors_resolve": helpers.actors_resolve,
+            "actor_display": helpers.actor_display,
+            "contactpoints_display": helpers.contactpoints_display,
             "preferred_publisher_actor_id": helpers.preferred_publisher_actor_id,
+        }
+
+    def get_validators(self):
+        return {
+            "actor_registry_actor_exists": validators.actor_registry_actor_exists,
+            "actor_registry_contactpoints_exist": validators.actor_registry_contactpoints_exist,
         }
 
     def get_actions(self):
         return {
             "actor_registry_actor_merge": actions.actor_registry_actor_merge,
+            "actor_registry_actor_delete": actions.actor_registry_actor_delete,
+            "actor_registry_contactpoint_delete": actions.actor_registry_contactpoint_delete,
         }
 
     def get_auth_functions(self):
         return {
             "actor_registry_actor_merge": auth.actor_registry_actor_merge,
+            "actor_registry_actor_delete": auth.actor_registry_actor_delete,
+            "actor_registry_contactpoint_delete": auth.actor_registry_contactpoint_delete,
         }
 
     def _remember_user_choices(self, context, pkg_dict):

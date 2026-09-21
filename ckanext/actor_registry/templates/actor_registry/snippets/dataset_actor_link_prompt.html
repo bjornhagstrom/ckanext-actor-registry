@@ -12,7 +12,7 @@
 {% if missing_publisher or missing_contact %}
 {% set schema = h.scheming_get_dataset_schema(pkg.type) %}
 <div class="alert alert-warning" data-dataset-actor-link-prompt>
-  <strong><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ _('Actor link missing.') }}</strong>
+  <strong><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ _('Publisher link missing.') }}</strong>
   {% if h.check_access('package_update', {'id': pkg.id}) %}
     <form method="post" action="{{ h.url_for('actor_registry.dataset_actor_link', package_id=pkg.id) }}" class="mt-2">
       {{ h.csrf_input() }}
@@ -27,7 +27,7 @@
       <button type="submit" class="btn btn-primary btn-sm">{{ _('Save') }}</button>
     </form>
   {% else %}
-    <span>{{ _('Log in with permission to edit the dataset to link an actor.') }}</span>
+    <span>{{ _('Log in with permission to edit the dataset to link a publisher.') }}</span>
   {% endif %}
 </div>
 {% endif %}

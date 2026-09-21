@@ -1,100 +1,54 @@
 # Backlog
 
-Framtida förbättringar för `ckanext-actor-registry` som är beslutade men inte
-prioriterade ännu. Se även `docs/I18N_PLAN.md` för i18n-specifik backlog
-(språkväljare i GUI, m.m.).
+Improvements that are decided but not scheduled, and design choices that are deliberate and
+should not be mistaken for gaps. Please open an issue before starting work on any of them.
 
-## Visa datamängder som saknar kontaktpunkt, på kontaktpunktssidan (2026-09-15)
+## Planned
 
-`actors_index.html` har idag en sektion "Datasets without an actor link"
-(`unlinked_datasets`) som listar datamängder som saknar *både* utgivare och
-kontaktpunkt bland aktörerna ovan (se
-`ckanext/actor_registry/templates/actor_registry/actors_index.html`,
-runt raden med `{{ _('Datasets without an actor link ({n})')... }}`).
+- **Import and export command for registry data** (CSV or JSON). Useful for bulk editing,
+  migration and backup outside the database. It should work directly against the model, for
+  example as a `ckan` command or a stand-alone script, and **not** on top of a general Action
+  API (see below).
+- **Browser-based (end-to-end) tests and a formal security review** before the extension is
+  used more widely than a pilot. Neither is a code change in itself, but both are concrete
+  tasks.
+- **Dataset collaborators in the registry lists.** The dataset lists on publisher and contact
+  point pages show a private dataset only to sysadmins and to members of the dataset's
+  organization. A user who can see a private dataset only as a CKAN *dataset collaborator*
+  (`ckan.auth.allow_dataset_collaborators`, off by default) does not see it there. That errs on
+  the safe side (too little is shown, nothing leaks). The fix is one more condition in the same
+  SQL that already filters visibility (`model.linked_datasets`): include a dataset when
+  `id IN (SELECT package_id FROM package_member WHERE user_id = :user)`, only when the feature
+  is enabled. It needs a test with a collaborator who is not an organization member, and
+  `_viewer_visibility()` in `views.py` must also return the user's id.
+- **The worklist on the contact points page.** The *Publishers* page (`/actors`) has a worklist
+  of datasets that are missing a publisher and/or a contact point, with a *Missing:* choice
+  (both, publisher, contact point, either). The contact points page has no entry point to it;
+  linking to `/actors?missing=contact_point` from there, or showing the same list, would make
+  the "datasets without a contact point" view easier to find. The list logic is shared
+  (`model.linked_datasets`), so the change is in the templates.
+- **Screenshots and a short walkthrough** for the README (the image links are in place and
+  marked "to be added").
 
-`contactpoints_index.html` saknar motsvarande sektion helt idag.
+## Deliberate design choices (not gaps)
 
-Björn vill ha en liknande funktion på kontaktpunktssidan: visa datamängder
-som saknar kontaktpunkt. Att utreda vid implementation:
+- **No full `ckan.logic.action` CRUD API for registry management** (create, read, update and
+  delete publishers and contact points programmatically). Comparable CKAN registry and metadata
+  extensions rarely provide one, and it is not needed for how this extension is used: the
+  admin interface covers day-to-day editing, and the merge and delete actions cover the cases
+  where a programmatic call has been needed. All validation lives in one shared layer
+  (`validation.py`), so an API added later would reuse it rather than duplicate it. Raise an
+  issue if you think this should be revisited.
+- **Identifier schemes and publisher-type vocabularies are left to the deploying catalog.**
+  The extension is meant to be general and portable, so it does not hard-code a vocabulary.
+  A catalog that wants to define and validate its own schemes and types does so in its own
+  schema and configuration.
 
-- Ska listan vara specifik för "saknar kontaktpunkt" (oavsett om utgivare
-  finns), till skillnad från aktörssidans "saknar både utgivare och
-  kontaktpunkt"? Det är sannolikt rätt tolkning, eftersom sidorna annars
-  skulle visa nästan identiska listor och kontaktpunktssidans lista annars
-  vore missvisande.
-- Delad logik: bryt ut en gemensam query/helper i `views.py` (typ
-  `_datasets_missing(role=...)`) som båda sidorna kan återanvända, i stället
-  för att duplicera SQL/logik.
-- Uppdatera i18n-katalogen (`i18n/sv/LC_MESSAGES/ckanext-actor-registry.po`)
-  med de nya strängarna, och lägg till motsvarande automatiska test (jämför
-  med `test_i18n_extraction.py` och de befintliga vyerna för aktörer).
+## Done
 
-Status: ej påbörjad, tillagd i backlog per Björns instruktion
-("Kör" avvaktar; "lägg på backlog nu").
-
-## Från README/CHANGELOG "Known limitations" -- vad som flyttats till backlog (2026-09-15, uppdaterat 2026-09-18)
-
-Björn bad om en genomgång av de kända begränsningarna i `README.md` och
-`CHANGELOG.md` för att avgöra vilka som är faktiska att-göra-punkter kontra
-medvetna designval. Resultat:
-
-**Flyttat till backlog (riktiga funktionsluckor):**
-
-- **Import/export-kommando för registerdata** (CSV/JSON). Behövs för
-  massredigering, migrering och backup/återställning utanför databasen
-  direkt. Implementeras direkt mot modellen/databasen (t.ex. via
-  `ckan`-kommandots vanliga plugin-kommandon eller ett fristående skript),
-  INTE ovanpå ett generellt Action API -- se beslutet nedan om att inte
-  bygga ett sådant.
-- **Webbläsar- och flerversionskompatibilitetstester samt en formell
-  säkerhetsgranskning.** Ren pre-launch-uppgift innan tillägget
-  driftsätts bredare än denna PoC -- inte en kodändring i sig, men en
-  konkret att-göra-punkt.
-- **Automatiserad testtäckning gäller idag bara CKAN 2.11.6** (se
-  `TESTING.md`, det reproducerbara testflödet bygger en isolerad
-  CKAN 2.11-miljö), medan vår egen portal kör CKAN 2.12 sedan ett tag.
-  Testsviten bör uppdateras/verifieras mot 2.12 (och ev. köras mot båda)
-  för att inte ge falsk trygghet om att den täcker den version vi
-  faktiskt driftsätter.
-
-**Redan löst sedan denna genomgång skrevs (2026-09-15), inte längre en
-lucka:**
-
-- **Finare behörighetsmodell.** Löst av commit `44f01d5`
-  (2026-09-16): registret (visa/skapa/redigera aktörer/kontaktpunkter +
-  quick-create) är nu tillgängligt för alla inloggade redaktörer, inte
-  bara sysadmins. Sammanslagningsfunktionen (`actors_merge`) förblir
-  medvetet sysadmin-only (destruktiv, katalogomfattande) -- se
-  `claude/aktorsregister-sammanslagning-plan.md` i huvudprojektet.
-
-**Inte flyttat till backlog (medvetet designval, inte en lucka):**
-
-- *"Selection and validation of identifier schemes and publisher-type
-  vocabularies is left to the deploying catalog."* Det här är avsiktligt
-  -- `ckanext-actor-registry` är tänkt att vara en generell,
-  portabel extension (se `TASKLISTA_SKELLEFTEA.md`s regel om att
-  Skellefteå-specifikt inte ska in i det allmänna tillägget), så den ska
-  INTE hårdkoda ett specifikt vokabulär. Om Skellefteå vill definiera och
-  validera sitt eget identifierarschema/utgivartyp-vokabulär är det en
-  Skellefteå-specifik uppgift som hör hemma i `TASKLISTA_SKELLEFTEA.md`,
-  inte här -- inte tillagd där heller ännu, flagga separat om det är
-  aktuellt.
-- **Fullständigt `ckan.logic.action`-CRUD-API för registerhantering
-  (skapa/läsa/uppdatera/radera aktörer och kontaktpunkter program-
-  matiskt), tillagt som medvetet designval 2026-09-18.** Tidigare
-  listad som en "riktig funktionslucka" (se ovan, version före
-  2026-09-18) -- Björn korrigerade detta: efter en jämförande
-  undersökning av liknande CKAN-tillägg (utfört i en annan session,
-  möjligen med ChatGPT/Codex snarare än här, därför inte tidigare
-  dokumenterat i det här repot) konstaterades att ett fullt CRUD Action
-  API är ovanligt bland jämförbara register-/metadata-tillägg och inte
-  behövs för hur `ckanext-actor-registry` faktiskt används: admin-GUI:t
-  täcker det dagliga redaktörsarbetet, och `actor_registry_actor_merge`
-  (se `claude/aktorsregister-sammanslagning-plan.md`) täcker det enda
-  fallet där ett programmatiskt anrop hittills behövts. Framtida
-  import/export-behov (se ovan) löses direkt mot modellen, inte via ett
-  generellt API som annars bara skulle finnas för sin egen skull.
-  **Status: avsiktligt nedprioriterat, inte en brist.**
-
-Status: ej påbörjat (för de kvarvarande punkterna ovan), ren
-backlog-katalogisering.
+- A finer permission model: the registry (view, create, edit, quick-create) is available to all
+  logged-in editors; merging and permanent deletion stay sysadmin-only.
+- Automated tests on more than one CKAN release: the suite runs on CKAN 2.11.1, the newest 2.11
+  patch and 2.12 (see [TESTING.md](../TESTING.md)).
+- The datasets-missing-something worklist, including the choice between missing both, only the
+  publisher, only the contact point, or either.

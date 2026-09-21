@@ -1,0 +1,70 @@
+# EXAMPLE dataset schema showing how to wire the actor registry into a
+# ckanext-scheming dataset form (CKAN 2.12 + ckanext-scheming). It is an
+# integration example, NOT a binding or universal metadata schema: copy it,
+# then decide per metadata profile which fields are required.
+#
+# Reference it from ckan.ini with the Scheming module:path format (an
+# absolute file path does not work):
+#
+#   scheming.dataset_schemas = ckanext.actor_registry.examples:actor_registry_schema.yaml
+#   scheming.presets = ckanext.scheming:presets.json
+#
+# Labels are localised for en, sv and sv_SE.
+scheming_version: 2
+dataset_type: dataset
+
+dataset_fields:
+- field_name: title
+  label: {en: Title, sv: Titel, sv_SE: Titel}
+  preset: title
+  required: true
+
+- field_name: name
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: dataset_slug
+
+- field_name: notes
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+  required: true
+  form_snippet: markdown.html
+  display_snippet: markdown.html
+
+- field_name: owner_org
+  label: {en: Organization, sv: Organisation, sv_SE: Organisation}
+  preset: dataset_organization
+  required: true
+
+# Publisher is REQUIRED in this example. A required field must not offer a
+# misleading empty choice: an empty submission gives a clear validation
+# error. To make it optional instead, remove `required: true` and the
+# scheming_required validator -- an empty choice then clears the link.
+- field_name: publisher_actor_id
+  label: {en: Publisher, sv: Utgivare, sv_SE: Utgivare}
+  preset: select
+  required: true
+  form_snippet: actors_multiple_select.html
+  display_snippet: actor.html
+  choices_helper: actors_choices
+  sorted_choices: true
+  validators: scheming_required actor_registry_actor_exists
+
+- field_name: contact_point_ids
+  label: {en: Contact points, sv: Kontaktpunkter, sv_SE: Kontaktpunkter}
+  preset: multiple_select
+  form_snippet: contactpoints_multiple_select.html
+  display_snippet: contactpoints.html
+  choices_helper: contactpoints_choices
+  sorted_choices: true
+  validators: ignore_missing scheming_multiple_choice actor_registry_contactpoints_exist
+
+resource_fields:
+- field_name: url
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: resource_url_upload
+- field_name: name
+  label: {en: Name, sv: Namn, sv_SE: Namn}
+- field_name: description
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+- field_name: format
+  label: {en: Format, sv: Format, sv_SE: Format}
+  preset: resource_format_autocomplete

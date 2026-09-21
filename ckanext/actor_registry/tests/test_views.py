@@ -62,7 +62,7 @@ def test_registry_index_rejects_anonymous_but_allows_normal_users(app):
     # Sammanåggningen är fortfarande sysadmin-only (destruktiv, inte
     # org-scopad) -- kryssrutorna/knappen för det ska därför INTE synas för
     # en vanlig användare, även om resten av sidan nu är öppen.
-    assert b"Merge selected actors" not in response.data
+    assert b"Merge selected publishers" not in response.data
 
 
 def test_sysadmin_can_open_registry_management(app):
@@ -71,9 +71,9 @@ def test_sysadmin_can_open_registry_management(app):
     response = app.get("/actors", headers=_auth_headers(sysadmin))
 
     assert response.status_code == 200
-    assert "Actors" in response.body
+    assert "Publishers" in response.body
     # Sysadmins ska fortfarande se sammanslagningsfunktionen.
-    assert b"Merge selected actors" in response.data
+    assert b"Merge selected publishers" in response.data
 
 
 def test_registry_index_lists_datasets_without_any_actor_link(app):
@@ -101,7 +101,7 @@ def test_registry_index_lists_datasets_without_any_actor_link(app):
     response = app.get("/actors", headers=_auth_headers(sysadmin))
 
     assert response.status_code == 200
-    assert "Datasets without an actor link" in response.body
+    assert "Datasets missing both a publisher and a contact point" in response.body
     assert "Ej kopplad datamängd" in response.body
     assert "Kopplad datamängd" not in response.body
 

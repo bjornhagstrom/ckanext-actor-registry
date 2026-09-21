@@ -72,3 +72,15 @@ assert.equal(preview.children.length, 1);
 assert.equal(preview.children[0].children[0].children[0].textContent, 'Testkontakt');
 assert.equal(preview.children[0].children.length, 4);
 console.log('Kontaktpunktsförhandsvisning via jQuery/Select2: OK');
+
+// "Belongs to organization" (actor_id) in the inline dialog: prefilled when
+// editing, and kept on the option after saving so a later edit starts from
+// the saved value. Source-level checks, like the jQuery event checks above.
+assert.match(source, /querySelector\('\[data-field="actor_id"\]'\)/);
+assert.match(source, /actorField\.value = option\.dataset\.actorId/);
+assert.match(source, /existing\.dataset\.actorId = contact\.actor_id/);
+assert.match(source, /option\.dataset\.actorId = contact\.actor_id/);
+
+// Stored values are not trusted to be http(s): only such values (and mailto:/tel:) become
+// links in the previews; anything else (e.g. javascript:) is shown as plain text.
+assert.match(source, /\/\^\(https\?:\|mailto:\|tel:\)\/i\.test\(href\)/);

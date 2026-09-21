@@ -1,30 +1,21 @@
 {% extends "admin/base.html" %}
+{% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ item.name }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Actors') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}
 {% block primary_content_inner %}
 <h1>{{ item.name }}</h1>
 {% if not item.active %}
 <div class="alert alert-warning">
 {% if merged_into %}
-{{ _('This actor has been merged with') }} <a href="{{ h.url_for('actor_registry.actors_show', item_id=merged_into.id) }}">{{ merged_into.name }}</a>. {{ _('Use that record from now on.') }}
+{{ _('This publisher has been merged with') }} <a href="{{ h.url_for('actor_registry.actors_show', item_id=merged_into.id) }}">{{ merged_into.name }}</a>. {{ _('Use that record from now on.') }}
 {% else %}
-{{ _('This actor is inactive.') }}
+{{ _('This publisher is inactive.') }}
 {% endif %}
 </div>
 {% endif %}
-<dl><dt>{{ _('Kind') }}</dt><dd>{{ _('Person') if item.actor_kind == 'person' else _('Organization') }}</dd><dt>{{ _('Type') }}</dt><dd>{{ item.actor_type or '–' }}</dd><dt>{{ _('Identifier') }}</dt><dd>{{ item.identifier or '–' }}{% if item.identifier_scheme %} ({{ item.identifier_scheme }}){% endif %}</dd><dt>URI</dt><dd><a href="{{ item.uri }}">{{ item.uri }}</a></dd><dt>{{ _('URL') }}</dt><dd>{% if item.url %}<a href="{{ item.url }}">{{ item.url }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Email') }}</dt><dd>{% if item.email %}<a href="mailto:{{ item.email }}">{{ item.email }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Description') }}</dt><dd>{{ item.description or '–' }}</dd></dl>
+<dl><dt>{{ _('Kind') }}</dt><dd>{{ _('Person') if item.actor_kind == 'person' else _('Organization') }}</dd><dt>{{ _('Type') }}</dt><dd>{{ item.actor_type or '–' }}</dd><dt>{{ _('Identifier') }}</dt><dd>{{ item.identifier or '–' }}{% if item.identifier_scheme %} ({{ item.identifier_scheme }}){% endif %}</dd><dt>URI</dt><dd>{% if h.is_url(item.uri) %}<a href="{{ item.uri }}">{{ item.uri }}</a>{% else %}{{ item.uri }}{% endif %}</dd><dt>{{ _('URL') }}</dt><dd>{% if item.url %}{% if h.is_url(item.url) %}<a href="{{ item.url }}" rel="noopener">{{ item.url }}</a>{% else %}{{ item.url }}{% endif %}{% else %}–{% endif %}</dd><dt>{{ _('Email') }}</dt><dd>{% if item.email %}<a href="mailto:{{ item.email }}">{{ item.email }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Description') }}</dt><dd>{{ item.description or '–' }}</dd></dl>
 {% if item.active %}
-<h2>{{ _('Publisher for {n} dataset(s)').format(n=linked.publisher|length) }}</h2>
-{% if linked.publisher %}
-<ul class="dataset-list">{% for dataset in linked.publisher %}<li><a href="{{ h.url_for('dataset.read', id=dataset.name) }}">{{ dataset.title or dataset.name }}</a></li>{% endfor %}</ul>
-{% else %}
-<p>{{ _('No datasets have this actor as publisher.') }}</p>
-{% endif %}
-<h2>{{ _('Contact point linked to {n} dataset(s)').format(n=linked.contact_point|length) }}</h2>
-{% if linked.contact_point %}
-<ul class="dataset-list">{% for dataset in linked.contact_point %}<li><a href="{{ h.url_for('dataset.read', id=dataset.name) }}">{{ dataset.title or dataset.name }}</a></li>{% endfor %}</ul>
-{% else %}
-<p>{{ _('No dataset has a contact point linked to this actor.') }}</p>
-{% endif %}
+<h2>{{ _('Publisher for {n} dataset(s)').format(n=linked.publisher.total) }}</h2>
+{{ dl.dataset_list(linked.publisher, h.url_for('actor_registry.actors_datasets', item_id=item.id, link='publisher'), _('No datasets have this publisher.')) }}
 {% endif %}
 {% endblock %}

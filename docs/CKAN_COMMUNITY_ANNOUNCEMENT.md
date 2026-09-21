@@ -1,50 +1,59 @@
 # Draft CKAN community announcement
 
+> **Draft for the maintainer's review (rewritten 2026-09-21 for 0.2.0).** This is an external
+> post: read it, change what you want, and post it only once the 0.2.0 release exists and you
+> approve the text. Post it as a discussion in the CKAN community.
+
 ## Title
 
-Feedback wanted: ckanext-actor-registry 0.1.0 alpha
+Feedback wanted: ckanext-actor-registry 0.2.0 alpha, reusable publishers and contact points for CKAN metadata
 
 ## Body
 
-We are preparing the first public alpha release of
-**ckanext-actor-registry**, an extension for centrally managed, reusable actors
-and contact points in CKAN metadata.
+We are looking for feedback on **ckanext-actor-registry**, an extension for
+centrally managed, reusable publishers and contact points in CKAN metadata.
 
 The problem we are exploring is simple: publisher and contact details are often
 repeated across many datasets, which makes both data entry and later maintenance
-unnecessarily expensive. The extension stores actors and contact points once,
-references them from datasets by stable IDs, and resolves current registry data
-for display and DCAT export. CKAN organizations remain a separate ownership and
-authorization concept.
+unnecessarily expensive. The extension stores publishers and contact points once,
+references them from datasets by stable IDs, and resolves the current registry
+data for display and DCAT export. CKAN organizations remain a separate ownership
+and authorization concept.
 
-Version 0.1.0 includes:
+Version 0.2.0 includes:
 
-- actor and contact point management for sysadmins;
-- Scheming selectors, inline creation and record previews;
-- latest publisher and three recent contact points per user;
-- optional `foaf:Agent` and `vcard:Kind` output through ckanext-dcat;
-- optional VCARD telephone serialization for a European DCAT-AP 3 profile.
+- publisher and contact point management for logged-in editors, with merging of
+  duplicates and permanent deletion for sysadmins;
+- Scheming selectors, inline creation and editing while editing a dataset, record
+  previews, the latest publisher and three recent contact points per user;
+- dataset pages that show the publisher and contact points with their details, and
+  a page per publisher and contact point that lists its datasets (paginated, and
+  respecting private datasets);
+- a worklist of datasets that are missing a publisher and/or a contact point, for
+  activating the extension on a catalog that already has data;
+- unique identifiers per identifier scheme, and one shared validation layer for
+  the forms, the inline dialogs and the merge action;
+- optional `foaf:Agent` and `vcard:Kind` output through ckanext-dcat, including
+  `vcard:hasTelephone`, validated against the official DCAT-AP 3 SHACL shapes;
+- an English interface with Swedish translations, and a runnable Docker Compose
+  example with a smoke test.
 
 The extension grew out of a Swedish municipal proof of concept, but the registry
 model is intended to be useful across sectors, countries and organization types.
-The initial UI is still Swedish-only. It has been manually tested on CKAN 2.11.6
-and includes an initial automated suite for registry behavior, access control,
-CSRF, dataset projection and RDF serialization. Browser, migration and broader
-compatibility testing are still incomplete, so we are explicitly calling this
-an alpha release for evaluation rather than a production-ready release.
+The automated suite runs on CKAN 2.11.1 and later 2.11 releases and on CKAN 2.12
+(with ckanext-scheming 3.1.0). It is alpha software, meant for evaluation: there is
+no formal security review or browser-based test suite yet, and no Action API for
+registry administration (a deliberate choice; the reasoning is in the repository's
+`docs/BACKLOG.md`). Parts of it were developed with AI assistance, which is
+disclosed in `AI_ASSISTANCE.md`.
 
 Before expanding the implementation, we would value feedback on three points:
 
 1. Are you aware of an existing extension that already provides a comparable
-   reusable actor and contact point registry?
-2. Does the separation between CKAN organization, metadata actor and contact
-   point fit your catalog's model?
-3. Which API, authorization and multilingual workflows would be most important
-   for a 0.2 release?
+   reusable publisher and contact point registry?
+2. Does the separation between CKAN organization, publisher and contact point fit
+   your catalog's model?
+3. Which import/export, API, authorization and multilingual workflows would be
+   most important for the next release?
 
-Repository: REPOSITORY_URL
-
-AI assistance disclosure: the initial implementation and documentation were
-developed by Björn Hagström with assistance from OpenAI's ChatGPT and Codex. The
-human maintainer reviewed the released work and accepts responsibility for its
-correctness, security, licensing and provenance.
+Repository: https://github.com/bjornhagstrom/ckanext-actor-registry

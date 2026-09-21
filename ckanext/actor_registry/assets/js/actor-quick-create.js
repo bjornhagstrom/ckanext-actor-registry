@@ -65,9 +65,14 @@
         if (option.dataset.url) {
           var line = document.createElement('div'), link = document.createElement('a');
           line.textContent = i18n.urlLabel + ': ';
-          link.href = option.dataset.url;
-          link.textContent = option.dataset.url;
-          line.appendChild(link);
+          // Stored values are not trusted to be http(s): only those become links.
+          if (/^https?:\/\//i.test(option.dataset.url)) {
+            link.href = option.dataset.url;
+            link.textContent = option.dataset.url;
+            line.appendChild(link);
+          } else {
+            line.appendChild(document.createTextNode(option.dataset.url));
+          }
           card.appendChild(line);
         }
         preview.appendChild(card);

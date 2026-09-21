@@ -1,12 +1,12 @@
 {% extends "admin/base.html" %}
-{% block subtitle %}{{ _('Merge actors') }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Actors') }}</a></li><li class="active">{{ _('Merge') }}</li>{% endblock %}
+{% block subtitle %}{{ _('Merge publishers') }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li class="active">{{ _('Merge') }}</li>{% endblock %}
 {% block primary_content_inner %}
-<h1 class="page-heading">{{ _('Merge actors') }}</h1>
-<p>{{ _('Choose which actor should remain and which value should apply for each field. The actor not kept is not deleted -- it is marked inactive and points to the remaining record, and its page keeps responding with a clear pointer.') }}</p>
+<h1 class="page-heading">{{ _('Merge publishers') }}</h1>
+<p>{{ _('Choose which publisher should remain and which value should apply for each field. The publisher not kept is not deleted -- it is marked inactive and points to the remaining record, and its page keeps responding with a clear pointer.') }}</p>
 <div class="alert alert-info">
-  <strong>{{ actor_a.name }}</strong>: {{ _('publisher for {n} dataset(s), contact point linked to {m} dataset(s).').format(n=linked_a.publisher|length, m=linked_a.contact_point|length) }}<br>
-  <strong>{{ actor_b.name }}</strong>: {{ _('publisher for {n} dataset(s), contact point linked to {m} dataset(s).').format(n=linked_b.publisher|length, m=linked_b.contact_point|length) }}
+  <strong>{{ actor_a.name }}</strong>: {{ _('Publisher for {n} dataset(s)').format(n=linked_a.publisher|length) }}<br>
+  <strong>{{ actor_b.name }}</strong>: {{ _('Publisher for {n} dataset(s)').format(n=linked_b.publisher|length) }}
 </div>
 <form method="post" class="dataset-form">
 {{ h.csrf_input() }}
@@ -14,7 +14,7 @@
 <input type="hidden" name="actor_b_id" value="{{ actor_b.id }}">
 
 <div class="form-group">
-  <label class="form-label">{{ _('Which actor should remain?') }} *</label>
+  <label class="form-label">{{ _('Which publisher should remain?') }} *</label>
   <div class="form-check"><input class="form-check-input" type="radio" name="keep_id" id="keep-a" value="{{ actor_a.id }}" checked><label class="form-check-label" for="keep-a">{{ actor_a.name }}</label></div>
   <div class="form-check"><input class="form-check-input" type="radio" name="keep_id" id="keep-b" value="{{ actor_b.id }}"><label class="form-check-label" for="keep-b">{{ actor_b.name }}</label></div>
   <p class="help-block">{{ _('The remaining record keeps its id and persistent URI unchanged.') }} {{ actor_a.name }}: <code>{{ actor_a.uri }}</code>. {{ actor_b.name }}: <code>{{ actor_b.uri }}</code>.</p>
@@ -39,7 +39,7 @@
 
 <div class="form-actions">
 <a class="btn btn-secondary" href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Cancel') }}</a>
-<button class="btn btn-primary" type="submit">{{ _('Merge the actors') }}</button>
+<button class="btn btn-primary" type="submit">{{ _('Merge the publishers') }}</button>
 </div>
 </form>
 {% endblock %}

@@ -8,7 +8,7 @@ HERE = Path(__file__).parent
 
 setup(
     name="ckanext-actor-registry",
-    version="0.1.0",
+    version="0.2.0",
     description="Reusable actors and contact points for CKAN metadata",
     long_description=(HERE / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",

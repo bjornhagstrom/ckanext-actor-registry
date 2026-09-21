@@ -1,7 +1,10 @@
 {% extends "admin/base.html" %}
+{% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ item.name }}{% endblock %}
 {% block breadcrumb_content %}<li class="active">{{ _('Contact point') }}</li>{% endblock %}
 {% block primary_content_inner %}
   <h1 class="page-heading">{{ item.name }}</h1>
-  <dl><dt>{{ _('Belongs to actor') }}</dt><dd>{% if actor %}<a href="{{ h.url_for('actor_registry.actors_show', item_id=actor.id) }}">{{ actor.name }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Email') }}</dt><dd>{% if item.email %}<a href="mailto:{{ item.email }}">{{ item.email }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Phone') }}</dt><dd>{% if item.phone %}<a href="{{ h.contactpoints_tel_uri(item.phone) }}">{{ item.phone }}</a>{% else %}–{% endif %}</dd><dt>{{ _('URL') }}</dt><dd>{% if item.url %}<a href="{{ item.url }}">{{ item.url }}</a>{% else %}–{% endif %}</dd><dt>URI</dt><dd><a href="{{ item.uri }}">{{ item.uri }}</a></dd></dl>
+  <dl>{% if actor %}<dt>{{ _('Belongs to organization') }}</dt><dd><a href="{{ h.url_for('actor_registry.actors_show', item_id=actor.id) }}">{{ actor.name }}</a></dd>{% endif %}<dt>{{ _('Email') }}</dt><dd>{% if item.email %}<a href="mailto:{{ item.email }}">{{ item.email }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Phone') }}</dt><dd>{% if item.phone %}<a href="{{ h.contactpoints_tel_uri(item.phone) }}">{{ item.phone }}</a>{% else %}–{% endif %}</dd><dt>{{ _('URL') }}</dt><dd>{% if item.url %}{% if h.is_url(item.url) %}<a href="{{ item.url }}" rel="noopener">{{ item.url }}</a>{% else %}{{ item.url }}{% endif %}{% else %}–{% endif %}</dd><dt>URI</dt><dd>{% if h.is_url(item.uri) %}<a href="{{ item.uri }}">{{ item.uri }}</a>{% else %}{{ item.uri }}{% endif %}</dd></dl>
+  <h2>{{ _('Linked to {n} dataset(s)').format(n=linked.total) }}</h2>
+  {{ dl.dataset_list(linked, h.url_for('actor_registry.contactpoints_datasets', item_id=item.id), _('No dataset is linked to this contact point.')) }}
 {% endblock %}

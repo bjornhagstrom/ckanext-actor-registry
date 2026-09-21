@@ -7,11 +7,47 @@ on:
 
 jobs:
   pytest:
+    # The suite runs against every supported CKAN release line: 2.11.1 (the oldest
+    # supported release), the newest 2.11 patch, and 2.12. CKAN 2.12 is
+    # additionally run against ckanext-scheming's unreleased master, which is
+    # the only version with explicit 2.12 support; that job may fail without
+    # failing the build (an early warning about what the next release will
+    # change, not a requirement).
+    name: CKAN ${{ matrix.ckan }} / ${{ matrix.label }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ckan: "2.11.1"          # the oldest supported CKAN release
+            solr: "2.11"
+            label: scheming 3.1.0 (oldest supported CKAN)
+            scheming: "ckanext-scheming==3.1.0"
+            experimental: false
+          - ckan: "2.11"            # the newest 2.11 patch release
+            solr: "2.11"
+            label: scheming 3.1.0
+            scheming: "ckanext-scheming==3.1.0"
+            experimental: false
+          - ckan: "2.12"
+            solr: "2.12"
+            label: scheming 3.1.0
+            scheming: "ckanext-scheming==3.1.0"
+            experimental: false
+          - ckan: "2.12"
+            solr: "2.12"
+            label: scheming master (experimental)
+            scheming: "ckanext-scheming @ https://codeload.github.com/ckan/ckanext-scheming/tar.gz/refs/heads/master"
+            experimental: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run test suite (CKAN 2.11, isolated docker-compose stack)
+      - name: Run test suite (isolated docker-compose stack)
+        env:
+          CKAN_VERSION: ${{ matrix.ckan }}
+          SOLR_VERSION: ${{ matrix.solr }}
+          SCHEMING_SPEC: ${{ matrix.scheming }}
         run: |
           docker compose -f docker-compose.test.yml up \
             --build --abort-on-container-exit --exit-code-from tests

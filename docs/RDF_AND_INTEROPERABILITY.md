@@ -8,7 +8,7 @@ The extension should not implement a second RDF stack. It reuses
 
 Scheming's repeating subfields are useful when every dataset owns an embedded
 copy of its contacts. The registry deliberately stores stable IDs instead,
-because shared actors and contacts must be maintainable once. On dataset output,
+because shared publishers and contacts must be maintainable once. On dataset output,
 the IDs are projected into the repeating `publisher` and `contact` structures
 expected by ckanext-dcat.
 
@@ -35,8 +35,8 @@ features do not belong in this metadata registry.
 - Contact telephone numbers are emitted with `vcard:hasTelephone`,
   `vcard:Voice` and a `vcard:hasValue` `tel:` URI.
 - Stable URIs allow several datasets to refer to the same RDF resource.
-- Actor and contact-point URIs must be different, even when a contact belongs to
-  the actor. Using the same URI merges two semantically different resources.
+- Publisher and contact-point URIs must be different, even when a contact belongs to
+  the publisher. Using the same URI merges two semantically different resources.
 
 The optional `actor_registry_euro_dcat_ap_3` profile extends ckanext-dcat's
 European DCAT-AP 3 profile. Enabling it is not by itself a claim of complete
@@ -52,8 +52,9 @@ need the authoritative vocabulary graph to obtain `skos:prefLabel` values.
 
 1. Keep export as the first supported direction and verify it with graph and
    SHACL tests.
-2. Add read-only Action API endpoints for actors and contacts, followed by
-   separately authorized create/update actions.
+2. Add read-only Action API endpoints for publishers and contacts if a concrete
+   integration needs them, followed by separately authorized create/update actions.
+   A full CRUD API is deliberately not planned; see [BACKLOG.md](BACKLOG.md) for why.
 3. Add JSON/CSV registry export and reviewed import for operational portability.
 4. For RDF harvesting, reconcile by stable URI and show conflicts to an
    administrator. Do not automatically turn every harvested embedded contact

@@ -7,3 +7,6 @@
 __pycache__/
 build/
 dist/
+
+# Local secrets for examples/ckan-2.12 (created by setup.sh)
+.env

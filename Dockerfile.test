@@ -1,20 +1,32 @@
-FROM ckan/ckan-base:2.11
+# The CKAN release line under test (2.11 or 2.12) and the versions of the two
+# extensions the tests exercise. All three can be overridden at build time --
+# see docker-compose.test.yml and .github/workflows/test.yml.
+ARG CKAN_VERSION=2.12
+FROM ckan/ckan-base:${CKAN_VERSION}
+
+ARG SCHEMING_SPEC="ckanext-scheming==3.1.0"
+ARG DCAT_SPEC="ckanext-dcat==2.4.4"
+# "-e" (editable) by default. Older CKAN 2.11 images install CKAN itself with an editable
+# finder that claims the `ckanext` namespace, so an editable install of an extension is not
+# importable there; set EXTENSION_INSTALL_FLAG to an empty string for a regular install. (Not named PIP_EDITABLE: pip reads that variable itself.)
+ARG EXTENSION_INSTALL_FLAG="-e"
 
 USER root
 
-RUN pip install --no-cache-dir "ckanext-dcat==2.4.4" && \
-    pip install --no-cache-dir \
-      "https://github.com/ckan/ckanext-scheming/archive/refs/tags/release-3.0.0.tar.gz"
+RUN pip install --no-cache-dir "${DCAT_SPEC}" && \
+    pip install --no-cache-dir "${SCHEMING_SPEC}"
 
 COPY . /srv/app/src_extensions/ckanext-actor-registry
 WORKDIR /srv/app/src_extensions/ckanext-actor-registry
+# COPY keeps the host's file modes; a file that is 0600 on someone's machine
+# would be unreadable to the non-root test user below.
+RUN chmod -R a+rX /srv/app/src_extensions/ckanext-actor-registry
 
-RUN pip install --no-cache-dir -e . && \
+# (Python, not wget: wget is gone from the CKAN 2.12 images.)
+RUN pip install --no-cache-dir ${EXTENSION_INSTALL_FLAG} . && \
     pip install --no-cache-dir -r dev-requirements.txt && \
     mkdir -p /srv/app/test-data && \
-    wget -q \
-      https://semiceu.github.io/DCAT-AP/releases/3.0.1/shacl/dcat-ap-SHACL.ttl \
-      -O /srv/app/test-data/dcat-ap-3.0.1-SHACL.ttl
+    python -c "import urllib.request as u; u.urlretrieve('https://semiceu.github.io/DCAT-AP/releases/3.0.1/shacl/dcat-ap-SHACL.ttl', '/srv/app/test-data/dcat-ap-3.0.1-SHACL.ttl')"
 
 USER ckan
 

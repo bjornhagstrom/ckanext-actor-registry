@@ -1,4 +1,5 @@
 {% import 'macros/form.html' as form %}
+{% import 'actor_registry/snippets/help_texts.html' as ht with context %}
 {% set compact = compact|default(false) %}
 
 {% macro help_text() %}
@@ -10,6 +11,7 @@
       data-email="{{ contact.email or '' }}"
       data-phone="{{ contact.phone or '' }}"
       data-url="{{ contact.url or '' }}"
+      data-actor-id="{{ contact.actor_id or '' }}"
       {{ "selected " if contact.id in selected_values }}>{{ contact.name }}</option>
 {%- endmacro %}
 
@@ -64,11 +66,13 @@
       <h3 data-contactpoints-panel-title>{{ _('New contact point') }}</h3>
       <div data-contactpoints-form>
         {{ h.csrf_input() }}
+        <p class="help-block">{{ ht.text('contactpoints_intro') }}</p>
         <div class="alert alert-danger" data-contactpoints-error hidden></div>
         <div class="form-group"><label class="form-label">{{ _('Name or role') }} *</label><input class="form-control" data-field="name"></div>
-        <div class="form-group"><label class="form-label">{{ _('Email') }}</label><input class="form-control" data-field="email" type="email"></div>
-        <div class="form-group"><label class="form-label">{{ _('Phone') }}</label><input class="form-control" data-field="phone" type="tel" placeholder="+46910123456"><p class="help-block">{{ _('Include the country code, e.g. +46.') }}</p></div>
-        <div class="form-group"><label class="form-label">{{ _('URL') }}</label><input class="form-control" data-field="url" type="url"></div>
+        <div class="form-group"><label class="form-label">{{ _('Belongs to organization') }}</label><select class="form-control" data-field="actor_id"><option value="">{{ _('No link') }}</option>{% for choice in h.actors_choices() %}<option value="{{ choice.value }}">{{ choice.label }}</option>{% endfor %}</select><p class="help-block">{{ ht.text('belongs_to') }}</p></div>
+        <div class="form-group"><label class="form-label">{{ _('Email') }}</label><input class="form-control" data-field="email" type="email"><p class="help-block">{{ ht.text('email') }}</p></div>
+        <div class="form-group"><label class="form-label">{{ _('Phone') }}</label><input class="form-control" data-field="phone" type="tel" placeholder="+46910123456"><p class="help-block">{{ ht.text('phone') }}</p></div>
+        <div class="form-group"><label class="form-label">{{ _('URL') }}</label><input class="form-control" data-field="url" type="url"><p class="help-block">{{ ht.text('url') }}</p></div>
         <button class="btn btn-primary btn-sm" type="button" data-contactpoints-save>{{ _('Save and select') }}</button>
         <button class="btn btn-link btn-sm" type="button" data-contactpoints-cancel>{{ _('Cancel') }}</button>
         <p class="help-block mt-2 mb-0">{{ _('Editing here updates the contact point everywhere it is used, not just in this dataset.') }}</p>

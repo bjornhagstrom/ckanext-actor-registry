@@ -1,0 +1,36 @@
+# Example schema mirroring how a real portal wires the registry into the
+# dataset form (select/multiple_select presets + the extension's form
+# snippets). Publisher is deliberately OPTIONAL here, so the "clear an
+# optional publisher" behaviour can be tested. An example, not a
+# universal schema.
+scheming_version: 2
+dataset_type: dataset
+
+dataset_fields:
+- field_name: title
+  preset: title
+  required: true
+- field_name: name
+  preset: dataset_slug
+- field_name: notes
+- field_name: owner_org
+  preset: dataset_organization
+  required: true
+- field_name: publisher_actor_id
+  label: Publisher
+  preset: select
+  form_snippet: actors_multiple_select.html
+  display_snippet: actor.html
+  choices_helper: actors_choices
+  form_include_blank_choice: true
+- field_name: contact_point_ids
+  label: Contact points
+  preset: multiple_select
+  form_snippet: contactpoints_multiple_select.html
+  display_snippet: contactpoints.html
+  choices_helper: contactpoints_choices
+
+resource_fields:
+- field_name: url
+  preset: resource_url_upload
+- field_name: name

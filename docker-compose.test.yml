@@ -4,11 +4,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
+      args:
+        CKAN_VERSION: ${CKAN_VERSION:-2.12}
+        SCHEMING_SPEC: ${SCHEMING_SPEC:-ckanext-scheming==3.1.0}
+        DCAT_SPEC: ${DCAT_SPEC:-ckanext-dcat==2.4.4}
+        EXTENSION_INSTALL_FLAG: ${EXTENSION_INSTALL_FLAG--e}
     environment:
       CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@db/ckan_test
       CKAN_SOLR_URL: http://solr:8983/solr/ckan
       CKAN_REDIS_URL: redis://redis:6379/1
       DCAT_AP_3_SHACL_PATH: /srv/app/test-data/dcat-ap-3.0.1-SHACL.ttl
+      PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
     depends_on:
       db:
         condition: service_healthy
@@ -31,7 +37,7 @@ services:
 
   solr:
     platform: linux/amd64
-    image: ckan/ckan-solr:2.11-solr9
+    image: ckan/ckan-solr:${SOLR_VERSION:-${CKAN_VERSION:-2.12}}-solr9
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8983/solr/ckan/admin/ping >/dev/null"]
       interval: 3s

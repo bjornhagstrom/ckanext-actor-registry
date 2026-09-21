@@ -1,0 +1,12 @@
+{#- Public display of a contact_point_ids-style multi field: name plus
+    contact details, one block per contact point, never raw ids. See
+    helpers.contactpoints_display. -#}
+{%- set contact_points = h.contactpoints_display(data[field.field_name]) -%}
+{%- for cp in contact_points %}
+  <div class="contact-point{% if not loop.first %} mt-3 pt-3 border-top{% endif %}">
+    <a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=cp.id) }}">{{ cp.name }}</a>
+    {%- if cp.email %}<br><a href="mailto:{{ cp.email }}">{{ cp.email }}</a>{% endif -%}
+    {%- if cp.phone %}<br><a href="{{ h.contactpoints_tel_uri(cp.phone) }}">{{ cp.phone }}</a>{% endif -%}
+    {%- if cp.url %}<br>{% if h.is_url(cp.url) %}<a href="{{ cp.url }}" rel="noopener">{{ cp.url }}</a>{% else %}{{ cp.url }}{% endif %}{% endif -%}
+  </div>
+{%- endfor -%}

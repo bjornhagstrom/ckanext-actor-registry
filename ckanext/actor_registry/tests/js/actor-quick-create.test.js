@@ -80,3 +80,9 @@ assert.equal(preview.children[0].children[2].textContent, 'Identifier: 212000-26
 assert.equal(preview.children[0].children[3].textContent, 'Description: Testutgivare');
 assert.equal(preview.children[0].children[4].children[0].href, 'https://www.skelleftea.se/');
 console.log('Utgivarförhandsvisning via jQuery/Select2: OK');
+
+// Only http(s) URLs become links in the publisher preview.
+assert.match(
+  require('node:fs').readFileSync(require('node:path').join(__dirname, '../../assets/js/actor-quick-create.js'), 'utf8'),
+  /\^https\?:\\\/\\\/\/i\.test\(option\.dataset\.url\)/
+);

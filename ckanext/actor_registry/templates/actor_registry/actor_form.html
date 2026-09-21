@@ -1,18 +1,20 @@
 {% extends "admin/base.html" %}
-{% block subtitle %}{{ _('New actor') if is_new else _('Edit actor') }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Actors') }}</a></li><li class="active">{{ _('New') if is_new else _('Edit') }}</li>{% endblock %}
+{% block subtitle %}{{ _('New publisher') if is_new else _('Edit publisher') }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li class="active">{{ _('New') if is_new else _('Edit') }}</li>{% endblock %}
+{% import 'actor_registry/snippets/help_texts.html' as ht with context %}
 {% block primary_content_inner %}
-<h1 class="page-heading">{{ _('New actor') if is_new else _('Edit actor') }}</h1>
+<h1 class="page-heading">{{ _('New publisher') if is_new else _('Edit publisher') }}</h1>
+<p class="lead">{{ ht.text('actors_intro') }}</p>
 <form method="post" class="dataset-form">{{ h.csrf_input() }}
 <div class="form-group"><label class="form-label" for="ar-name">{{ _('Name') }} *</label><input class="form-control" id="ar-name" name="name" required value="{{ item.name }}"></div>
-<div class="form-group"><label class="form-label" for="ar-kind">{{ _('Kind') }}</label><select class="form-control" id="ar-kind" name="actor_kind"><option value="organization" {% if item.actor_kind != 'person' %}selected{% endif %}>{{ _('Organization') }}</option><option value="person" {% if item.actor_kind == 'person' %}selected{% endif %}>{{ _('Person') }}</option></select></div>
+<div class="form-group"><label class="form-label" for="ar-kind">{{ _('Kind') }}</label><select class="form-control" id="ar-kind" name="actor_kind"><option value="organization" {% if item.actor_kind != 'person' %}selected{% endif %}>{{ _('Organization') }}</option><option value="person" {% if item.actor_kind == 'person' %}selected{% endif %}>{{ _('Person') }}</option></select><p class="help-block">{{ ht.text('kind') }}</p></div>
 <div class="form-group"><label class="form-label" for="ar-type">{{ _('Type') }}</label><input class="form-control" id="ar-type" name="actor_type" type="url" value="{{ item.actor_type or '' }}"><p class="help-block">{{ _('Optional URI to a concept in a controlled vocabulary. A URI is required for full DCAT-AP 3 validation. No organization-specific types are hardcoded.') }}</p></div>
-<div class="form-group"><label class="form-label" for="ar-id">{{ _('Identifier') }}</label><input class="form-control" id="ar-id" name="identifier" value="{{ item.identifier or '' }}"></div>
-<div class="form-group"><label class="form-label" for="ar-id-scheme">{{ _('Identifier scheme') }}</label><input class="form-control" id="ar-id-scheme" name="identifier_scheme" value="{{ item.identifier_scheme or '' }}" placeholder="{{ _('For example a business registration number, ROR or LEI') }}"></div>
+<div class="form-group"><label class="form-label" for="ar-id">{{ _('Identifier') }}</label><input class="form-control" id="ar-id" name="identifier" value="{{ item.identifier or '' }}"><p class="help-block">{{ ht.text('identifier') }}</p></div>
+<div class="form-group"><label class="form-label" for="ar-id-scheme">{{ _('Identifier scheme') }}</label><input class="form-control" id="ar-id-scheme" name="identifier_scheme" value="{{ item.identifier_scheme or '' }}" placeholder="{{ _('For example a business registration number, ROR or LEI') }}"><p class="help-block">{{ ht.text('identifier_scheme') }}</p></div>
 <div class="form-group"><label class="form-label" for="ar-uri">{{ _('Persistent URI') }}</label><input class="form-control" id="ar-uri" name="uri" type="url" value="{{ item.uri or '' }}"><p class="help-block">{{ _('Leave blank when creating to get a URI from the catalog.') }}</p></div>
-<div class="form-group"><label class="form-label" for="ar-url">{{ _('URL') }}</label><input class="form-control" id="ar-url" name="url" type="url" value="{{ item.url or '' }}"></div>
-<div class="form-group"><label class="form-label" for="ar-email">{{ _('Email') }}</label><input class="form-control" id="ar-email" name="email" type="email" value="{{ item.email or '' }}"></div>
+<div class="form-group"><label class="form-label" for="ar-url">{{ _('URL') }}</label><input class="form-control" id="ar-url" name="url" type="url" value="{{ item.url or '' }}"><p class="help-block">{{ ht.text('url') }}</p></div>
+<div class="form-group"><label class="form-label" for="ar-email">{{ _('Email') }}</label><input class="form-control" id="ar-email" name="email" type="email" value="{{ item.email or '' }}"><p class="help-block">{{ ht.text('email') }}</p></div>
 <div class="form-group"><label class="form-label" for="ar-description">{{ _('Description') }}</label><textarea class="form-control" id="ar-description" name="description" rows="4">{{ item.description or '' }}</textarea></div>
 <div class="form-check mb-3"><input class="form-check-input" id="ar-active" name="active" type="checkbox" {% if item.active or is_new %}checked{% endif %}><label class="form-check-label" for="ar-active">{{ _('Active and selectable') }}</label></div>
-<div class="form-actions"><a class="btn btn-secondary" href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Cancel') }}</a><button class="btn btn-primary" type="submit">{{ _('Save actor') }}</button></div>
+<div class="form-actions"><a class="btn btn-secondary" href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Cancel') }}</a><button class="btn btn-primary" type="submit">{{ _('Save publisher') }}</button></div>
 </form>{% endblock %}
