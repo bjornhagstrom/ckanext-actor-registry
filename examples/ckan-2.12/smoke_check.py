@@ -39,7 +39,9 @@ def read_env():
 
 
 ENV = read_env()
-BASE = ENV.get("CKAN_SITE_URL", "http://localhost:5000").rstrip("/")
+# The process environment wins over .env, so a one-off override (a non-default port,
+# for example) is honoured even when .env still has the default.
+BASE = os.environ.get("CKAN_SITE_URL", ENV.get("CKAN_SITE_URL", "http://localhost:5000")).rstrip("/")
 COOKIES = {}
 failures = []
 
@@ -91,9 +93,17 @@ def find_link_id(path, name):
 
 
 def form_fields(page):
-    """Hidden inputs and submit buttons of the first <form> that contains ``owner_org``/``url``."""
-    fields = dict(re.findall(r'<input[^>]*type="hidden"[^>]*name="([^"]+)"[^>]*value="([^"]*)"', page))
-    fields.update({n: v for v, n in re.findall(r'<input[^>]*type="hidden"[^>]*value="([^"]*)"[^>]*name="([^"]+)"', page)})
+    """Hidden inputs and submit buttons of the first <form> that contains ``owner_org``/``url``.
+
+    Attribute order in the markup is not fixed -- CKAN's resource form, for example,
+    renders ``name`` and ``value`` before ``type`` -- so each ``<input>`` tag is parsed on
+    its own rather than assumed to start with ``type="hidden"``.
+    """
+    fields = {}
+    for tag in re.findall(r"<input\b[^>]*>", page):
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', tag))
+        if attrs.get("type") == "hidden" and "name" in attrs:
+            fields[attrs["name"]] = attrs.get("value", "")
     return fields
 
 
@@ -194,11 +204,19 @@ if request("/dataset/" + DATASET)[0] != 200:
         "name": "Smoke test data",
         "save": "go-metadata",
     })
-    request("/dataset/%s/resource/new" % DATASET, urllib.parse.urlencode(fields).encode())
+    status, after_step_2 = request("/dataset/%s/resource/new" % DATASET, urllib.parse.urlencode(fields).encode())
+    # Accepted means CKAN moved on (redirected to the dataset page, finishing the
+    # draft): status 200 with no error messages in the body. A validation error
+    # re-renders this same form with error messages; a server error is a non-200
+    # status. Either way it must be caught here, not silently ignored.
+    errors = re.findall(r'<li[^>]*data-field-label[^>]*>(.*?)</li>|class="error-block"[^>]*>(.*?)<', after_step_2, re.S)
+    check("resource form is accepted (step 2: resource)", status == 200 and not errors,
+          "HTTP %s, form errors: %s" % (status, [" ".join(filter(None, e)).strip() for e in errors][:3]))
 
 status, dataset_page = request("/dataset/" + DATASET)
 text = html.unescape(re.sub(r"<[^>]+>", " ", dataset_page))
 check("the dataset was created and is visible", status == 200 and "Smoke test dataset" in text, "HTTP %s" % status)
+check("the resource created by the smoke test is on the dataset page", "Smoke test data" in text)
 check("the dataset page shows the publisher by name, not by id",
       "Smoke test publisher" in text and (publisher_id or "-") not in text.replace("/actors/" + (publisher_id or ""), ""))
 check("the dataset page shows the contact point and its email",

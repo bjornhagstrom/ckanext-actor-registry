@@ -2,7 +2,7 @@
 
 Reusable publishers and contact points for CKAN metadata.
 
-> **Status: 0.2.0 alpha.** This version is intended for evaluation and feedback.
+> **Status: 0.2.1 alpha.** This version is intended for evaluation and feedback.
 > It has an automated test suite that runs against CKAN 2.11 and CKAN 2.12. The
 > user interface is in English by default, with a Swedish translation catalog
 > following the installation's locale settings. Do not treat it as

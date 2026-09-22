@@ -5,6 +5,30 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-22
+
+### Fixed
+
+- `examples/ckan-2.12/smoke_check.py`: the resource-creation step's POST response was
+  discarded, so a server error there could still end in "All checks passed." The
+  underlying cause was in the script itself: its hidden-field parser assumed
+  `type="hidden"` came first in the tag, which is not true of CKAN 2.12's resource
+  form, so the required (and CKAN-mandated) `id` field was silently dropped from the
+  submission, causing a real HTTP 500 (`KeyError: 'id'` in CKAN core). The parser is
+  now attribute-order independent, and the step's response is checked like every
+  other step.
+- `examples/ckan-2.12/smoke_check.py`: `CKAN_SITE_URL` is now read from the process
+  environment first, falling back to `.env`, so a one-off `CKAN_SITE_URL=... python3
+  smoke_check.py` (for a non-default port) is honoured instead of silently testing
+  the wrong server.
+
+### Added
+
+- a regression test confirming that migration `006` fails clearly, and does not drop
+  data, when a database already has active publishers with a duplicate
+  (identifier_scheme, identifier) pair -- the behaviour the migration's own docstring
+  and this changelog already documented, now exercised.
+
 ## [0.2.0] - 2026-09-21
 
 The first tagged release. It follows the initial source-only snapshot (0.1.0, below) and contains
@@ -179,6 +203,7 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.1
 [0.2.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/tree/df14240

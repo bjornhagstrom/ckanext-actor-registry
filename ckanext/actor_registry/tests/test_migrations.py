@@ -86,3 +86,46 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
     # Running the current migration again must be harmless during restarts.
     _run_migrations("actor_registry", "head", forward=True)
     assert current_revision("actor_registry") == "actor_registry_006 (head)"
+
+
+def test_migration_006_fails_clearly_on_pre_existing_duplicate_identifiers():
+    """006 adds a uniqueness constraint; a catalogue with existing duplicates must be
+    told so clearly (the documented, expected behaviour), not silently corrupted or
+    silently left half-migrated.
+    """
+    _run_migrations("actor_registry", "actor_registry_005", forward=False)
+    assert current_revision("actor_registry") == "actor_registry_005"
+
+    created = datetime(2026, 1, 15, 12, 0, 0)
+    for suffix in "ab":
+        ckan_model.Session.execute(
+            text(
+                """
+                INSERT INTO actor_registry_actor
+                    (id, name, actor_kind, identifier, identifier_scheme, uri, active, created, modified)
+                VALUES
+                    (:id, :name, 'organization', :identifier, :identifier_scheme, :uri, true, :created, :modified)
+                """
+            ),
+            {
+                "id": "duplicate-" + suffix,
+                "name": "Dubblettaktör " + suffix,
+                "identifier": "5566778899",
+                "identifier_scheme": "org-nr",
+                "uri": "https://example.org/actors/duplicate-" + suffix,
+                "created": created,
+                "modified": created,
+            },
+        )
+    ckan_model.Session.commit()
+
+    with pytest.raises(Exception, match="(?i)duplicate|actor_registry_actor_identifier_uq"):
+        _run_migrations("actor_registry", "head", forward=True)
+    ckan_model.Session.rollback()
+
+    # Neither duplicate row was dropped, and the migration did not silently advance.
+    assert current_revision("actor_registry") != "actor_registry_006 (head)"
+    remaining = ckan_model.Session.execute(
+        text("SELECT count(*) FROM actor_registry_actor WHERE identifier = '5566778899'")
+    ).scalar()
+    assert remaining == 2

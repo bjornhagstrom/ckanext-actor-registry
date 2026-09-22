@@ -1,8 +1,6 @@
-# Draft CKAN community announcement
+# CKAN community announcement
 
-> **Draft for the maintainer's review (rewritten 2026-09-21 for 0.2.0).** This is an external
-> post: read it, change what you want, and post it only once the 0.2.0 release exists and you
-> approve the text. Post it as a discussion in the CKAN community.
+Text for the announcement of the 0.2.0 release. Post it as a discussion in the CKAN community.
 
 ## Title
 
@@ -57,3 +55,4 @@ Before expanding the implementation, we would value feedback on three points:
    most important for the next release?
 
 Repository: https://github.com/bjornhagstrom/ckanext-actor-registry
+Release: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.0
