@@ -5,6 +5,21 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-01
+
+### Changed
+
+- The phone help text no longer refers to DCAT-AP-SE: "Include the country code, e.g. +46
+  or +49, so the number works from other countries too." The README and the profile
+  describe the telephone export as the usual vCard form, which ckanext-dcat itself lacks.
+- The documentation speaks of DCAT-AP and national profiles based on it, with the Swedish
+  DCAT-AP-SE only as an example of a national validator.
+- A new language needs only its catalogue: the plugin offers every locale with a compiled
+  `.mo` file in `i18n/` instead of a fixed list. A contributed language may be partial
+  (untranslated strings show in English); only the maintained Swedish catalogues must be
+  complete. A test checks that every `.mo` matches its `.po`, and CONTRIBUTING.md says how
+  to contribute a language.
+
 ## [0.2.2] - 2026-10-01
 
 ### Fixed
@@ -213,7 +228,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.3
 [0.2.2]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.2
 [0.2.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.1
 [0.2.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.0

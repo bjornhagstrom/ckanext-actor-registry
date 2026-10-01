@@ -61,10 +61,13 @@ missing again. If you add a new custom tag, extend the shim.
 
 1. Create `ckanext/actor_registry/i18n/<locale>/LC_MESSAGES/ckanext-actor-registry.po` (for
    example with `pybabel init -i ckanext-actor-registry.pot -d ckanext/actor_registry/i18n -D
-   ckanext-actor-registry -l <locale>`), translate it and compile it.
-2. Add the locale to `i18n_locales()` in `plugin.py`.
-3. Make sure the site offers the locale (`ckan.locales_offered`).
-4. Add it to the translation tests.
+   ckanext-actor-registry -l <locale>`), translate it and compile it. The plugin offers every
+   locale that has a compiled catalogue, so nothing in `plugin.py` needs to change.
+2. Make sure the site offers the locale (`ckan.locales_offered`).
+3. A partial translation is fine: a string not yet translated shows in English. The tests
+   check that the compiled `.mo` matches the `.po` for every language, and that the
+   languages the project maintains itself (`MAINTAINED_LANGUAGES` in
+   `test_i18n_extraction.py`, today `sv` and `sv_SE`) are complete.
 
 Translations of the field-level help texts live in one place, the macro in
 `templates/actor_registry/snippets/help_texts.html`, which both the admin forms and the inline

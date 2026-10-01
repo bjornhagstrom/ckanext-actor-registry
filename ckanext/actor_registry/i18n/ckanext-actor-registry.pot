@@ -825,7 +825,7 @@ msgid ""
 msgstr ""
 
 #: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:29
-msgid "Include the country code, e.g. +46, for correct DCAT-AP-SE export."
+msgid "Include the country code, e.g. +46 or +49, so the number works from other countries too."
 msgstr ""
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:19

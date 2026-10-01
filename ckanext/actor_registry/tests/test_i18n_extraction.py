@@ -72,10 +72,16 @@ def test_pybabel_extraction_finds_every_translatable_string(tmp_path):
     assert not failures, "\n".join(failures)
 
 
+# The languages this project maintains itself, and so keeps complete. A
+# contributed language may be partial: a missing string shows in English
+# until someone translates it (Björn 2026-10-01).
+MAINTAINED_LANGUAGES = ("sv", "sv_SE")
+
+
 def test_every_extracted_string_is_translated(tmp_path):
-    """A fresh extraction against the shipped catalogues (2026-10-01): the
-    contact point deletion added 13 strings that never reached the .pot or
-    the .po files, so they showed in English on Swedish pages."""
+    """A fresh extraction against the maintained catalogues (2026-10-01):
+    the contact point deletion added 13 strings that never reached the .pot
+    or the .po files, so they showed in English on Swedish pages."""
     from babel.messages.pofile import read_po
 
     pot_path = tmp_path / "extracted.pot"
@@ -91,10 +97,43 @@ def test_every_extracted_string_is_translated(tmp_path):
 
     i18n = REPO_ROOT / "ckanext" / "actor_registry" / "i18n"
     failures = []
-    for po_path in sorted(i18n.glob("*/LC_MESSAGES/ckanext-actor-registry.po")):
+    for language in MAINTAINED_LANGUAGES:
+        po_path = i18n / language / "LC_MESSAGES" / "ckanext-actor-registry.po"
         with po_path.open("rb") as f:
             translated = {m.id for m in read_po(f) if m.id and m.string}
         for missing in sorted(extracted - translated, key=str):
             failures.append(f"{po_path.parent.parent.name}: {missing!r}")
 
     assert not failures, "Untranslated strings:\n" + "\n".join(failures)
+
+
+def test_every_compiled_catalogue_is_offered():
+    from ckanext.actor_registry.plugin import ActorRegistryPlugin
+
+    plugin = ActorRegistryPlugin()
+    shipped = sorted(p.parent.parent.name for p in
+                     (REPO_ROOT / "ckanext" / "actor_registry" / "i18n").glob("*/LC_MESSAGES/*.mo"))
+    assert plugin.i18n_locales() == shipped
+    assert {"sv", "sv_SE"} <= set(shipped)
+
+
+def test_every_catalogue_is_compiled_and_up_to_date():
+    """CKAN loads the .mo, not the .po. A contributed language whose .mo is
+    missing or stale would silently not be offered, or show old text."""
+    from babel.messages.mofile import read_mo
+    from babel.messages.pofile import read_po
+
+    failures = []
+    for po_path in sorted((REPO_ROOT / "ckanext" / "actor_registry" / "i18n").glob("*/LC_MESSAGES/*.po")):
+        mo_path = po_path.with_suffix(".mo")
+        locale = po_path.parent.parent.name
+        if not mo_path.exists():
+            failures.append(f"{locale}: no .mo; run pybabel compile")
+            continue
+        with po_path.open("rb") as f:
+            po = {m.id: m.string for m in read_po(f) if m.id and m.string and not m.fuzzy}
+        with mo_path.open("rb") as f:
+            mo = {m.id: m.string for m in read_mo(f) if m.id}
+        if po != mo:
+            failures.append(f"{locale}: .mo does not match .po; run pybabel compile")
+    assert not failures, "\n".join(failures)

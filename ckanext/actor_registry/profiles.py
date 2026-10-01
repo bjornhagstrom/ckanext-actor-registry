@@ -11,7 +11,7 @@ VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
 
 
 class ActorRegistryEuropeanDCATAP3Profile(EuropeanDCATAP3Profile):
-    """DCAT-AP 3 plus DCAT-AP-SE-compatible telephone serialization."""
+    """DCAT-AP 3 plus vCard telephone serialization (vcard:Voice with a tel: URI)."""
 
     def graph_from_dataset(self, dataset_dict, dataset_ref):
         # ckanext-dcat's scheming profile (which we inherit) expects

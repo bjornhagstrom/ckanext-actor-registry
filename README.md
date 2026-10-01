@@ -2,7 +2,7 @@
 
 Reusable publishers and contact points for CKAN metadata.
 
-> **Status: 0.2.2 alpha.** This version is intended for evaluation and feedback.
+> **Status: 0.2.3 alpha.** This version is intended for evaluation and feedback.
 > It has an automated test suite that runs against CKAN 2.11 and CKAN 2.12. The
 > user interface is in English by default, with a Swedish translation catalog
 > following the installation's locale settings. Do not treat it as
@@ -95,7 +95,7 @@ dataset ownership.
 - optional DCAT integration: publishers become `foaf:Agent` values and contact
   points become `vcard:Kind` values;
 - optional `vcard:hasTelephone` serialization for the European DCAT-AP 3
-  profile used by DCAT-AP-SE implementations;
+  profile (a `vcard:Voice` with a `tel:` URI, the usual vCard form);
 - validation that prevents a publisher and a contact point from sharing the same
   RDF URI.
 
@@ -121,9 +121,8 @@ for DCAT export -- nothing is duplicated onto the dataset itself.
 
 A publisher's `Kind` (Organization or Person) determines the specific agent
 type used on export. A contact point's phone number is additionally serialized
-as a `vcard:hasTelephone` / `vcard:Voice` node carrying a `tel:` URI, matching
-what the DCAT-AP-SE profile expects rather than ckanext-dcat's own default
-handling of phone numbers. The extension builds on ckanext-dcat's
+as a `vcard:hasTelephone` / `vcard:Voice` node carrying a `tel:` URI, the
+usual vCard form. ckanext-dcat itself does not export phone numbers. The extension builds on ckanext-dcat's
 `EuropeanDCATAP3Profile`, so a DCAT-AP 3 consumer gets correctly typed,
 dereferenceable publisher and contact point data without extra configuration.
 
@@ -336,7 +335,8 @@ Theme and publisher-type URIs are also typed as `skos:Concept` so standalone
 DCAT-AP 3 validation can identify their intended range. Store publisher types
 as controlled-vocabulary URIs rather than local display labels.
 This is an interoperability aid, not a claim that installing this extension
-alone makes a catalog conformant with DCAT-AP or DCAT-AP-SE. Conformance also
+alone makes a catalog conformant with DCAT-AP or a national profile based on
+it. Conformance also
 depends on the complete dataset schema, validation and profile configuration.
 
 ## Access control and data handling

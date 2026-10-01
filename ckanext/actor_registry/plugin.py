@@ -22,13 +22,19 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
         toolkit.add_resource("assets", "actor_registry")
 
     # ITranslation. English is the source language of every user-facing string
-    # (wrapped in _()); the Swedish catalogues (sv, and sv_SE as a copy of sv) are
-    # compiled from the .po files in i18n/. See docs/TRANSLATIONS.md.
+    # (wrapped in _()); the catalogues are compiled from the .po files in i18n/.
+    # Every language with a compiled catalogue there is offered, so adding a
+    # language needs only its .po/.mo files. See docs/TRANSLATIONS.md.
     def i18n_directory(self):
         return os.path.join(os.path.dirname(__file__), "i18n")
 
     def i18n_locales(self):
-        return ["sv", "sv_SE"]
+        directory = self.i18n_directory()
+        return sorted(
+            locale for locale in os.listdir(directory)
+            if os.path.isfile(os.path.join(
+                directory, locale, "LC_MESSAGES", self.i18n_domain() + ".mo"))
+        )
 
     def i18n_domain(self):
         return "ckanext-actor-registry"
@@ -92,7 +98,7 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
     # for a dataset still in draft state, which re-validates the *whole*
     # package (existing pkg_dict + the new resource) against the active
     # scheming schema. Since "contact"/"publisher" aren't declared fields in
-    # dcat_ap_se.yaml (we use contact_point_ids/publisher_actor_id instead),
+    # the scheming schema (we use contact_point_ids/publisher_actor_id instead),
     # every dataset that actually has a contact point or publisher assigned
     # would fail to save a new resource with a spurious
     # "__junk: ... was not expected" validation error.

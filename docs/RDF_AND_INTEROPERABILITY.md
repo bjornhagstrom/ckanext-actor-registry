@@ -40,8 +40,8 @@ features do not belong in this metadata registry.
 
 The optional `actor_registry_euro_dcat_ap_3` profile extends ckanext-dcat's
 European DCAT-AP 3 profile. Enabling it is not by itself a claim of complete
-DCAT-AP-SE conformance; the catalog schema and all other metadata must also be
-validated.
+conformance with DCAT-AP or a national profile based on it; the catalog schema
+and all other metadata must also be validated.
 
 Controlled vocabulary values used for dataset themes and publisher types are
 typed as `skos:Concept` in the exported graph. Publisher type should therefore

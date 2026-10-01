@@ -86,11 +86,12 @@ The test is skipped when the shapes path is not supplied. Keeping the official
 shapes outside this MIT-licensed repository avoids silently vendoring a moving
 third-party specification artifact.
 
-DCAT-AP-SE is formally maintained through DIGG's RDForms specification rather
-than a repository-local SHACL file. Validate the deployed catalog export with
-the toolkit at `https://sandbox.admin.dataportal.se/toolkit` before claiming
-DCAT-AP-SE conformance. This complements, rather than replaces, the automated
-DCAT-AP 3 SHACL test.
+National profiles based on DCAT-AP often have their own validators. Validate
+the deployed catalog export with the one for the profile you target before
+claiming conformance with it. For example, the Swedish DCAT-AP-SE is maintained
+through DIGG's RDForms specification and validated with the toolkit at
+`https://sandbox.admin.dataportal.se/toolkit`. This complements, rather than
+replaces, the automated DCAT-AP 3 SHACL test.
 
 Fast tests that do not alter the database can be selected with:
 
@@ -118,7 +119,7 @@ Never point CKAN tests at a production or development database containing data.
 - Deactivate a selected registry record and verify existing dataset pages still
   resolve it while new forms do not offer it.
 - Export the same dataset from the live DCAT endpoint and validate it with the
-  DCAT-AP 3 SHACL shapes and the current DCAT-AP-SE validator.
+  DCAT-AP 3 SHACL shapes and the validator of any national profile you target.
 - Verify that publisher and contact URIs remain distinct even when the contact
   belongs to that publisher.
 - Run `examples/ckan-2.12` and its `smoke_check.py` from a clean state on the oldest

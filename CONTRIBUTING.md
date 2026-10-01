@@ -14,6 +14,16 @@ so bug reports, compatibility results and design feedback are especially useful.
 Use a private security report instead of a public issue for vulnerabilities; see
 [SECURITY.md](SECURITY.md).
 
+## Translations
+
+A new language is welcome as a pull request: add
+`ckanext/actor_registry/i18n/<locale>/LC_MESSAGES/ckanext-actor-registry.po` and its
+compiled `.mo`. No code change is needed; the plugin offers every compiled catalogue.
+A partial translation is fine: strings not yet translated show in English. The tests
+check that the `.mo` matches the `.po`; only the maintained Swedish catalogues must be
+complete.
+See [docs/TRANSLATIONS.md](docs/TRANSLATIONS.md).
+
 ## Pull requests
 
 1. Discuss substantial behavior or data-model changes in an issue first.

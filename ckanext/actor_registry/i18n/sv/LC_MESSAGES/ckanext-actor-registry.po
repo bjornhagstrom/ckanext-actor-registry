@@ -892,8 +892,8 @@ msgstr ""
 " en personlig."
 
 #: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:29
-msgid "Include the country code, e.g. +46, for correct DCAT-AP-SE export."
-msgstr "Ange landskod, exempelvis +46, för korrekt DCAT-AP-SE-export."
+msgid "Include the country code, e.g. +46 or +49, so the number works from other countries too."
+msgstr "Ange landskod, exempelvis +46 eller +49, så att numret fungerar även från andra länder."
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:19
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
