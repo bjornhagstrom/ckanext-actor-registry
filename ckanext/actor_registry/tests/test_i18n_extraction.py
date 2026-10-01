@@ -70,3 +70,31 @@ def test_pybabel_extraction_finds_every_translatable_string(tmp_path):
             )
 
     assert not failures, "\n".join(failures)
+
+
+def test_every_extracted_string_is_translated(tmp_path):
+    """A fresh extraction against the shipped catalogues (2026-10-01): the
+    contact point deletion added 13 strings that never reached the .pot or
+    the .po files, so they showed in English on Swedish pages."""
+    from babel.messages.pofile import read_po
+
+    pot_path = tmp_path / "extracted.pot"
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(REPO_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+    subprocess.run(
+        [sys.executable, "-m", "babel.messages.frontend", "extract",
+         "-F", "babel.cfg", "-o", str(pot_path), "."],
+        cwd=str(REPO_ROOT), env=env, capture_output=True, text=True, check=True,
+    )
+    with pot_path.open("rb") as f:
+        extracted = {m.id for m in read_po(f) if m.id}
+
+    i18n = REPO_ROOT / "ckanext" / "actor_registry" / "i18n"
+    failures = []
+    for po_path in sorted(i18n.glob("*/LC_MESSAGES/ckanext-actor-registry.po")):
+        with po_path.open("rb") as f:
+            translated = {m.id for m in read_po(f) if m.id and m.string}
+        for missing in sorted(extracted - translated, key=str):
+            failures.append(f"{po_path.parent.parent.name}: {missing!r}")
+
+    assert not failures, "Untranslated strings:\n" + "\n".join(failures)

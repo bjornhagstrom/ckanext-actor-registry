@@ -5,6 +5,16 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-01
+
+### Fixed
+
+- Swedish translations for the 13 strings added with contact point deletion
+  (confirmation page, list filter, messages). They were missing from the
+  `.pot` and `.po` files and showed in English on Swedish pages.
+- New test: every string a fresh extraction finds must be translated in every
+  shipped catalogue.
+
 ## [0.2.1] - 2026-09-22
 
 ### Fixed
@@ -203,7 +213,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.2
 [0.2.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.1
 [0.2.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/tree/df14240

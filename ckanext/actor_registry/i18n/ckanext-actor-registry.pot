@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 14:50+0000\n"
+"POT-Creation-Date: 2026-10-01 14:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,50 +17,333 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: ckanext/actor_registry/actions.py:51 ckanext/actor_registry/actions.py:53
+#: ckanext/actor_registry/actions.py:52 ckanext/actor_registry/actions.py:54
+#: ckanext/actor_registry/actions.py:181 ckanext/actor_registry/actions.py:248
 msgid "Required."
 msgstr ""
 
-#: ckanext/actor_registry/actions.py:59
+#: ckanext/actor_registry/actions.py:56
+msgid "Cannot merge a publisher with itself."
+msgstr ""
+
+#: ckanext/actor_registry/actions.py:60
 #, python-brace-format
 msgid "Unknown fields: {fields}"
 msgstr ""
 
-#: ckanext/actor_registry/actions.py:62
+#: ckanext/actor_registry/actions.py:63
 msgid "Name cannot be empty."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:105 ckanext/actor_registry/views.py:186
-msgid "The URI is already used by a contact point."
+#: ckanext/actor_registry/actions.py:71
+msgid "The publisher to keep was not found, or is already inactive."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:106
-msgid "The contact point has been created."
+#: ckanext/actor_registry/actions.py:75
+msgid "The publisher to merge was not found, or is already inactive."
 msgstr ""
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:30
-#: ckanext/actor_registry/views.py:109 ckanext/actor_registry/views.py:118
-#: ckanext/actor_registry/views.py:142 ckanext/actor_registry/views.py:178
-msgid "Name or role is required."
+#: ckanext/actor_registry/actions.py:185 ckanext/actor_registry/views.py:482
+msgid "The publisher was not found."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:130 ckanext/actor_registry/views.py:157
-#: ckanext/actor_registry/views.py:246 ckanext/actor_registry/views.py:272
-msgid "The URI is already in use."
-msgstr ""
-
-#: ckanext/actor_registry/views.py:139
+#: ckanext/actor_registry/actions.py:252 ckanext/actor_registry/views.py:236
 msgid "The contact point was not found."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:187
+#: ckanext/actor_registry/auth.py:11
+msgid "Only sysadmins can merge publishers."
+msgstr ""
+
+#: ckanext/actor_registry/auth.py:21
+msgid "Only sysadmins can delete publishers."
+msgstr ""
+
+#: ckanext/actor_registry/auth.py:30
+msgid "Only sysadmins can delete contact points."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:67
+#, python-brace-format
+msgid "{field} is too long: at most {max} characters."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:81
+msgid "Enter a valid email address, for example name@example.org."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:99
+msgid "Enter a full web address starting with http:// or https://."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:114
+msgid "Enter an absolute URI starting with http://, https:// or urn:."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:125
+msgid "Enter a phone number using digits, spaces and the characters + ( ) - only."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:132
+msgid "The kind must be either organization or person."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:217
+msgid "Identifier and identifier scheme must be filled in together."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:223
+#, python-brace-format
+msgid ""
+"The identifier \"{identifier}\" with scheme \"{scheme}\" is already used "
+"by the publisher \"{name}\"."
+msgstr ""
+
+#: ckanext/actor_registry/validation.py:238
+msgid "The selected organization does not exist or is no longer active."
+msgstr ""
+
+#: ckanext/actor_registry/validators.py:24
+msgid "The selected publisher does not exist or is no longer active."
+msgstr ""
+
+#: ckanext/actor_registry/validators.py:36
+msgid "A selected contact point does not exist or is no longer active."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:198 ckanext/actor_registry/views.py:220
+#: ckanext/actor_registry/views.py:249 ckanext/actor_registry/views.py:310
+#: ckanext/actor_registry/views.py:444 ckanext/actor_registry/views.py:466
+#: ckanext/actor_registry/views.py:494 ckanext/actor_registry/views.py:562
+msgid "The URI is already used by a publisher or contact point."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:199 ckanext/actor_registry/views.py:314
+msgid "The URI is already used by a contact point."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:200
+msgid "The contact point has been created."
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:32
+#: ckanext/actor_registry/views.py:203 ckanext/actor_registry/views.py:212
+#: ckanext/actor_registry/views.py:239 ckanext/actor_registry/views.py:303
+msgid "Name or role is required."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:227 ckanext/actor_registry/views.py:257
+#: ckanext/actor_registry/views.py:473 ckanext/actor_registry/views.py:502
+msgid "The URI is already in use."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:315
 msgid "The contact point has been updated."
 msgstr ""
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:20
-#: ckanext/actor_registry/views.py:225 ckanext/actor_registry/views.py:234
-#: ckanext/actor_registry/views.py:258 ckanext/actor_registry/views.py:312
+#: ckanext/actor_registry/views.py:337
+#, python-brace-format
+msgid "The contact point \"{name}\" has been permanently deleted."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:371
+msgid "Both"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:372
+msgid "Publisher"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:4
+#: ckanext/actor_registry/views.py:373
+msgid "Contact point"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:374
+msgid "Either"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:380
+#, python-brace-format
+msgid "Datasets missing both a publisher and a contact point ({n})"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:381
+#, python-brace-format
+msgid "Datasets without a publisher ({n})"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:382
+#, python-brace-format
+msgid "Datasets without a contact point ({n})"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:383
+#, python-brace-format
+msgid "Datasets missing a publisher or a contact point ({n})"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:445 ckanext/actor_registry/views.py:566
+msgid "The URI is already used by a publisher."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:446
+msgid "The publisher has been created."
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:21
+#: ckanext/actor_registry/views.py:449 ckanext/actor_registry/views.py:458
+#: ckanext/actor_registry/views.py:485 ckanext/actor_registry/views.py:555
 msgid "Name is required."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:567
+msgid "The publisher has been updated."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:595
+#, python-brace-format
+msgid "The publisher \"{name}\" has been permanently deleted."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:632
+msgid "Select exactly two different publishers to merge."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:638
+msgid "One or both publishers were not found, or are already inactive."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:644
+msgid "You must choose which publisher should remain."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:662
+#, python-brace-format
+msgid "Could not merge the publishers: {0}"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:664
+msgid "The publishers have been merged."
+msgstr ""
+
+#: ckanext/actor_registry/views.py:715
+#, python-brace-format
+msgid "Could not save the publisher link: {0}"
+msgstr ""
+
+#: ckanext/actor_registry/views.py:719
+msgid "The publisher link has been saved."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:3
+msgid "Delete publisher"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:4
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:3
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:4
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:3
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:4
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:7
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:3
+#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html:7
+#: ckanext/actor_registry/templates/admin/base.html:23
+msgid "Publishers"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:4
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:4
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:19
+msgid "Delete"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:6
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:6
+#, python-brace-format
+msgid "Delete \"{name}\"?"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:10
+msgid ""
+"This publisher is already merged and retired. It is kept around today "
+"only so its web address (URI) keeps resolving, in case anything outside "
+"this catalogue already links to it or has it cached. Deleting it removes "
+"that address for good -- do this only once you are confident nothing "
+"depends on it any more."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:20
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:20
+msgid "This will affect other records:"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:22
+#, python-brace-format
+msgid ""
+"{n} dataset(s) have this publisher. Their publisher will be cleared, not "
+"reassigned."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:23
+#, python-brace-format
+msgid ""
+"{n} contact point(s) belong to this publisher and will become standalone "
+"(not deleted, just no longer linked to an organization/person)."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:24
+#, python-brace-format
+msgid ""
+"{n} other publisher(s) were previously merged into this one. Their "
+"\"merged with\" pointer will stop resolving once this record is gone."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:28
+msgid ""
+"No datasets, contact points, or other publishers currently depend on this"
+" publisher."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:32
+msgid "Datasets with this publisher"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:37
+msgid "Contact points owned by this publisher"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:42
+msgid "Publishers previously merged into this one"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:49
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:19
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:41
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:34
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:17
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:77
+msgid "Cancel"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:50
+msgid "Yes, permanently delete this publisher"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:2
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:6
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:7
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:17
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
+msgid "New publisher"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:2
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:6
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:18
+msgid "Edit publisher"
 msgstr ""
 
 #: ckanext/actor_registry/templates/actor_registry/actor_form.html:3
@@ -69,173 +352,239 @@ msgid "New"
 msgstr ""
 
 #: ckanext/actor_registry/templates/actor_registry/actor_form.html:3
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:3
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:17
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:9
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:21
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:19
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:10
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:23
 msgid "Edit"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:7
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:10
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:9
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:19
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
 msgid "Name"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:8
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:10
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:10
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:19
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:11
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
 msgid "Kind"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:8
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:12
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:13
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
 msgid "Organization"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:8
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:12
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
 msgid "Person"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:9
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
 msgid "Type"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:9
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
 msgid ""
 "Optional URI to a concept in a controlled vocabulary. A URI is required "
 "for full DCAT-AP 3 validation. No organization-specific types are "
 "hardcoded."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:10
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:13
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:12
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:19
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:14
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
 msgid "Identifier"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:13
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
 msgid "Identifier scheme"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:13
 msgid "For example a business registration number, ROR or LEI"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:12
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:13
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
 msgid "Persistent URI"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:12
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
 msgid "Leave blank when creating to get a URI from the catalog."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:13
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:12
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:6
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:15
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:24
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:71
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:15
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:14
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:7
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:16
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:26
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:75
 msgid "URL"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:10
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:6
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:22
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:69
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:16
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:12
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:7
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:13
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:24
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:73
 msgid "Email"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:15
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:15
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:14
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:17
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:16
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:15
 msgid "Description"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:16
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:14
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:18
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:16
 msgid "Active and selectable"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:17
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:41
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:73
-msgid "Cancel"
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:19
+msgid "Save publisher"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:9
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:10
+msgid "This publisher has been merged with"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:10
 msgid "Use that record from now on."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:17
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:12
+msgid "This publisher is inactive."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:18
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:8
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:9
+#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html:13
 #, python-brace-format
 msgid "Publisher for {n} dataset(s)"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:7
+#: ckanext/actor_registry/templates/actor_registry/actor_show.html:19
+msgid "No datasets have this publisher."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:8
 msgid ""
 "Reusable organizations and people who can have roles in metadata, for "
 "example as publisher."
 msgstr ""
 
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:9
+msgid "Show merged/retired publishers too"
+msgstr ""
+
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:10
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:11
+msgid ""
+"Merging retires the losing publisher instead of deleting it, so its web "
+"address (URI) keeps resolving if anything already links to or has cached "
+"it -- its page simply points to the publisher it was merged into. Merged "
+"publishers are hidden here by default to keep this list focused on "
+"publishers still in use; check the box above to see them too, for example"
+" before permanently deleting one you are sure is no longer needed."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:17
+msgid "Merge selected publishers"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:17
+msgid "Select exactly two publishers to merge."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:19
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:13
 msgid "Status"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
 #, python-brace-format
 msgid "Select {name} for merging"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:16
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:18
 msgid "Active"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:16
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:18
 msgid "Inactive"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:19
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:20
+msgid "There are no publishers yet."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:24
+msgid "Missing:"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:27
+msgid "Open each dataset to add what is missing."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:30
 msgid "All datasets have at least one publisher or contact point linked."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:22
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:32
+msgid "No datasets are missing this."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:35
 msgid "General-purpose registry"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:22
+#: ckanext/actor_registry/templates/actor_registry/actors_index.html:35
 msgid ""
 "The registry is independent of organization type and country. Roles are "
 "chosen on each dataset."
 msgstr ""
 
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:2
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:5
+msgid "Merge publishers"
+msgstr ""
+
 #: ckanext/actor_registry/templates/actor_registry/actors_merge.html:3
 msgid "Merge"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:6
+msgid ""
+"Choose which publisher should remain and which value should apply for "
+"each field. The publisher not kept is not deleted -- it is marked "
+"inactive and points to the remaining record, and its page keeps "
+"responding with a clear pointer."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:17
+msgid "Which publisher should remain?"
 msgstr ""
 
 #: ckanext/actor_registry/templates/actor_registry/actors_merge.html:20
@@ -259,67 +608,112 @@ msgstr ""
 msgid "Type to override the choice on the left"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:5
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:7
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:26
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:64
-msgid "New contact point"
+#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:42
+msgid "Merge the publishers"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:5
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:27
-msgid "Edit contact point"
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:3
+msgid "Delete contact point"
 msgstr ""
 
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:4
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:3
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:2
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:3
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:6
+#: ckanext/actor_registry/templates/admin/base.html:24
 msgid "Contact points"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:8
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:68
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:10
+msgid ""
+"This contact point is already inactive. It is kept around today only so "
+"its web address (URI) keeps resolving, in case anything outside this "
+"catalogue already links to it or has it cached. Deleting it removes that "
+"address for good -- do this only once you are confident nothing depends "
+"on it any more."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:15
+#, python-brace-format
+msgid ""
+"This contact point belongs to {actor}. That publisher is not affected by "
+"deleting this contact point."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:22
+#, python-brace-format
+msgid ""
+"{n} dataset(s) list this contact point. It will be removed from their "
+"contact points, not reassigned."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:25
+msgid "Datasets listing this contact point"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:28
+msgid "No datasets currently reference this contact point."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:35
+msgid "Yes, permanently delete this contact point"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:2
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:6
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:7
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:28
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:66
+msgid "New contact point"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:2
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:6
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:29
+msgid "Edit contact point"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:13
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:71
 msgid "Name or role"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:9
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:6
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:7
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:72
 msgid "Belongs to organization"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:9
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:72
 msgid "No link"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:9
-msgid "Optional link to the organization or person this contact point represents."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:6
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:23
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:70
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:13
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:7
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:25
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:74
 msgid "Phone"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
-msgid "Include the country code, e.g. +46, for correct DCAT-AP-SE export."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:13
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
 msgid "Leave blank when creating the record to get a URI from the catalog."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:17
 msgid "Save contact point"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:3
-msgid "Contact point"
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:8
+#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html:17
+#, python-brace-format
+msgid "Linked to {n} dataset(s)"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:9
+msgid "No dataset is linked to this contact point."
 msgstr ""
 
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:9
@@ -328,483 +722,192 @@ msgid ""
 "Changes take effect everywhere without editing each dataset."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:20
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:10
+msgid "Show inactive contact points too"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:11
+msgid ""
+"Deactivating a contact point (rather than deleting it) keeps its web "
+"address (URI) resolving if anything already links to or has cached it, "
+"and keeps existing dataset references valid. Inactive contact points are "
+"hidden here by default; check the box above to see them too, for example "
+"before permanently deleting one you are sure is no longer needed."
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:22
 msgid "There are no contact points yet."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:26
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:28
 msgid "Central management"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:26
+#: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:28
 msgid ""
 "Deactivate a contact point when it should no longer be selectable. "
 "Existing references keep working."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/snippets/dataset_actor_link_prompt.html:27
-msgid "Save"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:5
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:6
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:16
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
-msgid "New publisher"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:5
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:17
-msgid "Edit publisher"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:18
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:28
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:72
-msgid "Save and select"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:19
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:29
-msgid "Save changes"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:21
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:31
-msgid "Your session has expired. Open a new tab, log in again and try again."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:22
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:32
-msgid "The server responded unexpectedly. Reload the page and try again."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:23
-msgid "The publisher could not be saved."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:26
-msgid "Search and select publisher…"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:26
-msgid "Select publisher…"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:29
-msgid "Preselected from the publisher you used last. You can change the choice."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
-msgid "Create new publisher"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
-msgid ""
-"Editing here updates the publisher everywhere it is used, not just in "
-"this dataset."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:25
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:57
-msgid "Select a contact point to see its details here."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:33
-msgid "The contact point could not be saved."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:47
-msgid "Search and select contact point…"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:49
-msgid "Recently used"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:53
-msgid "Other contact points (A-Z)"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:53
-msgid "All contact points (A-Z)"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:61
-msgid "Create new contact point"
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:70
-msgid "Include the country code, e.g. +46."
-msgstr ""
-
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:74
-msgid ""
-"Editing here updates the contact point everywhere it is used, not just in"
-" this dataset."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
-msgid ""
-"A publisher is the organization or person responsible for making a "
-"dataset available. Register it once and reuse it across datasets."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
-msgid ""
-"A contact point is the function or person users can contact with "
-"questions about a dataset. Prefer a functional contact over an individual"
-" when the responsibility is long-term."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
-msgid ""
-"Choose Organization for authorities, companies and departments, and "
-"Person for an individual."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
-msgid ""
-"A unique value for this organization or person, such as a Swedish "
-"organisation number or an ORCID. Enter it together with an identifier "
-"scheme."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
-msgid ""
-"Specifies how the identifier should be interpreted, for example SE:ORGNR "
-"or ORCID. Enter it together with an identifier."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
-msgid ""
-"An address where questions can be sent. A shared functional mailbox is "
-"better than a personal one."
-msgstr ""
-
-#: ckanext/actor_registry/validation.py
-msgid "Enter a valid email address, for example name@example.org."
-msgstr ""
-
-#: ckanext/actor_registry/validation.py
-msgid "Enter a full web address starting with http:// or https://."
-msgstr ""
-
-#: ckanext/actor_registry/validation.py
-msgid "Enter a phone number using digits, spaces and the characters + ( ) - only."
-msgstr ""
-
-#: ckanext/actor_registry/validation.py
-msgid "The kind must be either organization or person."
-msgstr ""
-
-#: ckanext/actor_registry/validation.py
-msgid "The selected publisher does not exist or is no longer active."
-msgstr ""
-
-#: ckanext/actor_registry/validation.py
-msgid "A selected contact point does not exist or is no longer active."
-msgstr ""
-
-#: ckanext/actor_registry/views.py
-msgid "The selected organization does not exist or is no longer active."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html
-#, python-brace-format
-msgid "Linked to {n} dataset(s)"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html
-#, python-brace-format
-msgid "Show all {n}"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html
-msgid "No dataset is linked to this contact point."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html
+#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html:20
 msgid "Datasets"
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html
+#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html:28
 msgid "No datasets to show."
 msgstr ""
 
-#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html
+#: ckanext/actor_registry/templates/actor_registry/linked_datasets.html:30
 msgid "Back to"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:3
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:3
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:2
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:3
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:6
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:3
-msgid "Publishers"
-msgstr ""
-
-msgid "Delete publisher"
-msgstr ""
-
-msgid ""
-"This publisher is already merged and retired. It is kept around today "
-"only so its web address (URI) keeps resolving, in case anything outside "
-"this catalogue already links to it or has it cached. Deleting it removes "
-"that address for good -- do this only once you are confident nothing "
-"depends on it any more."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"{n} dataset(s) have this publisher. Their publisher will be cleared, not "
-"reassigned."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"{n} contact point(s) belong to this publisher and will become standalone "
-"(not deleted, just no longer linked to an organization/person)."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"{n} other publisher(s) were previously merged into this one. Their "
-"\"merged with\" pointer will stop resolving once this record is gone."
-msgstr ""
-
-msgid ""
-"No datasets, contact points, or other publishers currently depend on this"
-" publisher."
-msgstr ""
-
-msgid "Datasets with this publisher"
-msgstr ""
-
-msgid "Contact points owned by this publisher"
-msgstr ""
-
-msgid "Publishers previously merged into this one"
-msgstr ""
-
-msgid "Yes, permanently delete this publisher"
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"This contact point belongs to {actor}. That publisher is not affected by "
-"deleting this contact point."
-msgstr ""
-
-msgid "Show merged/retired publishers too"
-msgstr ""
-
-msgid ""
-"Merging retires the losing publisher instead of deleting it, so its web "
-"address (URI) keeps resolving if anything already links to or has cached "
-"it -- its page simply points to the publisher it was merged into. Merged "
-"publishers are hidden here by default to keep this list focused on "
-"publishers still in use; check the box above to see them too, for example"
-" before permanently deleting one you are sure is no longer needed."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:9
-msgid "Merge selected publishers"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:9
-msgid "Select exactly two publishers to merge."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_index.html:11
-msgid "There are no publishers yet."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:2
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:5
-msgid "Merge publishers"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:6
-msgid ""
-"Choose which publisher should remain and which value should apply for "
-"each field. The publisher not kept is not deleted -- it is marked "
-"inactive and points to the remaining record, and its page keeps "
-"responding with a clear pointer."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:17
-msgid "Which publisher should remain?"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actors_merge.html:42
-msgid "Merge the publishers"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:17
-msgid "Save publisher"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:9
-msgid "This publisher has been merged with"
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:11
-msgid "This publisher is inactive."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/actor_show.html:21
-msgid "No datasets have this publisher."
 msgstr ""
 
 #: ckanext/actor_registry/templates/actor_registry/snippets/dataset_actor_link_prompt.html:15
 msgid "Publisher link missing."
 msgstr ""
 
+#: ckanext/actor_registry/templates/actor_registry/snippets/dataset_actor_link_prompt.html:27
+msgid "Save"
+msgstr ""
+
 #: ckanext/actor_registry/templates/actor_registry/snippets/dataset_actor_link_prompt.html:30
 msgid "Log in with permission to edit the dataset to link a publisher."
 msgstr ""
 
-#: ckanext/actor_registry/auth.py:11
-msgid "Only sysadmins can merge publishers."
-msgstr ""
-
-msgid "Only sysadmins can delete publishers."
-msgstr ""
-
-#: ckanext/actor_registry/actions.py:55
-msgid "Cannot merge a publisher with itself."
-msgstr ""
-
-#: ckanext/actor_registry/actions.py:70
-msgid "The publisher to keep was not found, or is already inactive."
-msgstr ""
-
-#: ckanext/actor_registry/actions.py:74
-msgid "The publisher to merge was not found, or is already inactive."
-msgstr ""
-
-#: ckanext/actor_registry/views.py:255
-msgid "The publisher was not found."
-msgstr ""
-
+#: ckanext/actor_registry/templates/actor_registry/snippets/dataset_list.html:8
 #, python-brace-format
+msgid "Show all {n}"
+msgstr ""
+
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:13
 msgid ""
-"The identifier \"{identifier}\" with scheme \"{scheme}\" is already used "
-"by the publisher \"{name}\"."
+"A publisher is the organization or person responsible for making a "
+"dataset available. Register it once and reuse it across datasets."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:104 ckanext/actor_registry/views.py:123
-#: ckanext/actor_registry/views.py:149 ckanext/actor_registry/views.py:182
-#: ckanext/actor_registry/views.py:220 ckanext/actor_registry/views.py:239
-#: ckanext/actor_registry/views.py:264 ckanext/actor_registry/views.py:316
-msgid "The URI is already used by a publisher or contact point."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:15
+msgid ""
+"A contact point is the function or person users can contact with "
+"questions about a dataset. Prefer a functional contact over an individual"
+" when the responsibility is long-term."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:221 ckanext/actor_registry/views.py:320
-msgid "The URI is already used by a publisher."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:17
+msgid "Optional link to the organization or person this contact point represents."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:222
-msgid "The publisher has been created."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:19
+msgid ""
+"Choose Organization for authorities, companies and departments, and "
+"Person for an individual."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:321
-msgid "The publisher has been updated."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:21
+msgid ""
+"A unique value for this organization or person, such as a Swedish "
+"organisation number or an ORCID. Enter it together with an identifier "
+"scheme."
 msgstr ""
 
-#, python-brace-format
-msgid "The publisher \"{name}\" has been permanently deleted."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:23
+msgid ""
+"Specifies how the identifier should be interpreted, for example SE:ORGNR "
+"or ORCID. Enter it together with an identifier."
 msgstr ""
 
-#: ckanext/actor_registry/views.py:342
-msgid "Select exactly two different publishers to merge."
-msgstr ""
-
-#: ckanext/actor_registry/views.py:348
-msgid "One or both publishers were not found, or are already inactive."
-msgstr ""
-
-#: ckanext/actor_registry/views.py:354
-msgid "You must choose which publisher should remain."
-msgstr ""
-
-#: ckanext/actor_registry/views.py:372
-#, python-brace-format
-msgid "Could not merge the publishers: {0}"
-msgstr ""
-
-#: ckanext/actor_registry/views.py:374
-msgid "The publishers have been merged."
-msgstr ""
-
-#: ckanext/actor_registry/views.py:425
-#, python-brace-format
-msgid "Could not save the publisher link: {0}"
-msgstr ""
-
-#: ckanext/actor_registry/views.py:429
-msgid "The publisher link has been saved."
-msgstr ""
-
-#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:25
 msgid "A full web address, for example https://www.example.org."
 msgstr ""
 
-#: ckanext/actor_registry/validation.py
-#, python-brace-format
-msgid "{field} is too long: at most {max} characters."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:27
+msgid ""
+"An address where questions can be sent. A shared functional mailbox is "
+"better than a personal one."
 msgstr ""
 
-#: ckanext/actor_registry/validation.py
-msgid "Enter an absolute URI starting with http://, https:// or urn:."
+#: ckanext/actor_registry/templates/actor_registry/snippets/help_texts.html:29
+msgid "Include the country code, e.g. +46, for correct DCAT-AP-SE export."
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-#, python-brace-format
-msgid "Datasets missing both a publisher and a contact point ({n})"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:19
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:30
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:76
+msgid "Save and select"
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-#, python-brace-format
-msgid "Datasets without a publisher ({n})"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:20
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:31
+msgid "Save changes"
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-#, python-brace-format
-msgid "Datasets without a contact point ({n})"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:22
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:33
+msgid "Your session has expired. Open a new tab, log in again and try again."
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-#, python-brace-format
-msgid "Datasets missing a publisher or a contact point ({n})"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:23
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:34
+msgid "The server responded unexpectedly. Reload the page and try again."
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-msgid "Missing:"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:24
+msgid "The publisher could not be saved."
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-msgid "Both"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:27
+msgid "Search and select publisher…"
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-msgid "Publisher"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:27
+msgid "Select publisher…"
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-msgid "Either"
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:30
+msgid "Preselected from the publisher you used last. You can change the choice."
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-msgid "Open each dataset to add what is missing."
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
+msgid "Create new publisher"
 msgstr ""
 
-#: ckanext/actor_registry/views.py
-msgid "No datasets are missing this."
+#: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
+msgid ""
+"Editing here updates the publisher everywhere it is used, not just in "
+"this dataset."
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:27
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:59
+msgid "Select a contact point to see its details here."
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:35
+msgid "The contact point could not be saved."
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:49
+msgid "Search and select contact point…"
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:51
+msgid "Recently used"
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:55
+msgid "Other contact points (A-Z)"
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:55
+msgid "All contact points (A-Z)"
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:63
+msgid "Create new contact point"
+msgstr ""
+
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:78
+msgid ""
+"Editing here updates the contact point everywhere it is used, not just in"
+" this dataset."
 msgstr ""
 
