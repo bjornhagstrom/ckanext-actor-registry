@@ -1,0 +1,61 @@
+# EXAMPLE dataset schema: CKAN organizations plus shared contact points, and
+# no publisher field. For catalogues where the owner organization already is
+# the publisher and only the contact details need to be shared. It is an
+# integration example, NOT a binding or universal metadata schema: copy it,
+# then decide per metadata profile which fields are required.
+#
+# Use it INSTEAD of actor_registry_schema.yaml (both define the `dataset`
+# type, so configure only one of them):
+#
+#   scheming.dataset_schemas = ckanext.actor_registry.examples:contact_points_only_schema.yaml
+#   scheming.presets = ckanext.scheming:presets.json
+#
+# With ckanext-dcat, a dataset without a publisher record is exported with
+# its organization as dct:publisher (ckanext-dcat's own fallback), and the
+# contact points as dcat:contactPoint.
+#
+# Labels are localised for en, sv and sv_SE.
+scheming_version: 2
+dataset_type: dataset
+
+dataset_fields:
+- field_name: title
+  label: {en: Title, sv: Titel, sv_SE: Titel}
+  preset: title
+  required: true
+
+- field_name: name
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: dataset_slug
+
+- field_name: notes
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+  required: true
+  form_snippet: markdown.html
+  display_snippet: markdown.html
+
+- field_name: owner_org
+  label: {en: Organization, sv: Organisation, sv_SE: Organisation}
+  preset: dataset_organization
+  required: true
+
+- field_name: contact_point_ids
+  label: {en: Contact points, sv: Kontaktpunkter, sv_SE: Kontaktpunkter}
+  preset: multiple_select
+  form_snippet: contactpoints_multiple_select.html
+  display_snippet: contactpoints.html
+  choices_helper: contactpoints_choices
+  sorted_choices: true
+  validators: ignore_missing scheming_multiple_choice actor_registry_contactpoints_exist
+
+resource_fields:
+- field_name: url
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: resource_url_upload
+- field_name: name
+  label: {en: Name, sv: Namn, sv_SE: Namn}
+- field_name: description
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+- field_name: format
+  label: {en: Format, sv: Format, sv_SE: Format}
+  preset: resource_format_autocomplete

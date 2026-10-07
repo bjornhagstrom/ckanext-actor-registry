@@ -1,0 +1,91 @@
+# EXAMPLE dataset schema for a catalogue that is IN THE MIDDLE OF migrating to the actor registry:
+# the same fields as actor_registry_schema.yaml (publisher and contact points), plus CKAN's own
+# contact fields (Maintainer, Author and their emails) shown through the legacy_contact.html
+# snippets, so editors keep seeing and editing them while the Migrate to Actor Registry page
+# (/actor-registry/migrate) turns them into contact points. When the migration is closed
+# (ckanext.actor_registry.legacy_contact_fields = false) the four fields are hidden and no longer
+# exported. It is an integration example, NOT a binding or universal metadata schema.
+#
+# Reference it from ckan.ini like the other example:
+#   scheming.dataset_schemas = ckanext.actor_registry.examples:actor_registry_migration_schema.yaml
+#
+# Labels are localised for en, sv and sv_SE, except those of the four CKAN contact fields (English only).
+scheming_version: 2
+dataset_type: dataset
+
+dataset_fields:
+- field_name: title
+  label: {en: Title, sv: Titel, sv_SE: Titel}
+  preset: title
+  required: true
+
+- field_name: name
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: dataset_slug
+
+- field_name: notes
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+  required: true
+  form_snippet: markdown.html
+  display_snippet: markdown.html
+
+- field_name: owner_org
+  label: {en: Organization, sv: Organisation, sv_SE: Organisation}
+  preset: dataset_organization
+  required: true
+
+# Publisher is OPTIONAL in this example: without one, the DCAT export gives
+# the dataset's organization as publisher (ckanext-dcat's own fallback), and
+# the form says so. To require a publisher instead, add `required: true` and
+# replace `ignore_missing` with `scheming_required` in the validators; an
+# empty submission then gives a clear validation error.
+- field_name: publisher_actor_id
+  label: {en: Publisher, sv: Utgivare, sv_SE: Utgivare}
+  preset: select
+  form_snippet: actors_multiple_select.html
+  display_snippet: actor.html
+  choices_helper: actors_choices
+  sorted_choices: true
+  validators: ignore_missing actor_registry_actor_exists
+
+- field_name: contact_point_ids
+  label: {en: Contact points, sv: Kontaktpunkter, sv_SE: Kontaktpunkter}
+  preset: multiple_select
+  form_snippet: contactpoints_multiple_select.html
+  display_snippet: contactpoints.html
+  choices_helper: contactpoints_choices
+  sorted_choices: true
+  validators: ignore_missing scheming_multiple_choice actor_registry_contactpoints_exist
+
+# CKAN's own contact fields, kept visible while the migration is open.
+- field_name: maintainer
+  label: Maintainer
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+- field_name: maintainer_email
+  label: Maintainer email
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+- field_name: author
+  label: Author
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+- field_name: author_email
+  label: Author email
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+resource_fields:
+- field_name: url
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: resource_url_upload
+- field_name: name
+  label: {en: Name, sv: Namn, sv_SE: Namn}
+- field_name: description
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+- field_name: format
+  label: {en: Format, sv: Format, sv_SE: Format}
+  preset: resource_format_autocomplete

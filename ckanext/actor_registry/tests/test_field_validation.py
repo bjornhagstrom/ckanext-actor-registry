@@ -11,7 +11,7 @@ from ckanext.actor_registry import model, validation
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.ckan_config("ckan.plugins", "scheming_datasets actor_registry"),
+    pytest.mark.ckan_config("ckan.plugins", "actor_registry scheming_datasets"),
     pytest.mark.ckan_config(
         "scheming.dataset_schemas", "ckanext.actor_registry.tests.fixtures:dcat_test_schema.yaml"
     ),
@@ -188,3 +188,39 @@ def test_required_publisher_cannot_be_saved_empty():
         _create_dataset("", [])
 
     assert "publisher_actor_id" in caught.value.error_dict
+
+
+def _page_without_publisher(app, contacts):
+    # An older dataset saved before the publisher became required: the form can
+    # no longer produce one, so remove the stored link directly.
+    dataset = _create_dataset(_record(model.Actor, "Aktiv", actor_kind="organization"), contacts)
+    package = ckan_model.Package.get(dataset["id"])
+    package.extras = {key: value for key, value in package.extras.items() if key != "publisher_actor_id"}
+    ckan_model.Session.commit()
+    # package_show reads the search index copy, so refresh it.
+    from ckan.lib.search import rebuild
+    rebuild(dataset["id"])
+    sysadmin = factories.SysadminWithToken()
+    html = app.get(f"/dataset/{dataset['name']}",
+                   headers={"Authorization": sysadmin["token"]}).get_data(as_text=True)
+    prompt = html.split("data-dataset-actor-link-prompt", 1)
+    return prompt[1].split("</form>", 1)[0] if len(prompt) == 2 else ""
+
+
+def test_a_required_publisher_that_is_missing_is_asked_for(app):
+    prompt = _page_without_publisher(app, [_record(model.ContactPoint, "Kontakt")])
+    assert "Publisher missing." in prompt
+    assert 'name="publisher_actor_id"' in prompt
+    assert 'name="contact_point_ids"' not in prompt
+
+
+def test_both_missing_are_named_in_the_heading(app):
+    prompt = _page_without_publisher(app, [])
+    assert "Publisher and contact point missing." in prompt
+    assert 'name="publisher_actor_id"' in prompt and 'name="contact_point_ids"' in prompt
+
+
+def test_a_required_publisher_has_no_empty_publisher_help(app):
+    sysadmin = factories.SysadminWithToken()
+    html = app.get("/dataset/new", headers={"Authorization": sysadmin["token"]}).get_data(as_text=True)
+    assert "data-publisher-empty-help" not in html

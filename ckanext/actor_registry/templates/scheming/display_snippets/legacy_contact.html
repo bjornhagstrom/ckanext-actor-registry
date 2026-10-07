@@ -1,0 +1,11 @@
+{#-
+  Display of CKAN's own contact fields while a catalogue moves to the
+  registry; an email field is a mailto link. Once the migration is closed the
+  whole row is left out (see scheming/package/snippets/additional_info.html).
+-#}
+{%- set value = data[field.field_name] -%}
+{%- if value and field.field_name.endswith('_email') -%}
+  <a href="mailto:{{ value }}">{{ value }}</a>
+{%- else -%}
+  {{ value }}
+{%- endif -%}

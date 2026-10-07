@@ -150,8 +150,8 @@ def test_resolve_contact_and_publisher_does_not_mutate_input(monkeypatch):
         lambda ids: [contact] if ids == ["contact-1"] else [],
     )
     monkeypatch.setattr(
-        "ckanext.actor_registry.profiles.helpers.actors_resolve",
-        lambda ids: [actor] if ids == "actor-1" else [],
+        "ckanext.actor_registry.profiles.helpers.actor_display",
+        lambda actor_id: actor if actor_id == "actor-1" else None,
     )
     original = {
         "contact_point_ids": ["contact-1"],
@@ -192,7 +192,7 @@ def test_resolve_contact_and_publisher_leaves_missing_references_unexpanded(monk
         "ckanext.actor_registry.profiles.helpers.contactpoints_resolve", lambda ids: []
     )
     monkeypatch.setattr(
-        "ckanext.actor_registry.profiles.helpers.actors_resolve", lambda ids: []
+        "ckanext.actor_registry.profiles.helpers.actor_display", lambda actor_id: None
     )
     original = {
         "contact_point_ids": ["deleted-contact"],

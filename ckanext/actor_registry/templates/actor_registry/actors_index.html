@@ -3,6 +3,8 @@
 {% block subtitle %}{{ _('Publishers') }}{% endblock %}
 {% block breadcrumb_content %}<li class="active">{{ _('Publishers') }}</li>{% endblock %}
 {% block primary_content_inner %}
+  {% set cleanup_count = h.actor_registry_cleanup_count() %}
+  {% if cleanup_count %}<div class="alert alert-warning" data-cleanup-hint>{% trans count=cleanup_count, url=h.url_for('actor_registry.cleanup_index') %}{{ count }} inactive or missing record is still used by datasets. <a href="{{ url }}">Clean up</a>{% pluralize %}{{ count }} inactive or missing records are still used by datasets. <a href="{{ url }}">Clean up</a>{% endtrans %}</div>{% endif %}
 {% asset 'actor_registry/actor-merge-select' %}
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="page-heading mb-0">{{ _('Publishers') }}</h1><a class="btn btn-primary" href="{{ h.url_for('actor_registry.actors_new') }}"><i class="fa fa-plus"></i> {{ _('New publisher') }}</a></div>
 <p>{{ _('Reusable organizations and people who can have roles in metadata, for example as publisher.') }}</p>
@@ -16,8 +18,8 @@
    slå-ihop-knappen istället för att visa en knapp som ändå skulle ge 403. #}
 <div class="mb-2"><button type="button" class="btn btn-secondary" data-actor-merge-submit data-base-url="{{ h.url_for('actor_registry.actors_merge') }}" disabled>{{ _('Merge selected publishers') }}</button> <span class="text-muted">{{ _('Select exactly two publishers to merge.') }}</span></div>
 {% endif %}
-<table class="table table-striped"><thead><tr><th></th><th>{{ _('Name') }}</th><th>{{ _('Kind') }}</th><th>{{ _('Identifier') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead><tbody>
-{% for item in items %}<tr><td>{% if item.active and c.userobj and c.userobj.sysadmin %}<input type="checkbox" data-actor-merge-checkbox value="{{ item.id }}" aria-label="{{ _('Select {name} for merging').format(name=item.name) }}">{% endif %}</td><td><a href="{{ h.url_for('actor_registry.actors_show', item_id=item.id) }}">{{ item.name }}</a></td><td>{{ _('Person') if item.actor_kind == 'person' else _('Organization') }}</td><td>{{ item.identifier or '–' }}</td><td>{{ _('Active') if item.active else _('Inactive') }}</td><td class="text-end"><a class="btn btn-sm btn-secondary" href="{{ h.url_for('actor_registry.actors_edit', item_id=item.id) }}">{{ _('Edit') }}</a>{% if c.userobj and c.userobj.sysadmin %} <a class="btn btn-sm btn-danger" href="{{ h.url_for('actor_registry.actors_delete', item_id=item.id) }}">{{ _('Delete') }}</a>{% endif %}</td></tr>{% else %}<tr><td colspan="6">{{ _('There are no publishers yet.') }}</td></tr>{% endfor %}
+<table class="table table-striped align-middle"><thead><tr><th></th><th>{{ _('Name') }}</th><th>{{ _('Kind') }}</th><th>{{ _('Identifier') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead><tbody>
+{% for item in items %}<tr><td>{% if item.active and c.userobj and c.userobj.sysadmin %}<input type="checkbox" data-actor-merge-checkbox value="{{ item.id }}" aria-label="{{ _('Select {name} for merging').format(name=item.name) }}">{% endif %}</td><td><a href="{{ h.url_for('actor_registry.actors_show', item_id=item.id) }}">{{ item.name }}</a></td><td>{{ _('Person') if item.actor_kind == 'person' else _('Organization') }}</td><td class="text-nowrap">{{ item.identifier or '–' }}</td><td>{{ _('Active') if item.active else _('Inactive') }}</td><td class="text-end">{% snippet 'actor_registry/snippets/row_actions.html', edit_url=h.url_for('actor_registry.actors_edit', item_id=item.id), delete_url=(h.url_for('actor_registry.actors_delete', item_id=item.id) if c.userobj and c.userobj.sysadmin else '') %}</td></tr>{% else %}<tr><td colspan="6">{{ _('There are no publishers yet.') }}</td></tr>{% endfor %}
 </tbody></table>
 </div>
 <h2 id="worklist">{{ missing_heading }}</h2>

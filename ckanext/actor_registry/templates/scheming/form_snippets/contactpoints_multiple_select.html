@@ -43,6 +43,7 @@
     ) -%}
   {%- set groups = h.contactpoints_grouped_choices() -%}
   {%- set selected_values = data.get(field.field_name, []) -%}
+  {%- set unavailable = h.contactpoints_unavailable(selected_values) -%}
   <select multiple
       id="field-{{ field.field_name }}" name="{{ field.field_name }}"
       class="form-control" data-module="autocomplete"
@@ -55,7 +56,16 @@
     <optgroup label="{{ _('Other contact points (A-Z)') if groups.recent else _('All contact points (A-Z)') }}">
       {%- for contact in groups.alphabetical -%}{{ contact_option(contact, selected_values) }}{%- endfor -%}
     </optgroup>
+    {#- Selected contact points that are not offered above, so that saving never
+        drops them silently: shown, marked, and explained below. -#}
+    {%- for item in unavailable -%}
+      <option value="{{ item.id }}" selected data-unavailable="{{ item.state }}">{% if item.state == 'inactive' %}{{ item.name }} ({{ _('inactive') }}){% else %}{{ _('Unknown contact point') }} ({{ item.id }}){% endif %}</option>
+    {%- endfor -%}
   </select>
+  {%- for item in unavailable -%}
+    <p class="help-block text-warning" data-contactpoint-unavailable="{{ item.state }}"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      {% if item.state == 'inactive' %}{{ _('“{name}” is inactive. It stays on this dataset, but it can no longer be chosen; replace it with an active contact point when you can.').format(name=item.name) }}{% else %}{{ _('A contact point that no longer exists is selected. Remove it from the list before you save.') }}{% endif %}</p>
+  {%- endfor -%}
   <div class="mt-2" data-contactpoints-preview aria-live="polite"><p class="help-block">{{ _('Select a contact point to see its details here.') }}</p></div>
 
   {% if c.userobj %}
@@ -69,7 +79,7 @@
         <p class="help-block">{{ ht.text('contactpoints_intro') }}</p>
         <div class="alert alert-danger" data-contactpoints-error hidden></div>
         <div class="form-group"><label class="form-label">{{ _('Name or role') }} *</label><input class="form-control" data-field="name"></div>
-        <div class="form-group"><label class="form-label">{{ _('Belongs to organization') }}</label><select class="form-control" data-field="actor_id"><option value="">{{ _('No link') }}</option>{% for choice in h.actors_choices() %}<option value="{{ choice.value }}">{{ choice.label }}</option>{% endfor %}</select><p class="help-block">{{ ht.text('belongs_to') }}</p></div>
+        <div class="form-group"><label class="form-label">{{ _('Belongs to organization') }}</label><select class="form-control" data-field="actor_id"><option value="">{{ _('No link') }}</option>{% for choice in h.active_actors_choices() %}<option value="{{ choice.value }}">{{ choice.label }}</option>{% endfor %}</select><p class="help-block">{{ ht.text('belongs_to') }}</p></div>
         <div class="form-group"><label class="form-label">{{ _('Email') }}</label><input class="form-control" data-field="email" type="email"><p class="help-block">{{ ht.text('email') }}</p></div>
         <div class="form-group"><label class="form-label">{{ _('Phone') }}</label><input class="form-control" data-field="phone" type="tel" placeholder="+46910123456"><p class="help-block">{{ ht.text('phone') }}</p></div>
         <div class="form-group"><label class="form-label">{{ _('URL') }}</label><input class="form-control" data-field="url" type="url"><p class="help-block">{{ ht.text('url') }}</p></div>

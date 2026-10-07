@@ -1,16 +1,25 @@
+import re
 from pathlib import Path
 
 from setuptools import find_namespace_packages, setup
 
 
 HERE = Path(__file__).parent
+REPOSITORY = "https://github.com/bjornhagstrom/ckanext-actor-registry/blob/master/"
+
+
+def long_description():
+    """The README for PyPI: no screenshots, and links that work outside the repository."""
+    text = (HERE / "README.md").read_text(encoding="utf-8")
+    text = re.sub(r"^!\[[^\]]*\]\([^)]*\)[ \t]*\n(?:[ \t]*\n)?", "", text, flags=re.MULTILINE)
+    return re.sub(r"\]\((?!https?://|#|mailto:)([^)]+)\)", lambda m: "](" + REPOSITORY + m.group(1) + ")", text)
 
 
 setup(
     name="ckanext-actor-registry",
-    version="0.2.3",
+    version="0.3.0",
     description="Reusable actors and contact points for CKAN metadata",
-    long_description=(HERE / "README.md").read_text(encoding="utf-8"),
+    long_description=long_description(),
     long_description_content_type="text/markdown",
     author="Bjorn Hagstrom",
     author_email="bjorn@hagstrom.nu",

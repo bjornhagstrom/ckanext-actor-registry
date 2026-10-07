@@ -108,7 +108,11 @@ def test_merged_actor_is_shown_as_its_survivor(app):
     assert "Bortslagen nämnd" not in html
 
 
-def test_inactive_and_missing_references_render_nothing_instead_of_ids(app):
+def test_inactive_references_are_shown_and_missing_ones_never_as_ids(app):
+    """Björn 2026-10-05: an inactive publisher or contact point is still what
+    the dataset says until someone replaces it, so it is shown (and exported,
+    see test_page_matches_export.py). A missing reference shows nothing,
+    never a raw id."""
     retired = _actor("Pensionerad utan mål")
     inactive_contact = _contact("Avstängd kontakt")
     deleted_contact = _contact("Raderad kontakt")
@@ -124,10 +128,10 @@ def test_inactive_and_missing_references_render_nothing_instead_of_ids(app):
     html = _anonymous_page(app, dataset)
 
     assert "Levande kontakt" in html
-    assert "Avstängd kontakt" not in html
-    assert "Pensionerad utan mål" not in html
+    assert "Avstängd kontakt" in html
+    assert "Pensionerad utan mål" in html
     assert ghost_contact not in html
-    assert retired.id not in html
+    assert retired.id not in html.replace(f"/actors/{retired.id}", "")
 
 
 def test_several_contact_points_are_visually_separated(app):

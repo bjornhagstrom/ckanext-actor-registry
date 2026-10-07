@@ -19,7 +19,7 @@
 <div class="alert alert-danger">
 <strong>{{ _('This will affect other records:') }}</strong>
 <ul>
-  <li>{{ _('{n} dataset(s) list this contact point. It will be removed from their contact points, not reassigned.').format(n=linked_datasets.total) }}</li>
+  <li>{% trans count=linked_datasets.total %}{{ count }} dataset lists this contact point. It will be removed from its contact points, not reassigned.{% pluralize %}{{ count }} datasets list this contact point. It will be removed from their contact points, not reassigned.{% endtrans %}</li>
 </ul>
 </div>
 <h2>{{ _('Datasets listing this contact point') }}</h2>

@@ -41,6 +41,26 @@ def extra_text(key):
     )
 
 
+def contact_ids_jsonb():
+    """SQL for a package's ``contact_point_ids`` as a jsonb array, never failing.
+
+    Meant to be used inside a query ``FROM package``. Read the same way as
+    ``helpers._id_list``: a JSON list of ids as it is, a bare id as a list of
+    one, and anything else (empty, missing, broken JSON) as an empty list. A
+    plain ``::jsonb`` cast would make the whole query fail on a single dataset
+    with a broken stored value, as old imports can have.
+    """
+    contacts = extra_text("contact_point_ids")
+    return (
+        "(CASE"
+        " WHEN {c} ~ '^\\s*\\[\\s*(\"[^\"\\\\]*\"\\s*(,\\s*\"[^\"\\\\]*\"\\s*)*)?\\]\\s*$'"
+        " THEN ({c})::jsonb"
+        " WHEN btrim(coalesce({c}, '')) <> '' AND left(btrim({c}), 1) <> '['"
+        " THEN jsonb_build_array(btrim({c}))"
+        " ELSE '[]'::jsonb END)"
+    ).format(c=contacts)
+
+
 def extra_present(key):
     """SQL that is true when a package has an extra called ``key``."""
     assert key in _EXTRA_KEYS, key
@@ -250,8 +270,8 @@ def datasets_for_actor(actor_id):
             SELECT id FROM package
             WHERE state = 'active'
               AND {present}
-              AND {contacts}::jsonb ?| :contact_point_ids
-            """.format(present=extra_present("contact_point_ids"), contacts=extra_text("contact_point_ids"))
+              AND {contacts} ?| :contact_point_ids
+            """.format(present=extra_present("contact_point_ids"), contacts=contact_ids_jsonb())
         ).bindparams(bindparam("contact_point_ids", type_=ARRAY(PG_TEXT)))
         contact_rows = session.execute(stmt, {"contact_point_ids": contact_point_ids})
         via_contact_point_ids = [row.id for row in contact_rows]
@@ -276,8 +296,8 @@ def datasets_for_contact_point(contact_point_id):
         SELECT id FROM package
         WHERE state = 'active'
           AND {present}
-          AND {contacts}::jsonb ? :contact_point_id
-        """.format(present=extra_present("contact_point_ids"), contacts=extra_text("contact_point_ids"))
+          AND {contacts} ? :contact_point_id
+        """.format(present=extra_present("contact_point_ids"), contacts=contact_ids_jsonb())
     )
     rows = session.execute(stmt, {"contact_point_id": contact_point_id})
     return [row.id for row in rows]
@@ -294,7 +314,8 @@ def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, pe
 
     Reads straight from the database (the source of truth; the search index
     can hold stale documents) and returns ``(rows, total)``, ``rows`` being
-    ``{"id", "name", "title"}`` dicts sorted by title, A-Z.
+    ``{"id", "name", "title", "organization", "private", "modified"}`` dicts
+    sorted by title, A-Z (``organization`` is the owner organisation's title).
 
     ``link`` is ``"publisher"`` (``publisher_actor_id`` equals one of
     ``subject_ids``) or ``"contact_point"`` (``contact_point_ids`` lists one
@@ -314,12 +335,11 @@ def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, pe
     if link not in MISSING_MODES and not subject_ids:
         return [], 0
     publisher = extra_text("publisher_actor_id")
-    contacts = extra_text("contact_point_ids")
     if link in MISSING_MODES:
         publisher_missing = "({publisher} IS NULL OR {publisher} = '')".format(publisher=publisher)
         contact_points_missing = (
-            "(NOT {present} OR {contacts} IS NULL OR {contacts} = '' OR {contacts}::jsonb = '[]'::jsonb)"
-        ).format(present=extra_present("contact_point_ids"), contacts=contacts)
+            "({contacts} = '[]'::jsonb)"
+        ).format(contacts=contact_ids_jsonb())
         link_clause = {
             "none": "{p} AND {c}",
             "no_publisher": "{p}",
@@ -329,9 +349,7 @@ def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, pe
     elif link == "publisher":
         link_clause = "{publisher} = ANY(:subject_ids)".format(publisher=publisher)
     elif link == "contact_point":
-        link_clause = "{present} AND {contacts}::jsonb ?| :subject_ids".format(
-            present=extra_present("contact_point_ids"), contacts=contacts
-        )
+        link_clause = "{contacts} ?| :subject_ids".format(contacts=contact_ids_jsonb())
     else:
         raise ValueError("link must be 'publisher', 'contact_point' or one of %s" % (MISSING_MODES,))
 
@@ -355,12 +373,27 @@ def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, pe
     page = max(int(page), 1)
     rows = session.execute(
         statement(
-            "SELECT id, name, title FROM package WHERE " + where
+            "SELECT id, name, title, owner_org, private, metadata_modified FROM package WHERE " + where
             + " ORDER BY lower(coalesce(nullif(title, ''), name)), name LIMIT :limit OFFSET :offset"
         ),
         dict(params, limit=per_page, offset=(page - 1) * per_page),
-    )
-    return [{"id": r.id, "name": r.name, "title": r.title or r.name} for r in rows], total
+    ).fetchall()
+    # The organisation's title for each row (2026-10-04: the lists show where a
+    # dataset lives and when it last changed). A second, separate query keeps
+    # the paged query on the package table alone.
+    org_titles = {}
+    owner_ids = {r.owner_org for r in rows if r.owner_org}
+    if owner_ids:
+        org_titles = {
+            g.id: g.title or g.name
+            for g in session.query(model.Group).filter(model.Group.id.in_(owner_ids))
+        }
+    return [
+        {"id": r.id, "name": r.name, "title": r.title or r.name,
+         "organization": org_titles.get(r.owner_org, ""), "private": bool(r.private),
+         "modified": r.metadata_modified}
+        for r in rows
+    ], total
 
 
 def datasets_without_actor_link():
@@ -387,16 +420,11 @@ def datasets_without_actor_link():
             SELECT id FROM package
             WHERE state = 'active'
               AND ({publisher} IS NULL OR {publisher} = '')
-              AND (
-                NOT {present}
-                OR {contacts} IS NULL
-                OR {contacts} = ''
-                OR {contacts}::jsonb = '[]'::jsonb
-              )
+              AND {contacts} = '[]'::jsonb
             """.format(
                 publisher=extra_text("publisher_actor_id"),
                 present=extra_present("contact_point_ids"),
-                contacts=extra_text("contact_point_ids"),
+                contacts=contact_ids_jsonb(),
             )
         )
     )

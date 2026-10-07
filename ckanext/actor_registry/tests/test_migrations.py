@@ -50,7 +50,7 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
     ckan_model.Session.commit()
 
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_006 (head)"
+    assert current_revision("actor_registry") == "actor_registry_008 (head)"
 
     tables = _table_names()
     assert {
@@ -85,7 +85,7 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
 
     # Running the current migration again must be harmless during restarts.
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_006 (head)"
+    assert current_revision("actor_registry") == "actor_registry_008 (head)"
 
 
 def test_migration_006_fails_clearly_on_pre_existing_duplicate_identifiers():
@@ -124,8 +124,35 @@ def test_migration_006_fails_clearly_on_pre_existing_duplicate_identifiers():
     ckan_model.Session.rollback()
 
     # Neither duplicate row was dropped, and the migration did not silently advance.
-    assert current_revision("actor_registry") != "actor_registry_006 (head)"
+    assert current_revision("actor_registry") != "actor_registry_008 (head)"
     remaining = ckan_model.Session.execute(
         text("SELECT count(*) FROM actor_registry_actor WHERE identifier = '5566778899'")
     ).scalar()
     assert remaining == 2
+
+
+def test_migration_007_decision_log_can_be_removed_and_added_again():
+    def has_table():
+        return ckan_model.Session.execute(
+            text("SELECT to_regclass('actor_registry_migration_decision') IS NOT NULL")
+        ).scalar()
+
+    assert has_table()
+    _run_migrations("actor_registry", "actor_registry_006", forward=False)
+    assert current_revision("actor_registry") == "actor_registry_006"
+    assert not has_table()
+    _run_migrations("actor_registry", "head", forward=True)
+    assert current_revision("actor_registry") == "actor_registry_008 (head)"
+    assert has_table()
+
+
+def test_migration_008_decision_values_can_be_removed_and_added_again():
+    def columns():
+        return {column["name"] for column in inspect(ckan_model.meta.engine).get_columns(
+            "actor_registry_migration_decision")}
+
+    assert "source_values" in columns()
+    _run_migrations("actor_registry", "actor_registry_007", forward=False)
+    assert "source_values" not in columns()
+    _run_migrations("actor_registry", "head", forward=True)
+    assert "source_values" in columns()

@@ -7,6 +7,7 @@ from ckan import model as ckan_model
 from ckanext.actor_registry import actions, auth, helpers, model, validators, views
 
 
+@toolkit.blanket.config_declarations
 class ActorRegistryPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IBlueprint)
@@ -20,6 +21,13 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
     def update_config(self, config):
         toolkit.add_template_directory(config, "templates")
         toolkit.add_resource("assets", "actor_registry")
+
+    # IConfigurer: "Close the migration" switches CKAN's own contact fields off
+    # at runtime (config_option_update), with no restart.
+    def update_config_schema(self, schema):
+        schema[helpers.LEGACY_CONTACT_FIELDS_OPTION] = [
+            toolkit.get_validator("ignore_missing"), toolkit.get_validator("boolean_validator")]
+        return schema
 
     # ITranslation. English is the source language of every user-facing string
     # (wrapped in _()); the catalogues are compiled from the .po files in i18n/.
@@ -46,13 +54,19 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
         return {
             "contactpoints_choices": helpers.contactpoints_choices,
             "contactpoints_resolve": helpers.contactpoints_resolve,
+            "contactpoints_unavailable": helpers.contactpoints_unavailable,
             "contactpoints_tel_uri": helpers.contactpoints_tel_uri,
             "contactpoints_grouped_choices": helpers.contactpoints_grouped_choices,
             "actors_choices": helpers.actors_choices,
             "actors_resolve": helpers.actors_resolve,
+            "actor_unavailable": helpers.actor_unavailable,
+            "active_actors_choices": helpers.active_actors_choices,
             "actor_display": helpers.actor_display,
             "contactpoints_display": helpers.contactpoints_display,
             "preferred_publisher_actor_id": helpers.preferred_publisher_actor_id,
+            "actor_registry_can_migrate": helpers.can_migrate,
+            "actor_registry_cleanup_count": helpers.cleanup_count,
+            "actor_registry_legacy_contact_fields_in_use": helpers.legacy_contact_fields_in_use,
         }
 
     def get_validators(self):

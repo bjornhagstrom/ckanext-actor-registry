@@ -1,0 +1,90 @@
+{% extends "admin/base.html" %}
+{#- Clean-up of inactive or missing registry records that datasets still use.
+    See cleanup.py. Plain forms, no JavaScript. -#}
+{% block subtitle %}{{ _('Cleanup') }}{% endblock %}
+{% block breadcrumb_content %}<li class="active">{{ _('Cleanup') }}</li>{% endblock %}
+
+{% macro replace_form(entry, records, kind, label_remove) %}
+  <form method="post" action="{{ h.url_for('actor_registry.cleanup_replace') }}" class="d-flex flex-wrap gap-2 align-items-center">
+    {{ h.csrf_input() }}
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <input type="hidden" name="old_id" value="{{ entry.id }}">
+    {#- Nothing is preselected except the publisher a record was merged into:
+        replacing must be a deliberate choice. -#}
+    {% set suggested = entry.merged_into.id if entry.merged_into else '' %}
+    <select class="form-select form-select-sm w-auto" name="new_id" aria-label="{{ _('Replace with') }}" required>
+      <option value="" disabled {% if not suggested %}selected{% endif %}>{{ _('Choose…') }}</option>
+      {% for record in records %}<option value="{{ record.id }}" {% if record.id == suggested %}selected{% endif %}>{{ record.name }}</option>{% endfor %}
+      <option value="__remove__">{{ label_remove }}</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">{% trans count=entry.datasets|length %}Replace on {{ count }} dataset{% pluralize %}Replace on {{ count }} datasets{% endtrans %}</button>
+  </form>
+{% endmacro %}
+
+{% macro dataset_links(entry) %}
+  {% for dataset in entry.datasets[:5] %}<a href="{{ h.url_for('dataset.read', id=dataset.name) }}">{{ dataset.title }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if entry.datasets|length > 5 %} {% trans count=entry.datasets|length - 5 %}and {{ count }} more{% pluralize %}and {{ count }} more{% endtrans %}{% endif %}
+{% endmacro %}
+
+{% block primary_content_inner %}
+  <h1 class="page-heading">{{ _('Cleanup') }}</h1>
+  <p>{{ _('Publishers and contact points that have been deactivated keep working on the datasets that already use them, but can no longer be chosen. Here you find the ones still in use, and datasets that point to records that no longer exist, and replace them on the datasets you may edit.') }}</p>
+
+  {% if not (data.publishers or data.contact_points or data.missing) %}
+    <p data-cleanup-empty>{{ _('Nothing to clean up.') }}</p>
+  {% endif %}
+
+  {% for section, entries, records, kind, remove_label in [
+      ('publishers', data.publishers, actors, 'publisher', _('Remove the publisher')),
+      ('contact_points', data.contact_points, contact_points, 'contact_point', _('Remove the contact point'))] %}
+    {% if entries %}
+      <section class="mb-4" data-cleanup-section="{{ section }}">
+        <h2 class="h4">{{ _('Inactive publishers still in use') if kind == 'publisher' else _('Inactive contact points still in use') }}</h2>
+        <table class="table align-middle">
+          <thead><tr><th>{{ _('Name') }}</th><th>{{ _('Datasets') }}</th><th>{{ _('Replace with') }}</th></tr></thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr data-cleanup-entry="{{ entry.id }}">
+                <td>
+                  <a href="{{ h.url_for('actor_registry.actors_show' if kind == 'publisher' else 'actor_registry.contactpoints_show', item_id=entry.id) }}">{{ entry.record.name }}</a>
+                  {% if entry.merged_into %}<br><small class="text-muted">{{ _('Merged into {name}').format(name=entry.merged_into.name) }}</small>{% endif %}
+                </td>
+                <td>
+                  {% if entry.datasets|length == entry.total %}{{ entry.total }}{% else %}{{ _('{mine} of {total} (the ones you may edit)').format(mine=entry.datasets|length, total=entry.total) }}{% endif %}
+                  {% if entry.datasets %}<br><small>{{ dataset_links(entry) }}</small>{% endif %}
+                </td>
+                <td>{% if entry.datasets %}{{ replace_form(entry, records, kind, remove_label) }}{% else %}<span class="text-muted">{{ _('None of these datasets is yours to edit.') }}</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+  {% endfor %}
+
+  {% if data.missing %}
+    <section class="mb-4" data-cleanup-section="missing">
+      <h2 class="h4">{{ _('References to records that no longer exist') }}</h2>
+      <table class="table align-middle">
+        <thead><tr><th>{{ _('Reference') }}</th><th>{{ _('Datasets') }}</th><th>{{ _('Replace with') }}</th></tr></thead>
+        <tbody>
+          {% for entry in data.missing %}
+            <tr data-cleanup-entry="{{ entry.id }}">
+              <td>{{ _('Publisher') if entry.kind == 'publisher' else _('Contact point') }}<br><small class="text-muted">{{ entry.id }}</small></td>
+              <td>{{ entry.total }}{% if entry.datasets %}<br><small>{{ dataset_links(entry) }}</small>{% endif %}</td>
+              <td>{% if entry.datasets %}{{ replace_form(entry, actors if entry.kind == 'publisher' else contact_points, entry.kind, _('Remove the publisher') if entry.kind == 'publisher' else _('Remove the contact point')) }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% endif %}
+{% endblock %}
+{% block secondary_content %}
+  <section class="module module-narrow module-shallow">
+    <h2 class="module-heading">{{ _('About cleanup') }}</h2>
+    <div class="module-content">
+      <p>{{ _('Replacing changes only the datasets you may edit, one by one with the usual checks; a dataset that cannot be saved is reported and left as it is.') }}</p>
+      <p class="mb-0">{{ _('Removing a required publisher is refused for each dataset; choose a replacement instead.') }}</p>
+    </div>
+  </section>
+{% endblock %}

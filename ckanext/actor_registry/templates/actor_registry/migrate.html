@@ -1,0 +1,277 @@
+{% extends "admin/base.html" %}
+{#-
+  Migrate to Actor Registry, step 1: contact points. Find -> Review -> Link.
+  See contact_migration.py for the rules. Plain forms, no JavaScript.
+-#}
+{% block subtitle %}{{ _('Migrate to Actor Registry') }}{% endblock %}
+{% block breadcrumb_content %}<li class="active">{{ _('Migrate to Actor Registry') }}</li>{% endblock %}
+{% block primary_content_inner %}
+  <h1 class="page-heading">{{ _('Migrate to Actor Registry') }}</h1>
+  <p>{{ _("Contact details are often stored as free text in CKAN's own fields, Maintainer and Author, and repeated on many datasets. Here you turn them into shared contact points and link the datasets to them. Maintainer is used first, and Author only when a dataset has no maintainer.") }}</p>
+  <p class="text-muted">{{ _('The original fields are never changed. A dataset that has a contact point is done and is no longer listed. You only see the datasets you may edit.') }}</p>
+
+  {% if closed %}
+    <div class="alert alert-success" data-migration-status="closed"><strong>{{ _('Migration closed.') }}</strong> {{ _('Maintainer and Author are hidden and no longer exported. Their values are still stored.') }}</div>
+  {% else %}
+    <div class="alert alert-info" data-migration-status="open"><strong>{{ _('Migration in progress.') }}</strong> {{ _('Maintainer and Author are still shown and used in the DCAT export for datasets without a contact point.') }}</div>
+  {% endif %}
+
+  {% if not data.types %}
+    <div class="alert alert-warning" data-migration-no-schema>{{ _('None of the dataset schemas has a contact points field (contact_point_ids). Add it to your schema before you migrate.') }}</div>
+  {% else %}
+    {% set counts = data.counts %}
+    <section class="mb-4" data-migration-overview>
+      <h2 class="h4">{{ _('Overview') }}</h2>
+      <table class="table table-sm w-auto">
+        <tbody>
+          <tr><th scope="row">{{ _('Datasets with contact details in Maintainer or Author') }}</th><td data-count="old">{{ counts.old }}</td></tr>
+          <tr><th scope="row">{{ _('of which linked to a contact point') }}</th><td data-count="linked">{{ counts.linked }}</td></tr>
+          <tr><th scope="row">{{ _('of which changed since linking') }}</th><td data-count="changed">{% if counts.changed %}<a href="#changed"><strong>{{ counts.changed }}</strong></a>{% else %}0{% endif %}</td></tr>
+          <tr><th scope="row">{{ _('of which skipped') }}</th><td data-count="skipped">{{ counts.skipped }}{% if counts.skipped %} · <a href="{{ h.url_for('actor_registry.migrate_index', show_skipped=1) }}#skipped">{{ _('Show') }}</a>{% endif %}</td></tr>
+          <tr><th scope="row">{{ _('of which remaining') }}</th><td data-count="remaining"><strong>{{ counts.remaining }}</strong></td></tr>
+          <tr><th scope="row">{{ _('Datasets with no contact details at all') }}</th><td data-count="no_contact">{{ counts.no_contact }}{% if counts.no_contact %} · <a href="{{ h.url_for('actor_registry.actors_unlinked_datasets', missing='contact_point') }}">{{ _('Add contact points') }}</a>{% endif %}</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    {% if data.changed %}
+      <section class="mb-4" id="changed" data-migration-changed>
+        <h2 class="h4">{{ _('Changed since linking') }}</h2>
+        <p>{{ _('Maintainer or Author has changed on these datasets after they were linked. Decide whether the contact point should follow the change.') }}</p>
+        {% for item in data.changed %}
+          {% set contact = item.contact_point %}
+          {% set can_update = contact and contact.active and item.contact_point_in_dataset %}
+          <div class="mb-3 p-3 border rounded" data-changed-dataset="{{ item.id }}">
+            <h3 class="h5 mb-1"><a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>{% if item.organization %} <small class="text-muted">· {{ item.organization }}</small>{% endif %}</h3>
+            <table class="table table-sm w-auto mb-2">
+              <tbody>
+                <tr><th scope="row">{{ _('Linked to') }}</th><td>{% if contact %}<a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=contact.id) }}">{{ contact.name }}</a>{% if contact.email %} &lt;{{ contact.email }}&gt;{% endif %}{% if not contact.active %} <span class="badge bg-secondary">{{ _('Inactive') }}</span>{% endif %}{% if not item.contact_point_in_dataset %} <span class="badge bg-warning text-dark">{{ _('no longer on the dataset') }}</span>{% endif %}{% else %}–{% endif %}</td></tr>
+                {% for field, label in [('maintainer', _('Maintainer')), ('maintainer_email', _('Maintainer email')), ('author', _('Author')), ('author_email', _('Author email'))] %}
+                  {% set before = item.previous[field] if item.previous else none %}
+                  {% set now = item['values'][field] %}
+                  {% if before is none or before != now %}
+                    <tr data-changed-field="{{ field }}"><th scope="row">{{ label }}</th><td>{% if item.previous %}<del>{{ before or '–' }}</del> → {% endif %}<ins>{{ now or '–' }}</ins></td></tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+            <form method="post" action="{{ h.url_for('actor_registry.migrate_change') }}">
+              {{ h.csrf_input() }}
+              <input type="hidden" name="dataset_id" value="{{ item.id }}">
+              <div class="row g-2 mb-2">
+                <p class="small mb-0">{{ _('Details for an updated or new contact point, taken from the new values:') }}</p>
+                <div class="col-md-6"><label class="form-label small" for="cn-{{ loop.index }}">{{ _('Name or role') }}</label><input class="form-control form-control-sm" id="cn-{{ loop.index }}" name="name" value="{{ item.name or (contact.name if contact else '') }}"></div>
+                <div class="col-md-6"><label class="form-label small" for="ce-{{ loop.index }}">{{ _('Email') }}</label><input class="form-control form-control-sm" id="ce-{{ loop.index }}" name="email" value="{{ item.email or (contact.email if contact else '') or '' }}"></div>
+              </div>
+              {% if can_update %}
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="action" value="update" id="c-update-{{ loop.index }}" checked>
+                  <label class="form-check-label radio" for="c-update-{{ loop.index }}">{{ _('Update the contact point') }}
+                    <span class="text-muted">({% trans count=item.usage %}changes it on {{ count }} dataset{% pluralize %}changes it on all {{ count }} datasets that use it{% endtrans %})</span></label>
+                </div>
+              {% endif %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="action" value="existing" id="c-existing-{{ loop.index }}" {% if not can_update %}checked{% endif %}>
+                <label class="form-check-label radio" for="c-existing-{{ loop.index }}">{{ _('Link this dataset to another contact point') }}</label>
+              </div>
+              <div class="ms-4 mb-2">
+                <select class="form-select form-select-sm" name="contact_point_id" aria-label="{{ _('Existing contact point') }}">
+                  <option value="">{{ _('Select contact point…') }}</option>
+                  {% for other in all_contact_points %}{% if not contact or other.id != contact.id %}<option value="{{ other.id }}">{{ other.name }}{% if other.email %} ({{ other.email }}){% endif %}</option>{% endif %}{% endfor %}
+                </select>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="action" value="create" id="c-create-{{ loop.index }}">
+                <label class="form-check-label radio" for="c-create-{{ loop.index }}">{{ _('Create a new contact point for this dataset from the new details') }}</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="action" value="keep" id="c-keep-{{ loop.index }}">
+                <label class="form-check-label radio" for="c-keep-{{ loop.index }}">{{ _('Keep it as it is (the change is accepted and no longer flagged)') }}</label>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">{{ _('Apply') }}</button>
+            </form>
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <h2 class="h4">{{ _('Contact details to migrate') }}</h2>
+    {% if not candidates %}
+      <p data-migration-done>{{ _('Nothing remains to migrate.') }}</p>
+    {% endif %}
+    {% for candidate in candidates %}
+      {% set number = first_number + loop.index0 %}
+      {% set default_action = 'existing' if candidate.matches else 'create' %}
+      <section class="module module-narrow mb-4 p-3 border rounded" id="candidate-{{ number }}" data-candidate="{{ candidate.key }}">
+        <h3 class="h5 mb-1">{{ candidate.suggested_name }}{% if candidate.email and candidate.email != candidate.suggested_name %} <small class="text-muted">{{ candidate.email }}</small>{% endif %}</h3>
+        <p class="mb-2 text-muted">{% trans count=candidate.datasets|length %}{{ count }} dataset{% pluralize %}{{ count }} datasets{% endtrans %}</p>
+        {% if candidate.variants|length > 1 %}
+          <p class="mb-1">{{ _('Names used:') }} {% for variant, count in candidate.variants %}{{ variant }} ({{ count }}){% if not loop.last %}, {% endif %}{% endfor %}</p>
+        {% endif %}
+        {% if candidate.invalid_emails %}
+          <p class="mb-1 text-warning" data-invalid-email>{{ _('Not a valid email address:') }} {{ candidate.invalid_emails|join(', ') }}. {{ _('Enter a correct address, or leave the field empty.') }}</p>
+        {% endif %}
+        <form method="post" action="{{ h.url_for('actor_registry.migrate_apply') }}">
+          {{ h.csrf_input() }}
+          <input type="hidden" name="page" value="{{ pager.page }}">
+          {% set is_large = candidate.datasets|length > large_group %}
+          <fieldset class="mb-2">
+            <legend class="h6">{{ _('Datasets') }}</legend>
+            {% if is_large %}
+            {# A large group: all its datasets are included; only the ones to leave out are posted. #}
+            <input type="hidden" name="group_key" value="{{ candidate.key }}">
+            <p class="mb-1" data-large-group>{% trans count=candidate.datasets|length %}All {{ count }} datasets are included.{% endtrans %}</p>
+            <details class="mb-2">
+              <summary>{% trans count=candidate.datasets|length %}Show all {{ count }} datasets, and leave some out{% endtrans %}</summary>
+              <div class="border rounded p-2 mt-2" style="max-height: 24em; overflow-y: auto;">
+                {% for item in candidate.datasets %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="exclude_ids" value="{{ item.id }}" id="x-{{ number }}-{{ loop.index }}">
+                    <label class="form-check-label checkbox" for="x-{{ number }}-{{ loop.index }}">
+                      <strong>{{ _('Leave out') }}</strong>
+                      <a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>
+                      {% if item.organization %}<span class="text-muted">· {{ item.organization }}</span>{% endif %}
+                      {% if item.private %}<span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}
+                      <span class="text-muted">· {{ _('from Maintainer') if item.source == 'maintainer' else _('from Author') }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
+                      {% if item.also %}<br><small data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+            </details>
+            <p class="help-block small">{{ _('Tick the datasets that belong to another contact point; they stay in the list for a later round. The same email address may be used by several contact points.') }}</p>
+            {% else %}
+            {% for item in candidate.datasets %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="dataset_ids" value="{{ item.id }}" id="d-{{ number }}-{{ loop.index }}" checked>
+                <label class="form-check-label checkbox" for="d-{{ number }}-{{ loop.index }}">
+                  <a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>
+                  {% if item.organization %}<span class="text-muted">· {{ item.organization }}</span>{% endif %}
+                  {% if item.private %}<span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}
+                  <span class="text-muted">· {{ _('from Maintainer') if item.source == 'maintainer' else _('from Author') }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
+                  {% if item.also %}<br><small data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}
+                </label>
+              </div>
+            {% endfor %}
+            <p class="help-block small">{{ _('Clear the datasets that belong to another contact point; they stay in the list for a later round. The same email address may be used by several contact points.') }}</p>
+            {% endif %}
+          </fieldset>
+
+          <fieldset>
+            <legend class="h6">{{ _('What to do with the selected datasets') }}</legend>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="action" value="create" id="a-create-{{ number }}" {% if default_action == 'create' %}checked{% endif %}>
+              <label class="form-check-label radio" for="a-create-{{ number }}">{{ _('Create a new contact point') }}</label>
+            </div>
+            <div class="ms-4 mb-2 row g-2">
+              <div class="col-md-6">
+                <label class="form-label small" for="n-{{ number }}">{{ _('Name or role') }}</label>
+                <input class="form-control form-control-sm" id="n-{{ number }}" name="name" value="{{ candidate.suggested_name }}" list="v-{{ number }}">
+                <datalist id="v-{{ number }}">{% for variant, count in candidate.variants %}<option value="{{ variant }}">{% endfor %}</datalist>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small" for="e-{{ number }}">{{ _('Email') }}</label>
+                <input class="form-control form-control-sm" id="e-{{ number }}" name="email" value="{{ candidate.email }}">
+              </div>
+              <p class="help-block small mb-0">{{ _('Prefer the name of a function, such as "GIS Support", over a person.') }}</p>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="action" value="existing" id="a-existing-{{ number }}" {% if default_action == 'existing' %}checked{% endif %}>
+              <label class="form-check-label radio" for="a-existing-{{ number }}">{{ _('Link to an existing contact point') }}</label>
+            </div>
+            <div class="ms-4 mb-2">
+              <select class="form-select form-select-sm" name="contact_point_id" aria-label="{{ _('Existing contact point') }}">
+                {% if candidate.matches %}
+                  <optgroup label="{{ _('Same email or name') }}">
+                    {% for item in candidate.matches %}<option value="{{ item.id }}">{{ item.name }}{% if item.email %} ({{ item.email }}){% endif %}</option>{% endfor %}
+                  </optgroup>
+                {% endif %}
+                <optgroup label="{{ _('All contact points') }}">
+                  {% if not candidate.matches %}<option value="">{{ _('Select contact point…') }}</option>{% endif %}
+                  {% for item in all_contact_points %}<option value="{{ item.id }}">{{ item.name }}{% if item.email %} ({{ item.email }}){% endif %}</option>{% endfor %}
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="radio" name="action" value="skip" id="a-skip-{{ number }}">
+              <label class="form-check-label radio" for="a-skip-{{ number }}">{{ _('Skip, for example a personal address that should not become a shared contact point') }}</label>
+            </div>
+          </fieldset>
+          <button type="submit" class="btn btn-primary btn-sm">{% if is_large %}{% trans count=candidate.datasets|length %}Apply to all {{ count }} datasets, except those left out{% endtrans %}{% else %}{{ _('Apply to the selected datasets') }}{% endif %}</button>
+        </form>
+      </section>
+    {% endfor %}
+    {% if pager.item_count > pager.items_per_page %}{{ pager.pager() }}{% endif %}
+
+    {% if data.skipped %}
+      <section class="mt-4" id="skipped" data-migration-skipped>
+        <h2 class="h4">{{ _('Skipped') }}</h2>
+        {% if show_skipped %}
+          <table class="table table-sm">
+            <tbody>
+              {% for item in data.skipped %}
+                <tr>
+                  <td><a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a></td>
+                  <td>{{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</td>
+                  <td class="text-end">
+                    <form method="post" action="{{ h.url_for('actor_registry.migrate_unskip') }}" class="d-inline">
+                      {{ h.csrf_input() }}<input type="hidden" name="dataset_id" value="{{ item.id }}">
+                      <button type="submit" class="btn btn-outline-secondary btn-sm">{{ _('Undo') }}</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p><a href="{{ h.url_for('actor_registry.migrate_index', show_skipped=1) }}#skipped">{% trans count=data.skipped|length %}Show {{ count }} skipped dataset{% pluralize %}Show {{ count }} skipped datasets{% endtrans %}</a></p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    {% if close_check %}
+      <section class="mt-4 p-3 border rounded" id="close" data-migration-close>
+        {% if closed %}
+          <h2 class="h4">{{ _('Reopen the migration') }}</h2>
+          <p>{{ _('Shows Maintainer and Author again and uses them in the export for datasets without a contact point.') }}</p>
+          <form method="post" action="{{ h.url_for('actor_registry.migrate_reopen') }}">
+            {{ h.csrf_input() }}
+            <button type="submit" class="btn btn-secondary">{{ _('Reopen the migration') }}</button>
+          </form>
+        {% else %}
+          <h2 class="h4">{{ _('Close the migration') }}</h2>
+          <p>{{ _('Closing hides Maintainer and Author in forms and on dataset pages, for everyone including sysadmins, and stops exporting them. Nothing is deleted: the values stay stored, and you can reopen the migration at any time. It takes effect at once, without a restart.') }}</p>
+          <p class="small text-muted">{{ _('Hiding works for schemas whose Maintainer and Author fields use the legacy_contact.html snippets; schemas without those fields are not affected.') }}</p>
+          <form method="post" action="{{ h.url_for('actor_registry.migrate_close') }}">
+            {{ h.csrf_input() }}
+            {% if close_check.needs_confirmation %}
+              <div class="alert alert-warning" data-close-warning>
+                <ul class="mb-2">
+                  {% if close_check.no_contact_point %}<li>{% trans count=close_check.no_contact_point %}{{ count }} dataset will have no contact point in the export. A contact point is required in DCAT-AP.{% pluralize %}{{ count }} datasets will have no contact point in the export. A contact point is required in DCAT-AP.{% endtrans %}</li>{% endif %}
+                  {% if close_check.changed %}<li>{% trans count=close_check.changed %}{{ count }} linked dataset has unhandled changes.{% pluralize %}{{ count }} linked datasets have unhandled changes.{% endtrans %}</li>{% endif %}
+                </ul>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="confirm" value="1" id="close-confirm">
+                  <label class="form-check-label checkbox" for="close-confirm">{{ _('Close the migration anyway') }}</label>
+                </div>
+              </div>
+            {% endif %}
+            <button type="submit" class="btn btn-danger">{{ _('Close the migration') }}</button>
+          </form>
+        {% endif %}
+      </section>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+{% block secondary_content %}
+  <section class="module module-narrow module-shallow">
+    <h2 class="module-heading">{{ _('How it works') }}</h2>
+    <div class="module-content">
+      <ol class="ps-3 mb-0">
+        <li>{{ _('Find: contact details are grouped by email address, or by name when there is no valid address.') }}</li>
+        <li>{{ _('Review: create a contact point, link to an existing one, or skip. Clear datasets that belong elsewhere.') }}</li>
+        <li>{{ _('Link: the selected datasets get the contact point. You can work in rounds.') }}</li>
+      </ol>
+    </div>
+  </section>
+{% endblock %}

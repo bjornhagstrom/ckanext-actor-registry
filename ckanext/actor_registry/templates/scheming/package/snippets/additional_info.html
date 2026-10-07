@@ -1,0 +1,40 @@
+{% ckan_extends %}
+{#-
+  Leaves out the rows of CKAN's own contact fields (display_snippet
+  legacy_contact.html) once the migration to the registry is closed. Same
+  loop as ckanext-scheming's own template otherwise. A theme that overrides
+  this block itself (listed before actor_registry) must add the same check.
+-#}
+{% block package_additional_info %}
+  {#- The same list as ckanext-scheming's, repeated: the parent's top-level
+     variable is not reliably visible inside an overridden block. -#}
+  {%- set exclude_fields = ['id', 'title', 'name', 'notes', 'tag_string',
+                            'license_id', 'owner_org'] -%}
+  {#- Hidden when the migration is closed, and when the dataset has registry
+      contact points: the DCAT export then leaves these fields out, and the
+      page shows what is exported. -#}
+  {%- set legacy_hidden = not h.actor_registry_legacy_contact_fields_in_use()
+                          or h.contactpoints_display(pkg_dict.get('contact_point_ids')) -%}
+  {%- for field in schema.dataset_fields -%}
+    {%- if field.field_name not in exclude_fields
+        and field.display_snippet is not none
+        and not (legacy_hidden and field.display_snippet == 'legacy_contact.html') -%}
+      <tr{% if field.display_snippet == 'legacy_contact.html' %} data-legacy-contact-row{% endif %}>
+        <th scope="row" class="dataset-label">{{
+          h.scheming_language_text(field.label) }}</th>
+        <td class="dataset-details"{%
+          if field.display_property %} property="{{ field.display_property
+          }}"{% endif %}>{%- snippet 'scheming/snippets/display_field.html',
+          field=field, data=pkg_dict, schema=schema -%}</td>
+      </tr>
+    {%- endif -%}
+  {%- endfor -%}
+  {% if h.check_access('package_update',{'id':pkg_dict.id}) %}
+    <tr>
+      <th scope="row" class="dataset-label">{{ _("State") }}</th>
+      {#- gettext rather than the underscore alias: the state is a variable that CKAN's own catalogue
+          translates, not a text of this extension. -#}
+      <td class="dataset-details">{{ gettext(pkg_dict.state) }}</td>
+    </tr>
+  {% endif %}
+{% endblock %}

@@ -2,6 +2,8 @@
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ item.name }}{% endblock %}
 {% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}
+{# No sidebar: CKAN then gives the page its full width (no-nav). #}
+{% block secondary %}{% endblock %}
 {% block primary_content_inner %}
 <h1>{{ item.name }}</h1>
 {% if not item.active %}
@@ -13,9 +15,17 @@
 {% endif %}
 </div>
 {% endif %}
-<dl><dt>{{ _('Kind') }}</dt><dd>{{ _('Person') if item.actor_kind == 'person' else _('Organization') }}</dd><dt>{{ _('Type') }}</dt><dd>{{ item.actor_type or '–' }}</dd><dt>{{ _('Identifier') }}</dt><dd>{{ item.identifier or '–' }}{% if item.identifier_scheme %} ({{ item.identifier_scheme }}){% endif %}</dd><dt>URI</dt><dd>{% if h.is_url(item.uri) %}<a href="{{ item.uri }}">{{ item.uri }}</a>{% else %}{{ item.uri }}{% endif %}</dd><dt>{{ _('URL') }}</dt><dd>{% if item.url %}{% if h.is_url(item.url) %}<a href="{{ item.url }}" rel="noopener">{{ item.url }}</a>{% else %}{{ item.url }}{% endif %}{% else %}–{% endif %}</dd><dt>{{ _('Email') }}</dt><dd>{% if item.email %}<a href="mailto:{{ item.email }}">{{ item.email }}</a>{% else %}–{% endif %}</dd><dt>{{ _('Description') }}</dt><dd>{{ item.description or '–' }}</dd></dl>
+<dl>
+<dt>{{ _('Kind') }}</dt><dd>{{ _('Person') if item.actor_kind == 'person' else _('Organization') }}</dd>
+{% if item.actor_type %}<dt>{{ _('Type') }}</dt><dd>{{ item.actor_type }}</dd>{% endif %}
+{% if item.identifier %}<dt>{{ _('Identifier') }}</dt><dd>{{ item.identifier }}{% if item.identifier_scheme %} ({{ item.identifier_scheme }}){% endif %}</dd>{% endif %}
+{% if item.uri %}<dt>URI</dt><dd>{% if h.is_url(item.uri) %}<a href="{{ item.uri }}">{{ item.uri }}</a>{% else %}{{ item.uri }}{% endif %}</dd>{% endif %}
+{% if item.url %}<dt>{{ _('URL') }}</dt><dd>{% if h.is_url(item.url) %}<a href="{{ item.url }}" rel="noopener">{{ item.url }}</a>{% else %}{{ item.url }}{% endif %}</dd>{% endif %}
+{% if item.email %}<dt>{{ _('Email') }}</dt><dd><a href="mailto:{{ item.email }}">{{ item.email }}</a></dd>{% endif %}
+{% if item.description %}<dt>{{ _('Description') }}</dt><dd>{{ item.description }}</dd>{% endif %}
+</dl>
 {% if item.active %}
-<h2>{{ _('Publisher for {n} dataset(s)').format(n=linked.publisher.total) }}</h2>
+<h2>{% trans count=linked.publisher.total %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}</h2>
 {{ dl.dataset_list(linked.publisher, h.url_for('actor_registry.actors_datasets', item_id=item.id, link='publisher'), _('No datasets have this publisher.')) }}
 {% endif %}
 {% endblock %}

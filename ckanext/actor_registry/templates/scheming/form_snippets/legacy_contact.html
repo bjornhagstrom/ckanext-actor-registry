@@ -1,0 +1,12 @@
+{#-
+  For CKAN's own contact fields (author, author_email, maintainer,
+  maintainer_email) while a catalogue moves to the registry. While the
+  migration is open, an ordinary text field. Once it is closed, the field is
+  not shown, but its value is sent along unchanged, so saving the form never
+  clears it. See "Migrate to Actor Registry" in the README.
+-#}
+{%- if h.actor_registry_legacy_contact_fields_in_use() -%}
+  {%- snippet 'scheming/form_snippets/text.html', field=field, data=data, errors=errors -%}
+{%- else -%}
+  <input type="hidden" name="{{ field.field_name }}" value="{{ data.get(field.field_name) or '' }}" data-legacy-contact-hidden>
+{%- endif -%}

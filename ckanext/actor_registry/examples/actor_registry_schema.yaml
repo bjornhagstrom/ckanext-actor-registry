@@ -34,19 +34,19 @@ dataset_fields:
   preset: dataset_organization
   required: true
 
-# Publisher is REQUIRED in this example. A required field must not offer a
-# misleading empty choice: an empty submission gives a clear validation
-# error. To make it optional instead, remove `required: true` and the
-# scheming_required validator -- an empty choice then clears the link.
+# Publisher is OPTIONAL in this example: without one, the DCAT export gives
+# the dataset's organization as publisher (ckanext-dcat's own fallback), and
+# the form says so. To require a publisher instead, add `required: true` and
+# replace `ignore_missing` with `scheming_required` in the validators; an
+# empty submission then gives a clear validation error.
 - field_name: publisher_actor_id
   label: {en: Publisher, sv: Utgivare, sv_SE: Utgivare}
   preset: select
-  required: true
   form_snippet: actors_multiple_select.html
   display_snippet: actor.html
   choices_helper: actors_choices
   sorted_choices: true
-  validators: scheming_required actor_registry_actor_exists
+  validators: ignore_missing actor_registry_actor_exists
 
 - field_name: contact_point_ids
   label: {en: Contact points, sv: Kontaktpunkter, sv_SE: Kontaktpunkter}

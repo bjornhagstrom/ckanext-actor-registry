@@ -5,8 +5,8 @@
 <h1 class="page-heading">{{ _('Merge publishers') }}</h1>
 <p>{{ _('Choose which publisher should remain and which value should apply for each field. The publisher not kept is not deleted -- it is marked inactive and points to the remaining record, and its page keeps responding with a clear pointer.') }}</p>
 <div class="alert alert-info">
-  <strong>{{ actor_a.name }}</strong>: {{ _('Publisher for {n} dataset(s)').format(n=linked_a.publisher|length) }}<br>
-  <strong>{{ actor_b.name }}</strong>: {{ _('Publisher for {n} dataset(s)').format(n=linked_b.publisher|length) }}
+  <strong>{{ actor_a.name }}</strong>: {% trans count=linked_a.publisher|length %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}<br>
+  <strong>{{ actor_b.name }}</strong>: {% trans count=linked_b.publisher|length %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}
 </div>
 <form method="post" class="dataset-form">
 {{ h.csrf_input() }}

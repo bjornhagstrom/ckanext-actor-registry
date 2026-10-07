@@ -1,0 +1,66 @@
+# TEST schema: contact_points_only_schema.yaml plus CKAN's own contact fields
+# using the legacy_contact.html snippets (migration step 3).
+scheming_version: 2
+dataset_type: dataset
+
+dataset_fields:
+- field_name: title
+  label: {en: Title, sv: Titel, sv_SE: Titel}
+  preset: title
+  required: true
+
+- field_name: name
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: dataset_slug
+
+- field_name: notes
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+  required: true
+  form_snippet: markdown.html
+  display_snippet: markdown.html
+
+- field_name: owner_org
+  label: {en: Organization, sv: Organisation, sv_SE: Organisation}
+  preset: dataset_organization
+  required: true
+
+- field_name: contact_point_ids
+  label: {en: Contact points, sv: Kontaktpunkter, sv_SE: Kontaktpunkter}
+  preset: multiple_select
+  form_snippet: contactpoints_multiple_select.html
+  display_snippet: contactpoints.html
+  choices_helper: contactpoints_choices
+  sorted_choices: true
+  validators: ignore_missing scheming_multiple_choice actor_registry_contactpoints_exist
+
+- field_name: maintainer
+  label: Maintainer
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+- field_name: maintainer_email
+  label: Maintainer email
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+- field_name: author
+  label: Author
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+- field_name: author_email
+  label: Author email
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+
+resource_fields:
+- field_name: url
+  label: {en: URL, sv: URL, sv_SE: URL}
+  preset: resource_url_upload
+- field_name: name
+  label: {en: Name, sv: Namn, sv_SE: Namn}
+- field_name: description
+  label: {en: Description, sv: Beskrivning, sv_SE: Beskrivning}
+- field_name: format
+  label: {en: Format, sv: Format, sv_SE: Format}
+  preset: resource_format_autocomplete

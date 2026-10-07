@@ -18,8 +18,18 @@
   asked to keep both in parallel while testing, so they're already both
   in place and either can be removed independently whenever ready.
 #}
+{#
+  2026-10-04: the registry's public pages (a publisher, a contact point) also
+  use this layout, so core's tabs (Sysadmins, Config, Trash) are shown only to
+  sysadmins, and the registry's own tabs only to logged-in users; a visitor
+  who is not logged in sees no tabs at all.
+#}
+{% block page_header %}{% if c.userobj %}{{ super() }}{% endif %}{% endblock %}
 {% block content_primary_nav %}
-  {{ super() }}
+  {% if c.userobj and c.userobj.sysadmin %}{{ super() }}{% endif %}
+  {% if c.userobj %}
   {{ h.build_nav_icon('actor_registry.actors_index', _('Publishers'), icon='building') }}
   {{ h.build_nav_icon('actor_registry.contactpoints_index', _('Contact points'), icon='address-book') }}
+  {% if h.actor_registry_can_migrate() %}{{ h.build_nav_icon('actor_registry.migrate_index', _('Migration'), icon='right-left') }}{{ h.build_nav_icon('actor_registry.cleanup_index', _('Cleanup'), icon='broom') }}{% endif %}
+  {% endif %}
 {% endblock %}

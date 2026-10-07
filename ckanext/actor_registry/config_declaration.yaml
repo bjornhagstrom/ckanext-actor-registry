@@ -1,0 +1,14 @@
+version: 1
+groups:
+  - annotation: ckanext-actor-registry
+    options:
+      - key: ckanext.actor_registry.legacy_contact_fields
+        type: bool
+        default: true
+        description: |
+          Whether the catalogue still uses CKAN's own free-text contact fields
+          (Author, Author email, Maintainer, Maintainer email, and
+          ckanext-dcat's contact_* extras). When true, the DCAT export uses
+          them for datasets without registry contact points. When false, they
+          are never exported. Datasets with registry contact points never
+          export them. The stored values are not changed either way.

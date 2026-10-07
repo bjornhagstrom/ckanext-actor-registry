@@ -2,7 +2,7 @@
 
 Reusable publishers and contact points for CKAN metadata.
 
-> **Status: 0.2.3 alpha.** This version is intended for evaluation and feedback.
+> **Status: 0.3.0 alpha.** This version is intended for evaluation and feedback.
 > It has an automated test suite that runs against CKAN 2.11 and CKAN 2.12. The
 > user interface is in English by default, with a Swedish translation catalog
 > following the installation's locale settings. Do not treat it as
@@ -20,6 +20,10 @@ Reusable publishers and contact points for CKAN metadata.
 - [Testing](TESTING.md): how to run the automated suite on each supported CKAN version;
 - [RDF and interoperability](docs/RDF_AND_INTEROPERABILITY.md): the optional DCAT-AP profile;
 - [Translations](docs/TRANSLATIONS.md): how the English and Swedish catalogues are maintained;
+- **[Common setups](docs/CATALOGUE_SETUPS.md)**: how organizations, publishers and
+  contact points relate in different catalogues, and what we recommend for each;
+- [Choosing your fields](#choosing-your-fields-organization-publisher-and-contact-points):
+  organization, publisher and contact points, and what happens to CKAN's own fields;
 - [Contributing](CONTRIBUTING.md), [security policy](SECURITY.md) and
   [AI assistance disclosure](AI_ASSISTANCE.md).
 
@@ -72,6 +76,87 @@ instead: additive tables with no CKAN user account, group membership or
 permission of their own, and no effect on how organizations already control
 dataset ownership.
 
+## Choosing your fields: organization, publisher and contact points
+
+You do not have to use both registries. Which fields a dataset has is decided
+by the [ckanext-scheming](https://github.com/ckan/ckanext-scheming) schema you
+configure. The extension does not add or remove a field in the schema; the optional
+snippets for CKAN's own contact fields (see "Migrate to Actor Registry") can hide
+Maintainer and Author on forms and pages, and only if your schema uses them.
+
+**Why choose deliberately.** CKAN core stores contact details as free text on
+each dataset (Author, Author email, Maintainer, Maintainer email). When the
+same contact appears on many datasets, every copy has to be kept up to date
+separately, and copies drift apart. The organization, on the other hand, is
+mainly about ownership and who may edit, and is often also the right
+publisher, but not always (see above). So the two needs are different:
+
+| Your catalogue | Use | Example schema |
+|---|---|---|
+| The owner organization is the publisher; contact details are repeated across datasets | **Organization + contact points**, no publisher field | `contact_points_only_schema.yaml` |
+| The publisher can differ from the owner organization (another organization, a person) | **Organization + publisher + contact points** | `actor_registry_schema.yaml` |
+
+Catalogues differ more than one expects: the organization can be a department
+while the city is the publisher, or the other way round. [Common
+setups](docs/CATALOGUE_SETUPS.md) describes the setups we know of and how to
+handle each one.
+
+Both ship in `ckanext/actor_registry/examples/` and are exercised by the test
+suite. Configure one of them (they both define the `dataset` type), or copy
+one into your own schema.
+
+**How CKAN's own fields map:**
+
+| CKAN core | With the registry |
+|---|---|
+| Organization (`owner_org`) | unchanged: ownership and permissions |
+| Author, Author email, Maintainer, Maintainer email | replaced by **Contact points** (`contact_point_ids`) if your schema uses that field instead |
+| (no equivalent) | **Publisher** (`publisher_actor_id`), optional |
+
+**What happens to CKAN's own fields.** Nothing, by the extension. Without
+Scheming the registry still works (its pages, lists and merging), but no
+dataset fields appear and CKAN's form is unchanged. With Scheming, the form
+and dataset page show exactly the fields in your schema, as with any Scheming
+schema: the example schemas leave out Author, Maintainer, licence, tags and
+version to stay short, so those do not appear. Add them back to your schema
+if you need them, for example during a transition. Values already stored on
+existing datasets stay in the database and in the API; they are only not
+shown when the schema lacks the field, and they are **not** copied into the
+registry automatically (see "Activating on an existing installation with
+datasets" below).
+
+**In the optional DCAT export** (ckanext-dcat with this extension's profile):
+a dataset without a publisher record is exported with its organization as
+`dct:publisher` (ckanext-dcat's own fallback), and with its registry contact
+points as `dcat:contactPoint`; without those, ckanext-dcat falls back to
+Maintainer and then Author. A dataset with registry contact points
+never exports Maintainer or Author as well, and the setting
+`ckanext.actor_registry.legacy_contact_fields = false` stops exporting them
+altogether (see [Installation](docs/INSTALLATION.md#ckans-own-contact-fields-in-the-dcat-export)).
+The stored values are never changed.
+
+## What visitors see is what is exported
+
+A ground rule for this extension: the dataset page is designed first, and the
+DCAT export follows what the page shows, never the other way round. The page
+and the export use the same resolution of publishers and contact points:
+
+- an inactive publisher or contact point is still what the dataset says until
+  someone replaces it, so it is shown and exported (the forms no longer offer
+  it; see *Cleanup*);
+- a merged publisher is replaced by the one it was merged into, on both;
+- a reference to a record that no longer exists is on neither;
+- CKAN's own Maintainer and Author are exported only as far as the page
+  shows them: never when the dataset has registry contact points or the
+  migration is closed, and otherwise only the fields your schema shows
+  (without Scheming, CKAN's own page shows all of them). A shown Author is
+  exported as `dct:creator`, which DCAT-AP-SE calls *producent*.
+
+Deliberate exceptions, decided and documented:
+
+- **No publisher:** the page shows no publisher (the organization is already
+  shown on the page), while ckanext-dcat exports the organization as
+  `dct:publisher`.
 ## Features
 
 - central registries for publishers and contact points;
@@ -383,9 +468,60 @@ Enabling this extension on a CKAN instance that already has datasets does not
 retroactively link anything: every existing dataset starts out with no
 publisher and no contact point in the registry, because those are new,
 separate fields the extension adds via Scheming (see "Scheming integration"
-above). Two features exist specifically to help you find and fix these
-datasets afterwards; neither runs automatically, so plan to use them as a
+above). Three features exist specifically to help you find and fix these
+datasets afterwards; none runs automatically, so plan to use them as a
 one-time cleanup pass after activation.
+
+**Migrate to Actor Registry (`/actor-registry/migrate`).** If your datasets
+already hold contact details in CKAN's own free-text fields, this page turns
+them into shared contact points. It reads Maintainer, and Author only when a
+dataset has no maintainer, on the datasets that have no contact point yet,
+and groups them by email address (or by name when there is no valid
+address), showing the spellings used and any existing contact point with the
+same address. For each group you create a contact point, link to an existing
+one, or skip; clear the datasets that belong elsewhere and they stay for a
+later round. One email address may back several contact points. The page
+shows how many datasets are linked, skipped and remaining.
+
+While the old fields are still in use, editors may keep changing them. When
+Maintainer or Author changes on a dataset after it was linked, the page lists
+it under *Changed since linking*, with the old and new values, and you choose:
+update the contact point (for every dataset that uses it), link this dataset
+to another contact point, create a new one, or keep it as it is.
+
+**Closing the migration.** When you are done, a sysadmin closes the migration
+on the same page. Maintainer and Author are then hidden in forms and on
+dataset pages, for everyone including sysadmins, and are no longer exported;
+their values stay stored, and saving a dataset keeps them. It takes effect at
+once, without a restart, and the migration can be reopened. If datasets are
+still without a contact point, or have unhandled changes, the page says how
+many and asks you to confirm. Closing sets
+`ckanext.actor_registry.legacy_contact_fields` to false at runtime (see
+[Installation](docs/INSTALLATION.md#ckans-own-contact-fields-in-the-dcat-export)).
+
+Hiding needs one thing in your schema: give the old fields the extension's
+`legacy_contact.html` snippets, which show them while the migration is open:
+
+```yaml
+- field_name: maintainer
+  label: Maintainer
+  form_snippet: legacy_contact.html
+  display_snippet: legacy_contact.html
+# ... and the same for maintainer_email, author and author_email
+```
+
+A schema without these fields has nothing to hide. A theme that overrides
+Scheming's `additional_info.html` block itself must leave out rows with
+`display_snippet: legacy_contact.html` while the migration is closed, as the
+extension's own version does.
+
+The original fields are never changed: linking only sets the contact points,
+through a partial update that checks `package_update` for each dataset. A
+dataset that fails your schema's validation is reported and the others are
+still linked. Editors see and migrate only the datasets they may edit;
+sysadmins all of them. Every decision is logged in the
+`actor_registry_migration_decision` table (run `ckan db upgrade -p
+actor_registry`).
 
 **A worklist on `/actors`.** The registry management page (*Publishers*) lists
 the active datasets that are missing something, with a direct link to each one.
@@ -405,11 +541,23 @@ in the full dataset edit form, so editors recognize the control instead of
 having to find the right field inside the advanced edit view. Saving it
 performs a partial update -- only the field(s) you actually filled in are
 touched, the rest of the dataset is left alone -- and requires the normal
-`package_update` permission for that dataset, not sysadmin. This prompt
-appears when either field is empty, like the worklist's *Either* choice.
+`package_update` permission for that dataset, not sysadmin. The prompt
+follows your schema: it asks for a contact point when the schema has that
+field, and for a publisher only when the schema requires one.
 
-Both features rely on `ckanext-scheming`'s own `read.html` template chain, so
-they only appear for dataset types managed by Scheming.
+**Deactivating and cleaning up.** Deactivating a publisher or contact point
+stops new use of it: it is no longer offered in the forms, and choosing it
+anyway gives a message that names it. Datasets that already use it keep it and
+can still be saved; the form shows it marked *inactive* instead of dropping
+it. The *Cleanup* page (`/actor-registry/cleanup`, a tab, also hinted on the
+registry pages) lists the inactive records still in use, and datasets that
+point to records that no longer exist, and replaces or removes such a
+reference on the datasets you may edit (editors their own, sysadmins all; a
+merged publisher suggests the one it was merged into).
+
+All three rely on `ckanext-scheming`, so they only cover dataset types managed
+by Scheming (the migration only those whose schema has the contact points
+field).
 
 ## Upgrade note for the prototype
 

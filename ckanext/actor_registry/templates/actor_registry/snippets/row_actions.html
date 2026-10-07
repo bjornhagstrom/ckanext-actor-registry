@@ -1,0 +1,12 @@
+{#
+  Edit and Delete for one row in the publisher and contact point lists
+  (2026-10-04). One snippet so both lists look the same: spaced, kept on one
+  line, Delete outlined rather than filled so it does not dominate the row.
+
+  edit_url   - the edit page
+  delete_url - the delete confirmation, or empty when the user may not delete
+#}
+<div class="d-inline-flex flex-nowrap gap-2">
+  <a class="btn btn-sm btn-outline-secondary" href="{{ edit_url }}"><i class="fa fa-pencil" aria-hidden="true"></i> {{ _('Edit') }}</a>
+  {% if delete_url %}<a class="btn btn-sm btn-outline-danger" href="{{ delete_url }}"><i class="fa fa-trash" aria-hidden="true"></i> {{ _('Delete') }}</a>{% endif %}
+</div>

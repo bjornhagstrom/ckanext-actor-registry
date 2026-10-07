@@ -7,27 +7,31 @@
   view, not this quick-fix prompt: "Det ska man ha koll på om man är
   inne i denna avancerade vy.").
 #}
-{% set missing_publisher = not pkg.publisher_actor_id %}
-{% set missing_contact = not pkg.contact_point_ids %}
-{% if missing_publisher or missing_contact %}
+{#- Follows the schema: a field that is not in the schema is never missing,
+    and an empty publisher only counts when the schema requires one (without
+    one, the organization is the publisher in the DCAT export). -#}
 {% set schema = h.scheming_get_dataset_schema(pkg.type) %}
+{% set publisher_field = h.scheming_field_by_name(schema.dataset_fields, 'publisher_actor_id') if schema else none %}
+{% set contact_field = h.scheming_field_by_name(schema.dataset_fields, 'contact_point_ids') if schema else none %}
+{% set missing_publisher = publisher_field and h.scheming_field_required(publisher_field) and not pkg.publisher_actor_id %}
+{% set missing_contact = contact_field and not pkg.contact_point_ids %}
+{% if missing_publisher or missing_contact %}
 <div class="alert alert-warning" data-dataset-actor-link-prompt>
-  <strong><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ _('Publisher link missing.') }}</strong>
+  <strong><i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    {% if missing_publisher and missing_contact %}{{ _('Publisher and contact point missing.') }}{% elif missing_publisher %}{{ _('Publisher missing.') }}{% else %}{{ _('Contact point missing.') }}{% endif %}</strong>
   {% if h.check_access('package_update', {'id': pkg.id}) %}
     <form method="post" action="{{ h.url_for('actor_registry.dataset_actor_link', package_id=pkg.id) }}" class="mt-2">
       {{ h.csrf_input() }}
       {% if missing_publisher %}
-        {% set field = h.scheming_field_by_name(schema.dataset_fields, 'publisher_actor_id') %}
-        {% snippet 'scheming/form_snippets/actors_multiple_select.html', field=field, data={}, errors={}, compact=true %}
+        {% snippet 'scheming/form_snippets/actors_multiple_select.html', field=publisher_field, data={}, errors={}, compact=true %}
       {% endif %}
       {% if missing_contact %}
-        {% set field = h.scheming_field_by_name(schema.dataset_fields, 'contact_point_ids') %}
-        {% snippet 'scheming/form_snippets/contactpoints_multiple_select.html', field=field, data={}, errors={}, compact=true %}
+        {% snippet 'scheming/form_snippets/contactpoints_multiple_select.html', field=contact_field, data={}, errors={}, compact=true %}
       {% endif %}
       <button type="submit" class="btn btn-primary btn-sm">{{ _('Save') }}</button>
     </form>
   {% else %}
-    <span>{{ _('Log in with permission to edit the dataset to link a publisher.') }}</span>
+    <span>{{ _('Log in with permission to edit the dataset to add what is missing.') }}</span>
   {% endif %}
 </div>
 {% endif %}

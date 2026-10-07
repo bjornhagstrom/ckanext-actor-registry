@@ -7,6 +7,7 @@ from ckan.plugins import toolkit
 from flask import Blueprint, abort, g, jsonify, redirect, request
 from sqlalchemy.exc import IntegrityError
 
+from ckanext.actor_registry import cleanup, contact_migration
 from ckanext.actor_registry import model as registry_model
 from ckanext.actor_registry import validation
 from ckanext.actor_registry.actions import MERGEABLE_FIELDS
@@ -719,3 +720,157 @@ def dataset_actor_link(package_id):
         toolkit.h.flash_success(toolkit._("The publisher link has been saved."))
 
     return redirect(toolkit.url_for("dataset.read", id=pkg.name))
+
+
+# --- Migrate to Actor Registry (step 1: contact points) ---------------------------------
+# Editors migrate the datasets they may edit; sysadmins all. See
+# contact_migration.py for the rules.
+
+MIGRATION_PAGE_SIZE = 20
+# A candidate with more datasets than this is shown compactly (see migrate.html).
+MIGRATION_LARGE_GROUP = 25
+
+
+def _require_migration_access():
+    _require_login()
+    if not contact_migration.can_migrate(g.user):
+        abort(403)
+
+
+@blueprint.route("/actor-registry/migrate")
+def migrate_index():
+    _require_migration_access()
+    data = contact_migration.survey(g.user)
+    page = _page_number()
+    total = len(data["candidates"])
+    start = (page - 1) * MIGRATION_PAGE_SIZE
+    pager = Page(
+        collection=[], page=page, item_count=total, items_per_page=MIGRATION_PAGE_SIZE,
+        url=lambda **kw: toolkit.url_for("actor_registry.migrate_index", **kw),
+    )
+    return toolkit.render("actor_registry/migrate.html", extra_vars={
+        "data": data,
+        "candidates": data["candidates"][start:start + MIGRATION_PAGE_SIZE],
+        "first_number": start + 1,
+        "large_group": MIGRATION_LARGE_GROUP,
+        "pager": pager,
+        "all_contact_points": all_contact_points(),
+        "show_skipped": request.args.get("show_skipped") == "1",
+        "closed": contact_migration.is_closed(),
+        "close_check": contact_migration.close_check(g.user) if authz.is_sysadmin(g.user) else None,
+    })
+
+
+@blueprint.route("/actor-registry/migrate/apply", methods=["POST"])
+def migrate_apply():
+    _require_migration_access()
+    action = request.form.get("action", "")
+    try:
+        done, failures, contact_point = contact_migration.apply(
+            g.user, action, request.form.getlist("dataset_ids"),
+            name=request.form.get("name", ""), email=request.form.get("email", ""),
+            contact_point_id=request.form.get("contact_point_id", ""),
+            group_key=request.form.get("group_key", ""), exclude_ids=request.form.getlist("exclude_ids"),
+        )
+    except contact_migration.MigrationError as error:
+        toolkit.h.flash_error(str(error))
+    else:
+        if action == "skip":
+            toolkit.h.flash_success(toolkit.ungettext(
+                "{count} dataset skipped.", "{count} datasets skipped.", len(done)
+            ).format(count=len(done)))
+        elif done:
+            toolkit.h.flash_success(toolkit.ungettext(
+                "{count} dataset linked to {name}.", "{count} datasets linked to {name}.", len(done)
+            ).format(count=len(done), name=contact_point.name))
+        for title, message in failures:
+            toolkit.h.flash_error(toolkit._("Could not link {title}: {message}").format(title=title, message=message))
+    page = request.form.get("page", "1")
+    return redirect(toolkit.url_for("actor_registry.migrate_index", page=page if page.isdigit() else 1))
+
+
+@blueprint.route("/actor-registry/migrate/unskip", methods=["POST"])
+def migrate_unskip():
+    _require_migration_access()
+    if contact_migration.unskip(g.user, request.form.get("dataset_id", "")):
+        toolkit.h.flash_success(toolkit._("The dataset is back among the remaining ones."))
+    return redirect(toolkit.url_for("actor_registry.migrate_index", show_skipped=1))
+
+
+@blueprint.route("/actor-registry/migrate/change", methods=["POST"])
+def migrate_change():
+    _require_migration_access()
+    action = request.form.get("action", "")
+    try:
+        contact_point = contact_migration.resolve_change(
+            g.user, request.form.get("dataset_id", ""), action,
+            name=request.form.get("name", ""), email=request.form.get("email", ""),
+            contact_point_id=request.form.get("contact_point_id", ""),
+        )
+    except contact_migration.MigrationError as error:
+        toolkit.h.flash_error(str(error))
+    else:
+        if action == "keep":
+            toolkit.h.flash_success(toolkit._("The change is accepted; the contact point stays as it is."))
+        elif action == "update":
+            toolkit.h.flash_success(toolkit._("{name} has been updated everywhere it is used.").format(
+                name=contact_point.name))
+        else:
+            toolkit.h.flash_success(toolkit._("The dataset is now linked to {name}.").format(name=contact_point.name))
+    return redirect(toolkit.url_for("actor_registry.migrate_index") + "#changed")
+
+
+@blueprint.route("/actor-registry/migrate/close", methods=["POST"])
+def migrate_close():
+    _require_sysadmin()
+    try:
+        contact_migration.set_closed(g.user, True, confirmed=request.form.get("confirm") == "1")
+    except contact_migration.MigrationError as error:
+        toolkit.h.flash_error(str(error))
+    else:
+        toolkit.h.flash_success(toolkit._(
+            "The migration is closed. Maintainer and Author are hidden and no longer exported."))
+    return redirect(toolkit.url_for("actor_registry.migrate_index") + "#close")
+
+
+@blueprint.route("/actor-registry/migrate/reopen", methods=["POST"])
+def migrate_reopen():
+    _require_sysadmin()
+    contact_migration.set_closed(g.user, False)
+    toolkit.h.flash_success(toolkit._(
+        "The migration is open again. Maintainer and Author are shown and exported as before."))
+    return redirect(toolkit.url_for("actor_registry.migrate_index") + "#close")
+
+
+# --- Clean-up: inactive or missing records still used by datasets -----------------------
+
+
+@blueprint.route("/actor-registry/cleanup")
+def cleanup_index():
+    _require_migration_access()
+    return toolkit.render("actor_registry/cleanup.html", extra_vars={
+        "data": cleanup.survey(g.user),
+        "actors": all_actors(),
+        "contact_points": all_contact_points(),
+        "is_sysadmin": authz.is_sysadmin(g.user),
+    })
+
+
+@blueprint.route("/actor-registry/cleanup/replace", methods=["POST"])
+def cleanup_replace():
+    _require_migration_access()
+    try:
+        changed, failures = cleanup.replace(
+            g.user, request.form.get("kind", ""), request.form.get("old_id", ""),
+            request.form.get("new_id", ""))
+    except cleanup.CleanupError as error:
+        toolkit.h.flash_error(str(error))
+    else:
+        if changed:
+            toolkit.h.flash_success(toolkit.ungettext(
+                "{count} dataset updated.", "{count} datasets updated.", len(changed)
+            ).format(count=len(changed)))
+        for title, message in failures:
+            toolkit.h.flash_error(toolkit._("Could not update {title}: {message}").format(
+                title=title, message=message))
+    return redirect(toolkit.url_for("actor_registry.cleanup_index"))

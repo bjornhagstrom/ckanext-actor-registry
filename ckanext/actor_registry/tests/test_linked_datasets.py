@@ -97,7 +97,7 @@ def test_actor_page_previews_ten_with_total_and_show_all(app, org):
 
     assert len(_links(html)) == 10
     assert _links(html)[0] == "Data 00"
-    assert "Publisher for 25 dataset(s)" in html
+    assert "Publisher for 25 datasets" in html
     assert "Show all 25" in html
 
 
@@ -164,7 +164,7 @@ def test_private_datasets_are_hidden_from_anonymous_visitors(app, org):
         html = app.get(path).get_data(as_text=True)
         assert "Hemlig" not in html, path
         assert "Publik" in html, path
-    assert "Publisher for 1 dataset(s)" in app.get(f"/en/actors/{actor}").get_data(as_text=True)
+    assert "Publisher for 1 dataset" in app.get(f"/en/actors/{actor}").get_data(as_text=True)
 
 
 def test_private_datasets_are_visible_to_org_members_and_sysadmins_only(app, org):
@@ -235,7 +235,7 @@ def test_actor_delete_confirmation_counts_everything_and_previews_ten(app, org):
 
     html = app.get(f"/en/actors/{actor}/delete", headers=headers).get_data(as_text=True)
 
-    assert "13 dataset(s) have this publisher" in html
+    assert "13 datasets have this publisher" in html
     assert "reference a contact point" not in html
     # The owned contact point is listed too (it becomes standalone); only count datasets.
     assert "Kontakt" in _links(html)
@@ -253,7 +253,7 @@ def test_contactpoint_delete_confirmation_uses_the_database_list(app, org):
 
     html = app.get(f"/en/contactpoints/{contact}/delete", headers=headers).get_data(as_text=True)
 
-    assert "11 dataset(s) list this contact point" in html
+    assert "11 datasets list this contact point" in html
     assert len(_links(html)) == 10 and "Show all 11" in html
 
 
@@ -382,3 +382,59 @@ def test_actors_index_does_not_use_the_search_index(app, org, monkeypatch):
 
     assert app.get("/actors", headers=headers).status_code == 200
     assert app.get("/actors/unlinked-datasets", headers=headers).status_code == 200
+
+
+# The public pages for a publisher and a contact point (2026-10-04).
+
+def test_public_pages_show_no_admin_tabs_to_visitors(app, org):
+    actor = _actor()
+    contact = _contact(actor)
+    _dataset(org, "Publik", publisher_actor_id=actor, contact_point_ids=[contact])
+    actor_html = app.get(f"/en/actors/{actor}").get_data(as_text=True)
+    contact_html = app.get(f"/en/contactpoints/{contact}").get_data(as_text=True)
+    for html in (actor_html, contact_html):
+        assert "/ckan-admin" not in html  # core's Sysadmins/Config/Trash tabs
+    # The registry's own tabs: the actor page has no other link to the
+    # contact point list, and vice versa (the breadcrumb links its own list).
+    assert 'contactpoints"' not in actor_html
+    assert 'actors"' not in contact_html
+
+
+def test_sysadmins_keep_the_admin_tabs(app, org):
+    sysadmin = factories.SysadminWithToken()
+    actor = _actor()
+    html = app.get(f"/en/actors/{actor}", headers=_headers(sysadmin)).get_data(as_text=True)
+    assert "/ckan-admin/config" in html and "/actors" in html
+
+
+def test_empty_fields_are_not_shown(app, org):
+    actor = _actor("Tom utgivare")
+    contact = _contact(None, "Tom kontakt")
+    actor_html = app.get(f"/en/actors/{actor}").get_data(as_text=True)
+    contact_html = app.get(f"/en/contactpoints/{contact}").get_data(as_text=True)
+    for label in ("<dt>Type</dt>", "<dt>Email</dt>", "<dt>Description</dt>", "<dt>URL</dt>"):
+        assert label not in actor_html, label
+    for label in ("<dt>Email</dt>", "<dt>Phone</dt>", "<dt>URL</dt>"):
+        assert label not in contact_html, label
+    assert "<dd>–</dd>" not in actor_html and "<dd>–</dd>" not in contact_html
+
+
+def test_lists_show_the_organization_and_singular_plural(app, org):
+    actor = _actor()
+    contact = _contact(actor, "Open Data Desk")
+    _dataset(org, "Ett", publisher_actor_id=actor, contact_point_ids=[contact])
+    html = app.get(f"/en/contactpoints/{contact}").get_data(as_text=True)
+    assert "Linked to 1 dataset<" in html
+    soup = BeautifulSoup(html, "html.parser")
+    item = soup.select_one(".dataset-list .dataset-item")
+    assert item is not None and "Org" in item.get_text() and "Updated" in item.get_text()
+    _dataset(org, "Två", publisher_actor_id=actor, contact_point_ids=[contact])
+    assert "Linked to 2 datasets" in app.get(f"/en/contactpoints/{contact}").get_data(as_text=True)
+    assert "Kopplad till 2 datamängder" in app.get(f"/sv/contactpoints/{contact}").get_data(as_text=True)
+
+
+def test_contact_point_breadcrumb_names_the_contact_point(app, org):
+    contact = _contact(None, "Open Data Desk")
+    soup = BeautifulSoup(app.get(f"/en/contactpoints/{contact}").get_data(as_text=True), "html.parser")
+    crumbs = [li.get_text(strip=True) for li in soup.select(".breadcrumb li")]
+    assert crumbs[-2:] == ["Contact points", "Open Data Desk"]

@@ -25,7 +25,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES_DIR = REPO_ROOT / "ckanext" / "actor_registry" / "templates"
 
-_GETTEXT_CALL = re.compile(r"_\(")
+# A _() call, or a {% trans %} block (one location each, plural or not).
+_GETTEXT_CALL = re.compile(r"_\(|\{%-?\s*trans\b")
 
 
 def _count_gettext_calls(path):
@@ -64,7 +65,7 @@ def test_pybabel_extraction_finds_every_translatable_string(tmp_path):
         found = pot_text.count(rel)
         if found != expected:
             failures.append(
-                f"{rel}: source has {expected} _() call(s) but only "
+                f"{rel}: source has {expected} _() call(s) and trans block(s) but "
                 f"{found} location reference(s) were extracted -- likely "
                 f"a template parse failure being swallowed silently"
             )
@@ -130,10 +131,13 @@ def test_every_catalogue_is_compiled_and_up_to_date():
         if not mo_path.exists():
             failures.append(f"{locale}: no .mo; run pybabel compile")
             continue
+        # Plural entries have a tuple id in the .po and a list in the .mo.
+        def key(value):
+            return tuple(value) if isinstance(value, (list, tuple)) else value
         with po_path.open("rb") as f:
-            po = {m.id: m.string for m in read_po(f) if m.id and m.string and not m.fuzzy}
+            po = {key(m.id): key(m.string) for m in read_po(f) if m.id and m.string and not m.fuzzy}
         with mo_path.open("rb") as f:
-            mo = {m.id: m.string for m in read_mo(f) if m.id}
+            mo = {key(m.id): key(m.string) for m in read_mo(f) if m.id}
         if po != mo:
             failures.append(f"{locale}: .mo does not match .po; run pybabel compile")
     assert not failures, "\n".join(failures)

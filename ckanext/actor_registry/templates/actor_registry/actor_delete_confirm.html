@@ -19,7 +19,7 @@
 <div class="alert alert-danger">
 <strong>{{ _('This will affect other records:') }}</strong>
 <ul>
-  {% if has_publisher_links %}<li>{{ _('{n} dataset(s) have this publisher. Their publisher will be cleared, not reassigned.').format(n=linked.publisher.total) }}</li>{% endif %}
+  {% if has_publisher_links %}<li>{% trans count=linked.publisher.total %}{{ count }} dataset has this publisher. Its publisher will be cleared, not reassigned.{% pluralize %}{{ count }} datasets have this publisher. Their publisher will be cleared, not reassigned.{% endtrans %}</li>{% endif %}
   {% if has_owned_contacts %}<li>{{ _('{n} contact point(s) belong to this publisher and will become standalone (not deleted, just no longer linked to an organization/person).').format(n=owned_contact_points|length) }}</li>{% endif %}
   {% if has_chained %}<li>{{ _('{n} other publisher(s) were previously merged into this one. Their "merged with" pointer will stop resolving once this record is gone.').format(n=chained_actors|length) }}</li>{% endif %}
 </ul>
