@@ -1,8 +1,10 @@
 # ckanext-actor-registry
 
+[![PyPI](https://img.shields.io/pypi/v/ckanext-actor-registry.svg)](https://pypi.org/project/ckanext-actor-registry/)
+
 Reusable publishers and contact points for CKAN metadata.
 
-> **Status: 0.3.0 alpha.** This version is intended for evaluation and feedback.
+> **Status: 0.3.1 alpha.** This version is intended for evaluation and feedback.
 > It has an automated test suite that runs against CKAN 2.11 and CKAN 2.12. The
 > user interface is in English by default, with a Swedish translation catalog
 > following the installation's locale settings. Do not treat it as
@@ -342,12 +344,15 @@ image has no working pytest plugin).
 
 The quickest way to try the extension is the [Docker Compose example](examples/ckan-2.12/README.md).
 For an existing CKAN, follow [docs/INSTALLATION.md](docs/INSTALLATION.md); in short, install
-the source checkout in the same Python environment as CKAN:
+the package from [PyPI](https://pypi.org/project/ckanext-actor-registry/) in the same Python
+environment as CKAN:
 
 ```console
-cd /path/to/ckanext-actor-registry
-pip install -e .
+pip install ckanext-actor-registry
 ```
+
+To work on the extension, install a source checkout instead: `pip install -e .` in the
+checkout.
 
 Add `actor_registry` to `ckan.plugins`:
 

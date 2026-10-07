@@ -45,8 +45,11 @@ on scheming `master`, which the CI also runs against as an early warning.
 
 ```bash
 pip install "ckanext-scheming==3.1.0"   # only for the dataset form fields
-pip install -e /path/to/ckanext-actor-registry
+pip install ckanext-actor-registry
 ```
+
+To work on the extension, use a source checkout instead:
+`pip install -e /path/to/ckanext-actor-registry`.
 
 If the extension cannot be imported after an editable install (`ModuleNotFoundError: No
 module named 'ckanext.actor_registry'`), use a regular `pip install

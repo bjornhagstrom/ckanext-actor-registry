@@ -5,6 +5,14 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-07
+
+### Changed
+
+- The package is on PyPI: `pip install ckanext-actor-registry` is the documented way to install it.
+- The two i18n extraction tests are skipped when run from an installed package, which has no
+  `babel.cfg`, instead of failing.
+
 ## [0.3.0] - 2026-10-07
 
 ### Upgrading from 0.2.x
@@ -332,7 +340,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.3
 [0.2.2]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.2

@@ -17,7 +17,7 @@ def long_description():
 
 setup(
     name="ckanext-actor-registry",
-    version="0.3.0",
+    version="0.3.1",
     description="Reusable actors and contact points for CKAN metadata",
     long_description=long_description(),
     long_description_content_type="text/markdown",

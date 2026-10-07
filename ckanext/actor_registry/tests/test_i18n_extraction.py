@@ -22,8 +22,16 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES_DIR = REPO_ROOT / "ckanext" / "actor_registry" / "templates"
+
+# The extraction tests run pybabel over the source tree; an installed package has no babel.cfg.
+needs_source_tree = pytest.mark.skipif(
+    not (REPO_ROOT / "babel.cfg").exists(),
+    reason="needs a source checkout (babel.cfg), not an installed package",
+)
 
 # A _() call, or a {% trans %} block (one location each, plural or not).
 _GETTEXT_CALL = re.compile(r"_\(|\{%-?\s*trans\b")
@@ -33,6 +41,7 @@ def _count_gettext_calls(path):
     return len(_GETTEXT_CALL.findall(path.read_text(encoding="utf-8")))
 
 
+@needs_source_tree
 def test_pybabel_extraction_finds_every_translatable_string(tmp_path):
     pot_path = tmp_path / "extracted.pot"
     env = dict(os.environ)
@@ -79,6 +88,7 @@ def test_pybabel_extraction_finds_every_translatable_string(tmp_path):
 MAINTAINED_LANGUAGES = ("sv", "sv_SE")
 
 
+@needs_source_tree
 def test_every_extracted_string_is_translated(tmp_path):
     """A fresh extraction against the maintained catalogues (2026-10-01):
     the contact point deletion added 13 strings that never reached the .pot
