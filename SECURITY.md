@@ -2,9 +2,8 @@
 
 ## Supported versions
 
-Until a later release is available, security fixes are made only on the latest
-0.2.x release. Version 0.2 is alpha software and has not received a formal
-security audit.
+Security fixes are made only on the latest release. The extension is in beta and
+has not received a formal security audit.
 
 ## Reporting a vulnerability
 

@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve ckanext-actor-registry. Version 0.2 is an alpha,
+Thank you for helping improve ckanext-actor-registry. The extension is in beta,
 so bug reports, compatibility results and design feedback are especially useful.
 
 ## Before opening an issue

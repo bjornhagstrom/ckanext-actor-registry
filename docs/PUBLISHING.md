@@ -82,7 +82,8 @@ new pull request.
 
 ## 7. Package index publication later
 
-PyPI publication is optional for 0.x. A GitHub release is sufficient for early
-testing. Publish to PyPI only after adding a modern build configuration,
-validating source and wheel contents, and confirming ownership of the package
-name. Never upload from an environment containing unrelated credentials.
+The package is on PyPI (`pip install ckanext-actor-registry`, from 0.3.0). Each release is a git tag, a GitHub
+release and a PyPI upload that belong to the same commit: build, run `twine check`, check that the contents
+include the templates, translations, migrations and example schemas, and make sure the version does not exist
+on PyPI yet (a version can never be uploaded twice). Never upload from an environment containing unrelated
+credentials.

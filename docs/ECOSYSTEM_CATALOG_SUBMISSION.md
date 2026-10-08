@@ -37,7 +37,7 @@ RELEASE_URL
 
 ## Version
 
-0.3.1
+0.4.0
 
 ## License
 
@@ -64,7 +64,7 @@ metadata, publishers, contact-points, dcat, dcat-ap, foaf, vcard, scheming
 
 ## Maturity
 
-Alpha / evaluation
+Beta
 
 ## Primary language
 

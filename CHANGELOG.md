@@ -5,6 +5,20 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-08
+
+First beta. No code or database changes since 0.3.1.
+
+### Changed
+
+- The extension leaves alpha: the development status is now Beta (PyPI classifier, README, SECURITY.md,
+  CONTRIBUTING.md). Still no formal security audit.
+- README: migrating existing contact details (CKAN's Maintainer and Author fields) is now a section of its own near
+  the top, with screenshots of the migration page and the cleanup page, and it is the first item in the feature list.
+  A new "Languages" section says how to add your own language.
+- Documentation: sixteen screenshots (all in English) and a GIF of merging two publishers in `docs/images/`.
+  The README's captions and its text about the "missing" prompt match them.
+
 ## [0.3.1] - 2026-10-07
 
 ### Changed
@@ -340,7 +354,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/bjornhagstrom/ckanext-actor-registry/releases/tag/v0.2.3

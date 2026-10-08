@@ -4,21 +4,24 @@
 
 Reusable publishers and contact points for CKAN metadata.
 
-> **Status: 0.3.1 alpha.** This version is intended for evaluation and feedback.
-> It has an automated test suite that runs against CKAN 2.11 and CKAN 2.12. The
-> user interface is in English by default, with a Swedish translation catalog
-> following the installation's locale settings. Do not treat it as
-> production-ready without your own review and tests.
+> **Status: beta.** The documented features are complete and covered by an automated test
+> suite that runs against CKAN 2.11 and CKAN 2.12. The user interface is in English by default,
+> with a Swedish translation catalog following the installation's locale settings. The extension
+> has not had a formal security audit and the database schema may still change between 0.x
+> releases (with migrations). Try it on a test installation first and review it before relying
+> on it in production.
 
 ## Documentation
 
+- **[Migrating existing contact details](#already-have-datasets-migrate-your-contact-details)**:
+  turn CKAN's free-text Maintainer and Author fields into shared contact points;
 - **[Installation and supported versions](docs/INSTALLATION.md)**: which CKAN and
   ckanext-scheming versions are tested, configuration, the database migration and the
   pitfalls to avoid;
 - **[Run it with Docker Compose](examples/ckan-2.12/README.md)**: a complete example (CKAN
   2.11 or 2.12, PostgreSQL, Solr, Redis) with a smoke test, for trying the extension or as
   a starting point;
-- [Changelog](CHANGELOG.md) and [release notes](docs/RELEASE_NOTES_0.2.0.md);
+- [Changelog](CHANGELOG.md) (and the [0.2.0 release notes](docs/RELEASE_NOTES_0.2.0.md));
 - [Testing](TESTING.md): how to run the automated suite on each supported CKAN version;
 - [RDF and interoperability](docs/RDF_AND_INTEROPERABILITY.md): the optional DCAT-AP profile;
 - [Translations](docs/TRANSLATIONS.md): how the English and Swedish catalogues are maintained;
@@ -53,6 +56,37 @@ permissions.
 > word *actor* survives only in technical places: the URLs (`/actors`), the
 > dataset field `publisher_actor_id`, the Python package and the action names
 > (`actor_registry_*`).
+
+## Already have datasets? Migrate your contact details
+
+Most catalogues start with contact details typed as free text into CKAN's own *Maintainer* and *Author*
+fields, repeated on many datasets. The **Migrate to Actor Registry** page (`/actor-registry/migrate`) turns
+them into shared contact points:
+
+- it finds the contact details on the datasets you may edit and groups them by email address (or by name
+  when there is no valid address), showing the different spellings in use;
+- for each group you create a contact point, link to an existing one, or skip (for example a personal
+  address); single datasets can be left out for a later round;
+- the original fields are never changed. The page counts what is linked, skipped and remaining, and flags
+  datasets whose Maintainer or Author changed after they were linked;
+- when you are done, a sysadmin closes the migration: the old fields are then hidden and no longer exported.
+
+Publishers are not migrated automatically. In an older catalogue the publisher is usually free text too, so
+you create the publishers once in the registry and choose them on the datasets. A **Cleanup** page then finds
+publishers and contact points that were deactivated but are still in use. The details are under
+[Activating on an existing installation with datasets](#activating-on-an-existing-installation-with-datasets).
+
+![The migration page: how many datasets have contact details, and how many are linked, skipped and remaining](docs/images/migrate-overview.jpg)
+
+![One group of datasets that share an email address: the spellings used, the datasets, and the choice to create a contact point, link to an existing one or skip](docs/images/migrate-group.jpg)
+
+![A group of 60 datasets in the compact view: all are included unless you leave some out](docs/images/migrate-bulk-group.jpg)
+
+![After two groups have been linked, the overview counts their datasets as linked](docs/images/migrate-linked.jpg)
+
+![Changed since linking: the old and the new Maintainer, and the choice to update the contact point, link to another one, create a new one or keep it as it is](docs/images/migrate-changed.jpg)
+
+![The Cleanup page: an inactive publisher that datasets still use, with a choice of replacement](docs/images/cleanup.jpg)
 
 ## Publishers vs. CKAN organizations
 
@@ -162,6 +196,9 @@ Deliberate exceptions, decided and documented:
 ## Features
 
 - central registries for publishers and contact points;
+- **migration of existing contact details**: CKAN's free-text Maintainer and Author fields become shared
+  contact points, in rounds and without changing the originals, plus a cleanup page for deactivated records
+  that are still in use;
 - stable URIs, identifiers (unique per identifier scheme) and optional
   controlled publisher types;
 - active/inactive records without breaking existing references; merging of
@@ -178,13 +215,22 @@ Deliberate exceptions, decided and documented:
   numbers) and opt-in validators that keep datasets from pointing at records that
   no longer exist;
 - Scheming helpers, form and display snippets, and a localised example schema;
-- an English interface with Swedish (`sv`, `sv_SE`) translations;
+- an English interface with Swedish (`sv`, `sv_SE`) translations, and a simple way to add your own
+  language (see "Languages" below);
 - optional DCAT integration: publishers become `foaf:Agent` values and contact
   points become `vcard:Kind` values;
 - optional `vcard:hasTelephone` serialization for the European DCAT-AP 3
   profile (a `vcard:Voice` with a `tel:` URI, the usual vCard form);
 - validation that prevents a publisher and a contact point from sharing the same
   RDF URI.
+
+## Languages
+
+The interface is in English and comes with Swedish (`sv`, `sv_SE`). Another language is one translation file:
+create it from the template with `pybabel init`, translate it and compile it, and the extension offers it
+automatically. A partial translation is fine, because text that is not translated stays in English. See
+[Translations](docs/TRANSLATIONS.md). Field labels in your own Scheming schema are translated in the schema, per
+language.
 
 ## Data model and DCAT-AP mapping
 
@@ -220,8 +266,9 @@ maintained once, centrally, instead of being retyped on every dataset -- which
 is manageable for a handful of datasets and increasingly unmanageable as a
 catalog grows.
 
-> **The screenshots are being retaken for 0.2.0.** Each image link below is
-> marked; the images will be added in a later commit.
+The screenshots are in English. The interface follows the site language, and Swedish
+(`sv`, `sv_SE`) ships with the extension; to use another language, add a translation
+catalogue for it (see [docs/TRANSLATIONS.md](docs/TRANSLATIONS.md)).
 
 ### Publishers: organizations and people
 
@@ -232,11 +279,9 @@ identifier and its scheme (for example `SE:ORGNR`) are optional but must be
 given together, and the pair is unique among active publishers: a clash names
 the existing publisher instead of failing with a generic error.
 
-![A publisher of kind Organization, showing name, identifier, identifier scheme and URL](docs/images/actor-kind-organization.jpg)
-*(Screenshot to be added later.)*
+![A publisher of kind Organization, showing its kind, identifier and scheme, URI, URL and email](docs/images/actor-kind-organization.jpg)
 
 ![A publisher of kind Person, using the same fields](docs/images/actor-kind-person.jpg)
-*(Screenshot to be added later.)*
 
 ### Contact points
 
@@ -244,8 +289,7 @@ Contact points are a separate, parallel register. A contact point can optionally
 belong to an organization ("Belongs to organization"), but doesn't have to -- a
 shared mailbox or a role-based contact works just as well as a named person.
 
-![The contact points list, showing an independent contact point and one that belongs to an organization](docs/images/contactpoints-index.jpg)
-*(Screenshot to be added later.)*
+![The contact points list, with name or role, email, status and the edit and delete buttons](docs/images/contactpoints-index.jpg)
 
 ### Linking a dataset to the registry
 
@@ -253,7 +297,6 @@ When editing a dataset, the publisher (a single publisher) and one or more
 contact points are chosen from the same registry used everywhere else in CKAN:
 
 ![A dataset's edit form with the publisher picker and the contact points picker both filled in](docs/images/dataset-edit-pickers.jpg)
-*(Screenshot to be added later.)*
 
 If the publisher or contact point you need doesn't exist yet, either can be
 created without leaving the dataset form. And if one already exists but needs a
@@ -261,7 +304,6 @@ correction, it can be edited from right here too -- the change applies
 everywhere it is used, not just on this dataset:
 
 ![The dataset edit form with the "Create new publisher" toggle expanded, showing the quick-create fields and their help texts](docs/images/actor-quick-create.jpg)
-*(Screenshot to be added later.)*
 
 ### What visitors see
 
@@ -271,7 +313,6 @@ never internal IDs. A publisher that has been merged into another shows as the
 surviving publisher; inactive or missing records are simply left out.
 
 ![A dataset page showing the publisher and two contact points with their details](docs/images/dataset-view.jpg)
-*(Screenshot to be added later.)*
 
 Publisher and contact point pages list the datasets they are linked to: the
 first ten, with the total and a "Show all" link to a paginated list. The lists
@@ -279,7 +320,6 @@ respect dataset visibility, so private datasets are only shown to people who may
 see them.
 
 ![A publisher's page listing its datasets with a "Show all" link](docs/images/publisher-datasets.jpg)
-*(Screenshot to be added later.)*
 
 ### Merging two publishers
 
@@ -290,7 +330,6 @@ re-pointed automatically, so the surviving publisher's dataset count grows to
 reflect the merge:
 
 ![Merging two publishers: selecting them, comparing fields, and the result, with the surviving publisher's dataset count increasing](docs/images/actor-merge-flow.gif)
-*(Screenshot to be added later.)*
 
 Soft-retiring rather than deleting exists for one reason: a merged publisher's
 web address (its URI) may already be linked to, or cached, outside this
@@ -304,28 +343,27 @@ outside this catalogue -- but doing so gives up that permanent-address
 guarantee for good, which is why the extension asks for that decision
 explicitly rather than doing it automatically after a merge.
 
-### A dataset with no publisher set
+### A dataset with no contact point set
 
-A newly created dataset with neither a publisher nor a contact point shows an
-inline warning on its own page, with pickers for both fields. This is also
-exactly what an editor sees, dataset by dataset, right after the extension is
+A dataset that lacks what the schema requires shows an inline warning on its own
+page, with a picker for each missing field. With the example schema the publisher
+is optional (the organization is given as publisher if it is left empty), so the
+warning asks for a contact point; where the publisher is required it asks for both.
+This is also exactly what an editor sees, dataset by dataset, right after the extension is
 activated on a catalog that already has data -- see "Activating on an existing
 installation with datasets" below for the full picture, including the separate
 worklist view:
 
-![A dataset missing both a publisher and a contact point shows an inline "Publisher link missing" prompt with both pickers](docs/images/dataset-no-actor-prompt.jpg)
-*(Screenshot to be added later.)*
+![A dataset without a contact point shows an inline "Contact point missing." prompt with a picker, a "Create new contact point" button and Save](docs/images/dataset-no-actor-prompt.jpg)
 
 The same dataset also shows up on the registry's own worklist, so it can be
 found and fixed from either place:
 
 ![The Publishers page listing "A very impressive dataset" under "Datasets missing both a publisher and a contact point"](docs/images/actors-worklist-entry.jpg)
-*(Screenshot to be added later.)*
 
 Saving resolves the warning immediately, without leaving the page:
 
-![After saving, the prompt is replaced by the resolved publisher and contact point values](docs/images/dataset-resolved.jpg)
-*(Screenshot to be added later.)*
+![After saving, the prompt is replaced by the contact point and its details](docs/images/dataset-resolved.jpg)
 
 ## Requirements and compatibility
 

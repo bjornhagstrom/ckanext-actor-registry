@@ -17,7 +17,7 @@ def long_description():
 
 setup(
     name="ckanext-actor-registry",
-    version="0.3.1",
+    version="0.4.0",
     description="Reusable actors and contact points for CKAN metadata",
     long_description=long_description(),
     long_description_content_type="text/markdown",
@@ -33,7 +33,7 @@ setup(
     license="MIT",
     python_requires=">=3.10",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
