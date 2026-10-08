@@ -5,6 +5,14 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-08
+
+No code or database changes since 0.4.0.
+
+### Changed
+
+- README: links the overview video on YouTube (90 seconds), at the top and in the documentation list.
+
 ## [0.4.0] - 2026-10-08
 
 First beta. No code or database changes since 0.3.1.
@@ -354,7 +362,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.2.3...v0.3.0

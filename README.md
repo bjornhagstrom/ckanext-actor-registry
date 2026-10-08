@@ -11,8 +11,12 @@ Reusable publishers and contact points for CKAN metadata.
 > releases (with migrations). Try it on a test installation first and review it before relying
 > on it in production.
 
+**Watch the overview video (90 seconds):** https://youtu.be/QOKnf9N6dPg
+
 ## Documentation
 
+- **[Overview video](https://youtu.be/QOKnf9N6dPg)** (90 seconds): the problem, shared contact points and publishers,
+  and the migration page;
 - **[Migrating existing contact details](#already-have-datasets-migrate-your-contact-details)**:
   turn CKAN's free-text Maintainer and Author fields into shared contact points;
 - **[Installation and supported versions](docs/INSTALLATION.md)**: which CKAN and
