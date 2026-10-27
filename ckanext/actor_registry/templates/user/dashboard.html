@@ -1,0 +1,12 @@
+{% ckan_extends %}
+
+{#
+  A tab on the user's own dashboard that leads to the registry, for those who may edit at least one dataset (the same
+  condition as Migration and Cleanup in the registry's submenu).
+#}
+{% block dashboard_nav_links %}
+  {{ super() }}
+  {% if h.actor_registry_can_migrate() %}
+    {{ h.actor_registry_nav_item('actor_registry.actors_index', 'actor_registry.', _('Actor registry'), 'address-book') }}
+  {% endif %}
+{% endblock %}

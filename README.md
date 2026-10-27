@@ -409,7 +409,10 @@ ckan -c /etc/ckan/default/ckan.ini db upgrade -p actor_registry
 ```
 
 Restart CKAN. Logged-in users can then manage publishers at `/actors` and contact
-points at `/contactpoints`.
+points at `/contactpoints`. The registry pages share a navigation of their own (Publishers,
+Contact points and, for those who may migrate, Migration and Cleanup, with a small number when
+something waits). Administration gets one "Actor registry" tab for sysadmins; set
+`ckanext.actor_registry.admin_tab = false` if the portal links to `/actors` from its own header.
 
 ## Scheming integration
 

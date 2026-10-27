@@ -1,4 +1,4 @@
-{% extends "admin/base.html" %}
+{% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ item.name }}{% endblock %}
 {% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index') }}">{{ _('Contact points') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}

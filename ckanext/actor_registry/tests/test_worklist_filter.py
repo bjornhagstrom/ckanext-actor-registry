@@ -90,10 +90,11 @@ def test_the_heading_and_the_active_button_follow_the_choice(app, four_datasets)
 
     assert "Datasets missing a publisher or a contact point (3)" in page
     assert soup.select_one("h2#worklist").get_text(strip=True).endswith("(3)")
-    active = soup.select("ul.nav-pills a.nav-link.active")
-    assert [a.get_text(strip=True) for a in active] == ["Either"]
+    # (the registry's own submenu is also a list of pills; the filter is the one that follows the heading)
+    active = soup.select("ul.nav-pills:not(.registry-submenu) a.nav-link.active")
+    assert [a.get_text(strip=True) for a in active] == ["Either (3)"]  # each choice shows how many datasets it lists
     # all four choices are offered as links that keep the choice
-    hrefs = [a["href"] for a in soup.select("ul.nav-pills a.nav-link")]
+    hrefs = [a["href"] for a in soup.select("ul.nav-pills:not(.registry-submenu) a.nav-link")]
     assert any("missing=publisher" in h for h in hrefs) and any("missing=contact_point" in h for h in hrefs)
 
 

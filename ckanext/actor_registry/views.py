@@ -7,7 +7,7 @@ from ckan.plugins import toolkit
 from flask import Blueprint, abort, g, jsonify, redirect, request
 from sqlalchemy.exc import IntegrityError
 
-from ckanext.actor_registry import cleanup, contact_migration
+from ckanext.actor_registry import cleanup, contact_migration, helpers
 from ckanext.actor_registry import model as registry_model
 from ckanext.actor_registry import validation
 from ckanext.actor_registry.actions import MERGEABLE_FIELDS
@@ -376,6 +376,14 @@ def _missing_labels():
     ]
 
 
+def _missing_counts(selected, selected_total):
+    """How many datasets each choice of "Missing:" lists, for the viewer. One count query each; the chosen one is already known."""
+    counts = {}
+    for key, link in MISSING_FILTERS.items():
+        counts[key] = selected_total if key == selected else _linked_datasets(link, [], per_page=1)["total"]
+    return counts
+
+
 def _missing_heading(key, total):
     return {
         "both": toolkit._("Datasets missing both a publisher and a contact point ({n})"),
@@ -407,6 +415,7 @@ def actors_index():
             "unlinked_datasets": unlinked_datasets,
             "missing": missing,
             "missing_labels": _missing_labels(),
+            "missing_counts": _missing_counts(missing, unlinked_datasets["total"]),
             "missing_heading": _missing_heading(missing, unlinked_datasets["total"]),
         },
     )
@@ -737,12 +746,14 @@ def _require_migration_access():
         abort(403)
 
 
-@blueprint.route("/actor-registry/migrate")
+@blueprint.route("/actor-registry/migrate", strict_slashes=False)
 def migrate_index():
     _require_migration_access()
     data = contact_migration.survey(g.user)
-    page = _page_number()
+    helpers.prime_counts(migration=data["counts"]["remaining"] + data["counts"]["changed"])
     total = len(data["candidates"])
+    # After the last group of the last page is linked, that page no longer exists: show the new last one.
+    page = min(_page_number(), max(1, -(-total // MIGRATION_PAGE_SIZE)))
     start = (page - 1) * MIGRATION_PAGE_SIZE
     pager = Page(
         collection=[], page=page, item_count=total, items_per_page=MIGRATION_PAGE_SIZE,
@@ -761,7 +772,7 @@ def migrate_index():
     })
 
 
-@blueprint.route("/actor-registry/migrate/apply", methods=["POST"])
+@blueprint.route("/actor-registry/migrate/apply", methods=["POST"], strict_slashes=False)
 def migrate_apply():
     _require_migration_access()
     action = request.form.get("action", "")
@@ -789,7 +800,7 @@ def migrate_apply():
     return redirect(toolkit.url_for("actor_registry.migrate_index", page=page if page.isdigit() else 1))
 
 
-@blueprint.route("/actor-registry/migrate/unskip", methods=["POST"])
+@blueprint.route("/actor-registry/migrate/unskip", methods=["POST"], strict_slashes=False)
 def migrate_unskip():
     _require_migration_access()
     if contact_migration.unskip(g.user, request.form.get("dataset_id", "")):
@@ -797,7 +808,7 @@ def migrate_unskip():
     return redirect(toolkit.url_for("actor_registry.migrate_index", show_skipped=1))
 
 
-@blueprint.route("/actor-registry/migrate/change", methods=["POST"])
+@blueprint.route("/actor-registry/migrate/change", methods=["POST"], strict_slashes=False)
 def migrate_change():
     _require_migration_access()
     action = request.form.get("action", "")
@@ -820,7 +831,7 @@ def migrate_change():
     return redirect(toolkit.url_for("actor_registry.migrate_index") + "#changed")
 
 
-@blueprint.route("/actor-registry/migrate/close", methods=["POST"])
+@blueprint.route("/actor-registry/migrate/close", methods=["POST"], strict_slashes=False)
 def migrate_close():
     _require_sysadmin()
     try:
@@ -833,7 +844,7 @@ def migrate_close():
     return redirect(toolkit.url_for("actor_registry.migrate_index") + "#close")
 
 
-@blueprint.route("/actor-registry/migrate/reopen", methods=["POST"])
+@blueprint.route("/actor-registry/migrate/reopen", methods=["POST"], strict_slashes=False)
 def migrate_reopen():
     _require_sysadmin()
     contact_migration.set_closed(g.user, False)
@@ -845,18 +856,20 @@ def migrate_reopen():
 # --- Clean-up: inactive or missing records still used by datasets -----------------------
 
 
-@blueprint.route("/actor-registry/cleanup")
+@blueprint.route("/actor-registry/cleanup", strict_slashes=False)
 def cleanup_index():
     _require_migration_access()
+    data = cleanup.survey(g.user)
+    helpers.prime_counts(cleanup=sum(len(data[key]) for key in ("publishers", "contact_points", "missing")))
     return toolkit.render("actor_registry/cleanup.html", extra_vars={
-        "data": cleanup.survey(g.user),
+        "data": data,
         "actors": all_actors(),
         "contact_points": all_contact_points(),
         "is_sysadmin": authz.is_sysadmin(g.user),
     })
 
 
-@blueprint.route("/actor-registry/cleanup/replace", methods=["POST"])
+@blueprint.route("/actor-registry/cleanup/replace", methods=["POST"], strict_slashes=False)
 def cleanup_replace():
     _require_migration_access()
     try:

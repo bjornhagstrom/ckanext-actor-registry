@@ -1,11 +1,45 @@
-{% extends "admin/base.html" %}
+{% extends "actor_registry/base.html" %}
 {#-
   Migrate to Actor Registry, step 1: contact points. Find -> Review -> Link.
-  See contact_migration.py for the rules. Plain forms, no JavaScript.
+  See contact_migration.py for the rules. Plain forms; JavaScript only makes the long lists easier (migrate-select.js).
 -#}
 {% block subtitle %}{{ _('Migrate to Actor Registry') }}{% endblock %}
 {% block breadcrumb_content %}<li class="active">{{ _('Migrate to Actor Registry') }}</li>{% endblock %}
 {% block primary_content_inner %}
+  {% macro dataset_label(item) %}<a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>
+                        {% if item.organization %}<span class="text-muted">· {{ item.organization }}</span>{% endif %}
+                        {% if item.private %}<span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}
+                        <span class="text-muted">· {{ _('from Maintainer') if item.source == 'maintainer' else _('from Author') }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
+                        {% if item.also %}<br><small data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}{% endmacro %}
+  {% asset 'actor_registry/migrate-select' %}
+  {# The datasets of a group as a table (the same for a small and a large group): one box in the heading for all or none, headings that sort the rows.
+     named: the boxes are posted as dataset_ids (a small group, works without JavaScript); not named: a large group, where JavaScript posts the ones that are left out. #}
+  {% macro dataset_table(candidate, number, named) %}
+    <div class="border rounded mt-2" style="max-height: 24em; overflow-y: auto;" {% if named %}data-table-list{% else %}data-include-list hidden{% endif %}>
+      <table class="table table-sm table-hover mb-0">
+        <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff);">
+          <tr>
+            <th scope="col" style="width: 2rem;"><input type="checkbox" class="form-check-input" data-include-master checked aria-label="{{ _('Include all, or none') }}"></th>
+            {% for key, label in [('title', _('Dataset')), ('org', _('Organization')), ('source', _('Source')), ('name', _('Name')), ('email', _('Email'))] %}
+              <th scope="col" aria-sort="none"><button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" data-sort="{{ key }}">{{ label }}<span aria-hidden="true" data-sort-mark></span></button></th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in candidate.datasets %}
+            <tr data-title="{{ item.title }}" data-org="{{ item.organization or '' }}" data-source="{{ item.source }}" data-name="{{ item.name or '' }}" data-email="{{ item.raw_email or '' }}">
+              <td><input class="form-check-input" type="checkbox" value="{{ item.id }}" {% if named %}name="dataset_ids" id="d-{{ number }}-{{ loop.index }}"{% else %}id="i-{{ number }}-{{ loop.index }}"{% endif %} data-include-box checked aria-label="{{ item.title }}"></td>
+              <td><a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>{% if item.private %} <span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}</td>
+              <td>{{ item.organization or '–' }}</td>
+              <td>{{ _('Maintainer') if item.source == 'maintainer' else _('Author') }}</td>
+              <td>{{ item.name or '–' }}{% if item.also %}<br><small class="text-muted" data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}</td>
+              <td>{{ item.raw_email or '–' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endmacro %}
   <h1 class="page-heading">{{ _('Migrate to Actor Registry') }}</h1>
   <p>{{ _("Contact details are often stored as free text in CKAN's own fields, Maintainer and Author, and repeated on many datasets. Here you turn them into shared contact points and link the datasets to them. Maintainer is used first, and Author only when a dataset has no maintainer.") }}</p>
   <p class="text-muted">{{ _('The original fields are never changed. A dataset that has a contact point is done and is no longer listed. You only see the datasets you may edit.') }}</p>
@@ -121,38 +155,29 @@
             {# A large group: all its datasets are included; only the ones to leave out are posted. #}
             <input type="hidden" name="group_key" value="{{ candidate.key }}">
             <p class="mb-1" data-large-group>{% trans count=candidate.datasets|length %}All {{ count }} datasets are included.{% endtrans %}</p>
-            <details class="mb-2">
+            {# Without JavaScript: boxes that leave datasets out (posted as exclude_ids). With it (migrate-select.js): the same list the
+               other way round, ticked = included, and buttons for all/none; the unticked ones are posted as exclude_ids on submit. #}
+            <details class="mb-2" data-large-details
+                     data-i18n-count="{{ _('{included} of {total} datasets are included.') }}"
+                     data-i18n-none="{{ _('No dataset is included.') }}">
               <summary>{% trans count=candidate.datasets|length %}Show all {{ count }} datasets, and leave some out{% endtrans %}</summary>
-              <div class="border rounded p-2 mt-2" style="max-height: 24em; overflow-y: auto;">
+              <div class="border rounded p-2 mt-2" style="max-height: 24em; overflow-y: auto;" data-exclude-list>
                 {% for item in candidate.datasets %}
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="exclude_ids" value="{{ item.id }}" id="x-{{ number }}-{{ loop.index }}">
                     <label class="form-check-label checkbox" for="x-{{ number }}-{{ loop.index }}">
                       <strong>{{ _('Leave out') }}</strong>
-                      <a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>
-                      {% if item.organization %}<span class="text-muted">· {{ item.organization }}</span>{% endif %}
-                      {% if item.private %}<span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}
-                      <span class="text-muted">· {{ _('from Maintainer') if item.source == 'maintainer' else _('from Author') }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
-                      {% if item.also %}<br><small data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}
+                      {{ dataset_label(item) }}
                     </label>
                   </div>
                 {% endfor %}
               </div>
+              {# With JavaScript: a table (one box in the header for all or none, and headings that sort the rows). Ticked = included. #}
+              {{ dataset_table(candidate, number, false) }}
             </details>
-            <p class="help-block small">{{ _('Tick the datasets that belong to another contact point; they stay in the list for a later round. The same email address may be used by several contact points.') }}</p>
+            <p class="help-block small" data-large-help data-i18n-js="{{ _('Clear the datasets that belong to another contact point; they stay in the list for a later round. The same email address may be used by several contact points.') }}">{{ _('Tick the datasets that belong to another contact point; they stay in the list for a later round. The same email address may be used by several contact points.') }}</p>
             {% else %}
-            {% for item in candidate.datasets %}
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="dataset_ids" value="{{ item.id }}" id="d-{{ number }}-{{ loop.index }}" checked>
-                <label class="form-check-label checkbox" for="d-{{ number }}-{{ loop.index }}">
-                  <a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>
-                  {% if item.organization %}<span class="text-muted">· {{ item.organization }}</span>{% endif %}
-                  {% if item.private %}<span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}
-                  <span class="text-muted">· {{ _('from Maintainer') if item.source == 'maintainer' else _('from Author') }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
-                  {% if item.also %}<br><small data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}
-                </label>
-              </div>
-            {% endfor %}
+            {{ dataset_table(candidate, number, true) }}
             <p class="help-block small">{{ _('Clear the datasets that belong to another contact point; they stay in the list for a later round. The same email address may be used by several contact points.') }}</p>
             {% endif %}
           </fieldset>
@@ -197,7 +222,9 @@
               <label class="form-check-label radio" for="a-skip-{{ number }}">{{ _('Skip, for example a personal address that should not become a shared contact point') }}</label>
             </div>
           </fieldset>
-          <button type="submit" class="btn btn-primary btn-sm">{% if is_large %}{% trans count=candidate.datasets|length %}Apply to all {{ count }} datasets, except those left out{% endtrans %}{% else %}{{ _('Apply to the selected datasets') }}{% endif %}</button>
+          {# With JavaScript the button says how many datasets it will act on (migrate-select.js); without, its text is the fixed one. #}
+          <button type="submit" class="btn btn-primary btn-sm" data-apply-button
+                  data-i18n-one="{{ _('Apply to {count} dataset') }}" data-i18n-many="{{ _('Apply to {count} datasets') }}" data-i18n-none="{{ _('Select at least one dataset first') }}">{% if is_large %}{% trans count=candidate.datasets|length %}Apply to all {{ count }} datasets, except those left out{% endtrans %}{% else %}{{ _('Apply to the selected datasets') }}{% endif %}</button>
         </form>
       </section>
     {% endfor %}

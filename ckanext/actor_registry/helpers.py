@@ -1,6 +1,7 @@
 import json
 
 from flask import g
+from markupsafe import Markup
 
 import ckan.plugins.toolkit as toolkit
 
@@ -161,10 +162,59 @@ def legacy_contact_fields_in_use():
     return str(value).strip().lower() in ("true", "yes", "t", "y", "1", "on")
 
 
+def _once_per_request(key, compute):
+    """The navigation asks for the same counts on every registry page, and some pages ask twice. The migration and the
+    clean-up page hand over what they computed themselves (prime_counts), so those two pages do not survey twice for it."""
+    cache = g.__dict__.setdefault("_actor_registry_counts", {})
+    if key not in cache:
+        cache[key] = compute()
+    return cache[key]
+
+
 def cleanup_count():
     """Entries on the clean-up page for the current user (0 when not allowed)."""
     from ckanext.actor_registry import cleanup, contact_migration
     user = getattr(g, "user", None)
     if not user or not contact_migration.can_migrate(user):
         return 0
-    return cleanup.count(user)
+    return _once_per_request("cleanup", lambda: cleanup.count(user))
+
+
+def _migration_waiting(data):
+    return data["counts"]["remaining"] + data["counts"]["changed"]
+
+
+def prime_counts(**counts):
+    """A page that has just computed its own survey hands the number to the navigation, which would compute it again."""
+    cache = g.__dict__.setdefault("_actor_registry_counts", {})
+    cache.update(counts)
+
+
+def migration_remaining_count():
+    """Datasets that still wait to be migrated or that changed since they were linked, for the current user (0 when not allowed)."""
+    from ckanext.actor_registry import contact_migration
+    user = getattr(g, "user", None)
+    if not user or not contact_migration.can_migrate(user):
+        return 0
+    return _once_per_request("migration", lambda: _migration_waiting(contact_migration.survey(user)))
+
+
+def nav_item(endpoint, prefix, label, icon, count=0, pills=False):
+    """One entry of a navigation. It is active on its own page and on the pages under it (whose endpoint names start
+    with ``prefix``), and has a small number next to the label when something waits. ``pills`` makes an entry of
+    the submenu (Bootstrap pills) instead of an Administration tab."""
+    from flask import request
+    active = (request.endpoint or "").startswith(prefix)
+    badge = Markup(' <span class="badge text-bg-warning" data-nav-count>{}</span>').format(count) if count else ""
+    link = Markup('<i class="fa fa-{}"></i> {}{}').format(icon, label, badge)
+    if pills:
+        return Markup('<li class="nav-item"><a class="nav-link{}" href="{}"{}>{}</a></li>').format(
+            " active" if active else "", toolkit.url_for(endpoint),
+            Markup(' aria-current="page"') if active else "", link)
+    return Markup('<li{}><a href="{}">{}</a></li>').format(
+        Markup(' class="active"') if active else "", toolkit.url_for(endpoint), link)
+
+
+def admin_tab_enabled():
+    """Whether Administration (/ckan-admin) has one tab that leads to the registry."""
+    return toolkit.asbool(toolkit.config.get("ckanext.actor_registry.admin_tab", True))

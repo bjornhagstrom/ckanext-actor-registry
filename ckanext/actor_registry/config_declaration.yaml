@@ -2,6 +2,14 @@ version: 1
 groups:
   - annotation: ckanext-actor-registry
     options:
+      - key: ckanext.actor_registry.admin_tab
+        type: bool
+        default: true
+        description: |
+          Whether Administration (/ckan-admin) gets one "Actor registry" tab for
+          sysadmins that leads to the registry (which has its own navigation:
+          Publishers, Contact points, Migration, Cleanup). Set to false when the
+          portal links to the registry from its own header.
       - key: ckanext.actor_registry.legacy_contact_fields
         type: bool
         default: true

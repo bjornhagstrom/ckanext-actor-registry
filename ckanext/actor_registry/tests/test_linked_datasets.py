@@ -218,7 +218,8 @@ def test_swedish_pages_say_utgivare_not_aktor(app, org):
     for path in (f"/sv/actors/{actor}", f"/sv/actors/{actor}/datasets", f"/sv/actors/{actor}/edit",
                  "/sv/actors", "/sv/actors/new", f"/sv/contactpoints/{contact}"):
         html = app.get(path, headers=headers).get_data(as_text=True)
-        assert "aktör" not in html.lower(), path
+        # The registry's own name is allowed (the Administration tab); everything else says Utgivare.
+        assert "aktör" not in html.replace("Aktörsregister", "").lower(), path
     assert "Utgivare" in app.get("/sv/actors", headers=headers).get_data(as_text=True)
 
 
@@ -308,6 +309,7 @@ def test_english_pages_say_publisher_not_actor(app, org):
         for tag in soup(["script", "style"]):
             tag.decompose()
         text = re.sub(r"https?://\S+", "", soup.body.get_text(" ", strip=True))  # URIs are identifiers, not UI text
+        text = re.sub(r"Actor registry", "", text)  # the name of the registry (its Administration tab) is allowed
         assert not re.search(r"\bactors?\b", text, re.I), (path, re.findall(r".{20}\bactors?\b.{20}", text, re.I)[:3])
 
 
@@ -400,11 +402,11 @@ def test_public_pages_show_no_admin_tabs_to_visitors(app, org):
     assert 'actors"' not in contact_html
 
 
-def test_sysadmins_keep_the_admin_tabs(app, org):
+def test_sysadmins_see_the_administration_tabs_and_the_submenu(app, org):
     sysadmin = factories.SysadminWithToken()
     actor = _actor()
     html = app.get(f"/en/actors/{actor}", headers=_headers(sysadmin)).get_data(as_text=True)
-    assert "/ckan-admin/config" in html and "/actors" in html
+    assert "/ckan-admin/config" in html and "/contactpoints" in html
 
 
 def test_empty_fields_are_not_shown(app, org):
@@ -438,3 +440,17 @@ def test_contact_point_breadcrumb_names_the_contact_point(app, org):
     soup = BeautifulSoup(app.get(f"/en/contactpoints/{contact}").get_data(as_text=True), "html.parser")
     crumbs = [li.get_text(strip=True) for li in soup.select(".breadcrumb li")]
     assert crumbs[-2:] == ["Contact points", "Open Data Desk"]
+
+
+def test_each_choice_of_missing_shows_how_many_datasets_it_lists(app, org):
+    actor = _actor()
+    contact = _contact(actor)
+    _dataset(org, "Bara utgivare", publisher_actor_id=actor)
+    _dataset(org, "Bara kontaktpunkt", contact_point_ids=[contact])
+    _dataset(org, "Ingen av dem")
+    _dataset(org, "Ingen heller")
+    headers = _headers(factories.SysadminWithToken())
+    html = app.get("/en/actors", headers=headers).get_data(as_text=True)
+    pills = {a.get_text(strip=True): None for a in BeautifulSoup(html, "html.parser").select("ul.nav-pills a")}
+    # Each choice counts the datasets that LACK that: no publisher = 3, no contact point = 3, lacking either = 4.
+    assert {"Both (2)", "Publisher (3)", "Contact point (3)", "Either (4)"} <= set(pills)

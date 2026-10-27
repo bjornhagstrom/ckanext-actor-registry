@@ -12,6 +12,13 @@ actor-quick-create:
   extra:
     preload:
       - base/main
+migrate-select:
+  output: actor_registry/%(version)s_migrate-select.js
+  contents:
+    - js/migrate-select.js
+  extra:
+    preload:
+      - base/main
 actor-merge-select:
   output: actor_registry/%(version)s_actor-merge-select.js
   contents:

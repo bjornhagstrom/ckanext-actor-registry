@@ -1,4 +1,4 @@
-{% extends "admin/base.html" %}
+{% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ _('Publishers') }}{% endblock %}
 {% block breadcrumb_content %}<li class="active">{{ _('Publishers') }}</li>{% endblock %}
@@ -24,7 +24,7 @@
 </div>
 <h2 id="worklist">{{ missing_heading }}</h2>
 {% set missing_text = _('Missing:') %}
-<ul class="nav nav-pills mb-3" aria-label="{{ missing_text }}"><li class="nav-item nav-link disabled">{{ missing_text }}</li>{% for key, label in missing_labels %}{% set keep = {'show_merged': '1'} if show_merged else {} %}<li class="nav-item"><a class="nav-link{{ ' active' if key == missing else '' }}" href="{{ h.url_for('actor_registry.actors_index', missing=key, **keep) }}#worklist">{{ label }}</a></li>{% endfor %}</ul>
+<ul class="nav nav-pills mb-3" aria-label="{{ missing_text }}"><li class="nav-item nav-link disabled">{{ missing_text }}</li>{% for key, label in missing_labels %}{% set keep = {'show_merged': '1'} if show_merged else {} %}<li class="nav-item"><a class="nav-link{{ ' active' if key == missing else '' }}" href="{{ h.url_for('actor_registry.actors_index', missing=key, **keep) }}#worklist">{{ label }} ({{ missing_counts[key] }})</a></li>{% endfor %}</ul>
 {% if unlinked_datasets.total %}
 <p>{{ _('Open each dataset to add what is missing.') }}</p>
 {{ dl.dataset_list(unlinked_datasets, h.url_for('actor_registry.actors_unlinked_datasets', missing=missing), '') }}

@@ -29,6 +29,10 @@ dataset_fields:
   form_snippet: markdown.html
   display_snippet: markdown.html
 
+- field_name: url
+  label: {en: Landing page, sv: Landningssida, sv_SE: Landningssida}
+  form_placeholder: https://
+
 - field_name: owner_org
   label: {en: Organization, sv: Organisation, sv_SE: Organisation}
   preset: dataset_organization

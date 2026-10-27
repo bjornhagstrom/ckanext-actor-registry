@@ -86,6 +86,8 @@ def test_dataset_new_form_has_publisher_and_contact_point_fields(app):
     assert response.status_code == 200
     assert 'name="publisher_actor_id"' in html and 'name="contact_point_ids"' in html
     assert f'value="{actor_id}"' in html and f'value="{contact_id}"' in html
+    # An editor can open the registry from the form (in a new tab, so the form is not lost).
+    assert 'data-actors-manage' in html and 'data-contactpoints-manage' in html
     # Shared inline-dialog help text is rendered with the fields.
     assert "A unique value for this organization or person" in html
     # Contact point dialog offers the owning organization, and options carry it.

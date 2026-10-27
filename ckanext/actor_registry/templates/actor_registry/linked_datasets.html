@@ -2,7 +2,7 @@
     (kind 'actor'), those a contact point is linked to (kind 'contact_point'),
     or those with neither a publisher nor a contact point (kind 'unlinked').
     ``data`` is {"rows": [...], "total": n}; see views._linked_datasets. -#}
-{% extends "admin/base.html" %}
+{% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% if kind == 'unlinked' %}
   {% set title = _('Publishers') %}

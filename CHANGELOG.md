@@ -5,6 +5,26 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Migration page: every group uses the same table, large or small. The datasets are ticked when they are included, one box in the heading ticks all or none (in
+  between when some are ticked), and the headings sort the rows (dataset, organisation, source, name, email; a second click reverses). The ones that are not ticked
+  are sent as the datasets to leave out. Without JavaScript the "Leave out" boxes work as before. Labels of checkboxes and radio buttons no longer get a colon from
+  CKAN's stylesheet.
+- Migration page: the button says how many datasets it will act on ("Apply to 42 datasets") and cannot be pressed for none.
+- The registry is one tab, "Actor registry", in Administration; its pages show the Administration tabs (for sysadmins) and, under them, a
+  submenu: Publishers, Contact points and, for those who may migrate, Migration and Cleanup, with a small number when something waits.
+  `ckanext.actor_registry.admin_tab = false` turns the Administration tab off for portals that link to the registry from their own header.
+- A tab "Actor registry" on the user's dashboard (for those who may edit at least one dataset) and a "Manage publishers" / "Manage contact
+  points" link next to the two fields in the dataset form (opens in a new tab).
+- The choices of "Missing:" on the publishers page show how many datasets each lists.
+- The migration example schema (`actor_registry_migration_schema.yaml`) has a Landing page field (CKAN's own `url`).
+
+### Fixed
+
+- Migration page: linking or skipping the last group on the last page showed "Nothing remains to migrate." although groups
+  were left; it now shows the last page that exists.
+
 ## [0.4.1] - 2026-10-08
 
 No code or database changes since 0.4.0.

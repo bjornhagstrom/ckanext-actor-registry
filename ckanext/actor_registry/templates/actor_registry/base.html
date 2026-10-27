@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+
+{#
+  The registry lives in Administration (2026-10-16): one tab "Actor registry" among the other Administration tabs (see
+  admin/base.html) and, under it, a submenu with the registry's own pages. Sysadmins see the Administration tabs above the
+  submenu; other logged-in users (editors) see only the submenu. A visitor who is not logged in sees neither: the public
+  pages of a publisher and a contact point have no navigation at all. Migration and Cleanup show a small number when
+  something waits.
+#}
+{% block subtitle %}{{ _('Actor registry') }}{% endblock %}
+{% block page_header %}
+  {% if c.userobj %}
+    {# Administration's tabs sit in core's page header, which floats them to the left; the submenu is a block of its own under it. #}
+    {% if c.userobj.sysadmin %}
+      <header class="module-content page-header">
+        <ul class="nav nav-tabs">{% block content_primary_nav %}{{ super() }}{% endblock %}</ul>
+      </header>
+    {% endif %}
+    <div class="module-content registry-submenu-wrap pb-0">
+      <ul class="nav nav-pills registry-submenu" aria-label="{{ _('Actor registry') }}">
+        {{ h.actor_registry_nav_item('actor_registry.actors_index', 'actor_registry.actor', _('Publishers'), 'building', pills=true) }}
+        {{ h.actor_registry_nav_item('actor_registry.contactpoints_index', 'actor_registry.contactpoint', _('Contact points'), 'address-book', pills=true) }}
+        {% if h.actor_registry_can_migrate() %}
+          {{ h.actor_registry_nav_item('actor_registry.migrate_index', 'actor_registry.migrate', _('Migration'), 'right-left', h.actor_registry_migration_remaining_count(), pills=true) }}
+          {{ h.actor_registry_nav_item('actor_registry.cleanup_index', 'actor_registry.cleanup', _('Cleanup'), 'broom', h.actor_registry_cleanup_count(), pills=true) }}
+        {% endif %}
+      </ul>
+    </div>
+  {% endif %}
+{% endblock %}

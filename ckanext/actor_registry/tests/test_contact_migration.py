@@ -280,6 +280,10 @@ def test_a_large_group_is_shown_compactly_and_applied_through_the_page(app, monk
     # No per-dataset "include" field: only "leave out" boxes, and the group key.
     assert "data-large-group" in html and 'name="group_key" value="email:desk@example.org"' in html
     assert 'name="dataset_ids"' not in html and html.count('name="exclude_ids"') == 4
+    # With JavaScript the same list is shown the other way round (ticked = included) and has buttons for all and none;
+    # the plain "leave out" boxes stay for a browser without it.
+    assert html.count("data-include-box") == 4 and "data-include-master" in html and html.count("data-sort=") == 5
+    assert "migrate-select" in html
     response = app.post("/actor-registry/migrate/apply", headers={"Authorization": sysadmin["token"]},
                         data={"action": "create", "group_key": "email:desk@example.org", "name": "Open Data Desk",
                               "email": "desk@example.org", "exclude_ids": [datasets[3]["id"]], "page": "1"},
@@ -768,3 +772,20 @@ def test_saving_the_form_with_a_missing_contact_point_gives_the_message(app):
                           "owner_org": org["id"], "contact_point_ids": ["gone-123"], "save": ""},
                     ).get_data(as_text=True)
     assert "A selected contact point no longer exists (id gone-123). Remove it from the list." in html
+
+
+@_page_mark
+def test_linking_the_last_group_of_the_last_page_shows_the_page_that_is_left(app):
+    import re
+
+    sysadmin = factories.SysadminWithToken()
+    org = _org()
+    for number in range(21):  # a page holds 20 groups: the 21st is alone on page 2
+        _dataset(org, maintainer=f"Desk {number:02d}", maintainer_email=f"desk{number:02d}@example.org")
+    page_two = _get(app, sysadmin, "/actor-registry/migrate?page=2")
+    [key] = re.findall(r'data-candidate="([^"]+)"', page_two)
+    response = app.post("/actor-registry/migrate/apply", headers={"Authorization": sysadmin["token"]},
+                        data={"action": "create", "group_key": key, "name": "Last desk",
+                              "email": key.split(":", 1)[1], "page": "2"}, follow_redirects=True)
+    html = response.get_data(as_text=True)
+    assert "data-migration-done" not in html and html.count("data-candidate=") == 20
