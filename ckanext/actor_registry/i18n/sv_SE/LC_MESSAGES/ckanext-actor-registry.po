@@ -367,20 +367,12 @@ msgid "The dataset is now linked to {name}."
 msgstr "Datamängden är nu kopplad till {name}."
 
 #: ckanext/actor_registry/views.py:843
-msgid ""
-"The migration is closed. Maintainer and Author are hidden and no longer "
-"exported."
-msgstr ""
-"Migreringen är avslutad. Förvaltare och Författare döljs och exporteras "
-"inte längre."
+msgid "The migration is closed. The old contact fields are hidden and no longer exported."
+msgstr "Migreringen är avslutad. De gamla kontaktfälten döljs och exporteras inte längre."
 
 #: ckanext/actor_registry/views.py:852
-msgid ""
-"The migration is open again. Maintainer and Author are shown and exported"
-" as before."
-msgstr ""
-"Migreringen är öppen igen. Förvaltare och Författare visas och exporteras"
-" som förut."
+msgid "The migration is open again. The old contact fields are shown and exported as before."
+msgstr "Migreringen är öppen igen. De gamla kontaktfälten visas och exporteras som förut."
 
 #: ckanext/actor_registry/views.py:884
 #, python-brace-format
@@ -1189,24 +1181,16 @@ msgid "Migration closed."
 msgstr "Migreringen är avslutad."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:20
-msgid ""
-"Maintainer and Author are hidden and no longer exported. Their values are"
-" still stored."
-msgstr ""
-"Förvaltare och Författare döljs och exporteras inte längre. Värdena finns"
-" kvar."
+msgid "The old contact fields are hidden and no longer exported. Their values are still stored."
+msgstr "De gamla kontaktfälten döljs och exporteras inte längre. Värdena finns kvar."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:22
 msgid "Migration in progress."
 msgstr "Migrering pågår."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:22
-msgid ""
-"Maintainer and Author are still shown and used in the DCAT export for "
-"datasets without a contact point."
-msgstr ""
-"Förvaltare och Författare visas fortfarande och används i DCAT-exporten "
-"för datamängder utan kontaktpunkt."
+msgid "The old contact fields are still shown and used in the DCAT export for datasets without a contact point."
+msgstr "De gamla kontaktfälten visas fortfarande och används i DCAT-exporten för datamängder utan kontaktpunkt."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:26
 msgid ""
@@ -1221,8 +1205,8 @@ msgid "Overview"
 msgstr "Översikt"
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:33
-msgid "Datasets with contact details in Maintainer or Author"
-msgstr "Datamängder med kontaktuppgifter i Förvaltare eller Författare"
+msgid "Datasets with contact details in free-text fields"
+msgstr "Datamängder med kontaktuppgifter i fritextfält"
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:34
 msgid "of which linked to a contact point"
@@ -1258,11 +1242,11 @@ msgstr "Ändrade sedan kopplingen"
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:46
 msgid ""
-"Maintainer or Author has changed on these datasets after they were "
-"linked. Decide whether the contact point should follow the change."
+"The free-text contact details have changed on these datasets after they "
+"were linked. Decide whether the contact point should follow the change."
 msgstr ""
-"Förvaltare eller Författare har ändrats på de här datamängderna efter att"
-" de kopplades. Avgör om kontaktpunkten ska följa ändringen."
+"Kontaktuppgifterna i fritext har ändrats på de här datamängderna efter "
+"att de kopplades. Avgör om kontaktpunkten ska följa ändringen."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:54
 msgid "Linked to"
@@ -1494,12 +1478,8 @@ msgid "Reopen the migration"
 msgstr "Öppna migreringen igen"
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:269
-msgid ""
-"Shows Maintainer and Author again and uses them in the export for "
-"datasets without a contact point."
-msgstr ""
-"Visar Förvaltare och Författare igen och använder dem i exporten för "
-"datamängder utan kontaktpunkt."
+msgid "Shows the old contact fields again and uses them in the export for datasets without a contact point."
+msgstr "Visar de gamla kontaktfälten igen och använder dem i exporten för datamängder utan kontaktpunkt."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:275
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:292
@@ -1507,26 +1487,12 @@ msgid "Close the migration"
 msgstr "Avsluta migreringen"
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:276
-msgid ""
-"Closing hides Maintainer and Author in forms and on dataset pages, for "
-"everyone including sysadmins, and stops exporting them. Nothing is "
-"deleted: the values stay stored, and you can reopen the migration at any "
-"time. It takes effect at once, without a restart."
-msgstr ""
-"Att avsluta döljer Förvaltare och Författare i formulär och på "
-"datamängdssidor, för alla, även sysadmins, och stoppar exporten av dem. "
-"Inget raderas: värdena finns kvar, och du kan öppna migreringen igen när "
-"som helst. Det gäller direkt, utan omstart."
+msgid "Closing hides the old contact fields (Maintainer, Author and ckanext-dcat's free-text contact point) in forms and on dataset pages, for everyone including sysadmins, and stops exporting them. Nothing is deleted: the values stay stored and are kept when a dataset is saved, and you can reopen the migration at any time. It takes effect at once, without a restart."
+msgstr "Att avsluta döljer de gamla kontaktfälten (Förvaltare, Författare och ckanext-dcats kontaktpunkt i fritext) i formulär och på datamängdssidor, för alla, även sysadmins, och stoppar exporten av dem. Inget raderas: värdena finns kvar och behålls när en datamängd sparas, och du kan öppna migreringen igen när som helst. Det gäller direkt, utan omstart."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:277
-msgid ""
-"Hiding works for schemas whose Maintainer and Author fields use the "
-"legacy_contact.html snippets; schemas without those fields are not "
-"affected."
-msgstr ""
-"Döljandet fungerar för scheman där fälten Förvaltare och Författare "
-"använder mallarna legacy_contact.html; scheman utan de fälten påverkas "
-"inte."
+msgid "Hiding works for fields that use the extension's snippets for old fields: legacy_contact.html for Maintainer and Author, legacy_dcat_contact.html for ckanext-dcat's contact point (added by ckan actor-registry schema). Other fields are not affected."
+msgstr "Döljandet fungerar för fält som använder tilläggets mallar för gamla fält: legacy_contact.html för Förvaltare och Författare, legacy_dcat_contact.html för ckanext-dcats kontaktpunkt (läggs till av ckan actor-registry schema). Andra fält påverkas inte."
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:283
 #, python-format
@@ -1845,3 +1811,18 @@ msgstr "Status"
 #~ msgid "Leave out all"
 #~ msgstr "Avmarkera alla"
 
+msgid "Contact point (free text)"
+msgstr "Kontaktpunkt (fritext)"
+
+msgid "from Contact point (free text)"
+msgstr "från Kontaktpunkt (fritext)"
+
+msgid "Also mentioned:"
+msgstr "Nämns också:"
+
+msgid ""
+"A contact point typed as free text in ckanext-dcat's contact points field "
+"is used before both, as in ckanext-dcat's export."
+msgstr ""
+"En kontaktpunkt som skrivits som fritext i ckanext-dcats fält för "
+"kontaktpunkter används före båda, som i ckanext-dcats export."

@@ -73,9 +73,10 @@ Things that go wrong if you change the setup and miss them:
   arrive through the `envvars` plugin (which is last) arrive too late for it, so the
   dataset form would silently fall back to CKAN's default fields.
 - **The Scheming schema path is `python.module:file.yaml`**, for example
-  `ckanext.actor_registry.examples:actor_registry_schema.yaml`. An absolute file path does
-  not work. To use your own schema, put it in a Python package that is installed in the
-  image and point `scheming.dataset_schemas` at it.
+  `ckanext.actor_registry.examples:actor_registry_schema.yaml`. A file in the image works
+  as a `file:///absolute/path.yaml` URL, but not as a bare absolute path. To use your own
+  schema, copy it into the image (or put it in an installed Python package) and point
+  `scheming.dataset_schemas` at it.
 - **The image's `ckan.ini` enables the `datastore` plugin**, and its start-up script runs
   `ckan db init` with that file before it applies `CKAN__PLUGINS`. Without a DataStore
   database that fails on the very first start, so the `Dockerfile` resets the plugin list

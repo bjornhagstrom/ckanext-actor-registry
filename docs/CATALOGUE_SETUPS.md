@@ -55,13 +55,20 @@ text on each dataset. In CKAN, the **maintainer** is the one you contact, and
 the **author** is who created the data. Our recommendation when you move to the
 registry:
 
+- **ckanext-dcat's free-text contact point** (the field `contact` of its
+  schemas) becomes a contact point when a dataset has one, before Maintainer
+  and Author, because ckanext-dcat exports it first. A second one is shown as
+  "also mentioned".
 - **Maintainer** becomes a contact point.
 - **Author** becomes a contact point only when there is no maintainer. When both
   exist and differ, an editor decides whether the author is a contact point of
   its own, a publisher, or neither.
-- **The original fields are never changed.** Their values stay in the database
-  and the API, so the move can always be undone. Hide them in your schema once
-  the move is complete.
+- **The original fields are never changed by the move.** Their values stay in
+  the database and the API, so the move can always be undone, as long as the
+  fields stay in your schema: keep them as legacy fields (`ckan actor-registry
+  schema` does this) and close the migration once the move is complete, which
+  hides them. Removing them from the schema clears their values on the next
+  save of the form.
 
 See [Activating on an existing installation with datasets](../README.md#activating-on-an-existing-installation-with-datasets)
 for how to do this today.

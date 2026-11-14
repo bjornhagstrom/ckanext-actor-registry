@@ -5,23 +5,64 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Changed
+## [0.5.0] - 2026-11-14
 
-- Migration page: every group uses the same table, large or small. The datasets are ticked when they are included, one box in the heading ticks all or none (in
-  between when some are ticked), and the headings sort the rows (dataset, organisation, source, name, email; a second click reverses). The ones that are not ticked
-  are sent as the datasets to leave out. Without JavaScript the "Leave out" boxes work as before. Labels of checkboxes and radio buttons no longer get a colon from
-  CKAN's stylesheet.
-- Migration page: the button says how many datasets it will act on ("Apply to 42 datasets") and cannot be pressed for none.
+No database migration. To move a catalogue's existing schema over to the registry, use the new schema tool
+(`docs/INSTALLATION.md`).
+
+### Added
+
+- `ckan actor-registry schema SOURCE` (or `python -m ckanext.actor_registry.schema_tool SOURCE` without a CKAN configuration) writes
+  your own copy of a Scheming schema, such as ckanext-dcat's `dcat_ap_full`, with the registry's contact points (`contact_point_ids`)
+  where the free-text contact point was. The old field is kept as a legacy field (`legacy_dcat_contact.html`), like Maintainer and Author in
+  the migration example: shown while the migration is open, hidden but sent along with every save once it is closed, because CKAN clears a
+  stored value that a save does not send. Translated subfields (ckanext-fluent, such as `name_translated` in `dcat_ap_multilingual`) are
+  sent along too. Nothing from the source schema ships with the extension.
+  CKAN's own Author, Maintainer and their emails are kept the same way (`legacy_contact.html`), so the tool is the standard path for a
+  catalogue without ckanext-dcat too, from its own schema or from `ckanext.scheming:ckan_dataset.yaml`.
+  A legacy field loses `required` (it is hidden once the migration is closed), and the source may also be a `file:///` URL.
+  A source URL with a user name or password is refused (urllib does not send them) without quoting them.
+- `docs/INSTALLATION.md` starts with a table of the choices to make (Scheming or not, ckanext-dcat or not, existing contact details,
+  publisher), and `AGENTS.md` gives an AI assistant installing the extension the same choices and what not to guess.
+  `AGENTS.md` and `TESTING.md` are included in the source distribution.
+- The migration page reads ckanext-dcat's free-text contact point (the field `contact`) before Maintainer and Author, as ckanext-dcat's
+  export does; a second one is shown as "also mentioned". Datasets linked or skipped before keep their fingerprint unless they also have a
+  stored dcat contact point: those are listed once more (as changed, or as remaining) so that an editor sees the new source.
+  A contact point with only a translated name (`name_translated`, as in ckanext-dcat's multilingual schema) is read in the site's
+  default language, and a change to any of its translations counts as a change since linking.
 - The registry is one tab, "Actor registry", in Administration; its pages show the Administration tabs (for sysadmins) and, under them, a
   submenu: Publishers, Contact points and, for those who may migrate, Migration and Cleanup, with a small number when something waits.
-  `ckanext.actor_registry.admin_tab = false` turns the Administration tab off for portals that link to the registry from their own header.
+  The new setting `ckanext.actor_registry.admin_tab = false` turns the Administration tab off for portals that link to the registry
+  from their own header.
 - A tab "Actor registry" on the user's dashboard (for those who may edit at least one dataset) and a "Manage publishers" / "Manage contact
   points" link next to the two fields in the dataset form (opens in a new tab).
 - The choices of "Missing:" on the publishers page show how many datasets each lists.
 - The migration example schema (`actor_registry_migration_schema.yaml`) has a Landing page field (CKAN's own `url`).
 
+### Changed
+
+- The DCAT profile leaves out a value stored in ckanext-dcat's `contact` field when the page does not show it: the schema has no such
+  field, or it is the legacy field and the migration is closed. A dataset whose only contact point was such a value has none in the
+  export after the upgrade; link it to a contact point in the registry (the migration page lists it).
+- The migration page counts a dataset linked through it as linked even when its old value is gone since.
+- Migration page: the texts about closing and reopening, and the status lines, speak of the old contact fields (Maintainer, Author and
+  ckanext-dcat's free-text contact point) instead of Maintainer and Author only (new translations).
+- Migration page texts: the overview counts "Datasets with contact details in free-text fields", and *Changed since linking* speaks of the
+  free-text contact details (both strings have new translations).
+- Migration page: every group uses the same table, large or small. The datasets are ticked when they are included, one box in the heading
+  ticks all or none (in between when some are ticked), and the headings sort the rows (dataset, organisation, source, name, email; a second
+  click reverses) in the page's language. The ones that are not ticked are sent as the datasets to leave out. Without JavaScript the
+  "Leave out" boxes work as before. Labels of checkboxes and radio buttons no longer get a colon from CKAN's stylesheet, nor do
+  the "Show merged/retired publishers too" and "Show inactive contact points too" boxes.
+- Migration page: the button says how many datasets it will act on ("Apply to 42 datasets") and cannot be pressed for none.
+- The migration and cleanup pages also answer with a trailing `/` in the address.
+
 ### Fixed
 
+- The documentation said that Scheming cannot read a schema from a file path; a `file:///` URL works (a bare path does not).
+- `docs/INSTALLATION.md`: `actor_registry` before `scheming_datasets` is also what hides the old contact fields on the dataset page
+  once the migration is closed.
+- README: a value in a field the schema lacks was said to stay in the database; the next form save clears it (CKAN's own columns too).
 - Migration page: linking or skipping the last group on the last page showed "Nothing remains to migrate." although groups
   were left; it now shows the last page that exists.
 
@@ -382,7 +423,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.0...v0.3.1

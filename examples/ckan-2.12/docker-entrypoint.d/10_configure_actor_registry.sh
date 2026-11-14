@@ -9,7 +9,7 @@ set -e
 # for Scheming. Writing them here with `ckan config-tool` avoids the ordering
 # problem.
 #
-# Scheming path format: <python module>:<file>. An absolute file path does not work.
+# Scheming path format: <python module>:<file>, or a file:///absolute/path.yaml URL (a bare path does not work).
 # The schema below ships inside the extension; copy it into a package of your own
 # and point this at it to customise the dataset form.
 ckan config-tool "$CKAN_INI" \

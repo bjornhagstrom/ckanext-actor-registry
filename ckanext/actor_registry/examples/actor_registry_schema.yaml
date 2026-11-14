@@ -3,8 +3,8 @@
 # integration example, NOT a binding or universal metadata schema: copy it,
 # then decide per metadata profile which fields are required.
 #
-# Reference it from ckan.ini with the Scheming module:path format (an
-# absolute file path does not work):
+# Reference it from ckan.ini with the Scheming module:path format (a file
+# needs a file:/// URL; a bare absolute path does not work):
 #
 #   scheming.dataset_schemas = ckanext.actor_registry.examples:actor_registry_schema.yaml
 #   scheming.presets = ckanext.scheming:presets.json

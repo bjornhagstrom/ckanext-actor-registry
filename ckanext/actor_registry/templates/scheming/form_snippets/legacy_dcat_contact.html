@@ -1,0 +1,27 @@
+{#-
+  For ckanext-dcat's free-text contact point (the repeating field "contact")
+  while a catalogue moves to the registry, in a schema made by
+  `ckan actor-registry schema`. While the migration is open, dcat's ordinary
+  repeating fields. Once it is closed, they are not shown, but every stored
+  value is sent along unchanged, so saving the form never clears them (CKAN
+  removes a stored value that a save does not send). Like legacy_contact.html
+  for CKAN's own contact fields.
+-#}
+{%- if h.actor_registry_legacy_contact_fields_in_use() -%}
+  {%- snippet 'scheming/form_snippets/repeating_subfields.html', field=field, data=data, errors=errors,
+      licenses=licenses, entity_type=entity_type, object_type=object_type -%}
+{%- else -%}
+  {%- set flat = h.scheming_flatten_subfield(field, data) -%}
+  {%- for key, value in flat|dictsort -%}
+    {%- if key.startswith(field.field_name ~ '-') and value is mapping -%}
+      {#- A translated subfield (ckanext-fluent, e.g. name_translated): one input per language, as its form sends it. -#}
+      {%- for lang, text in value|dictsort -%}
+        {%- if text is not none -%}
+          <input type="hidden" name="{{ key }}-{{ lang }}" value="{{ text }}" data-legacy-contact-hidden>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- elif key.startswith(field.field_name ~ '-') and value is not none -%}
+      <input type="hidden" name="{{ key }}" value="{{ value }}" data-legacy-contact-hidden>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}

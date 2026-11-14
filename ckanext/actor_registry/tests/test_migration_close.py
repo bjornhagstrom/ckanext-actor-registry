@@ -29,22 +29,6 @@ OLD = {"maintainer": "Desk", "maintainer_email": "desk@example.org",
        "author": "Ann", "author_email": "ann@example.org"}
 
 
-@pytest.fixture
-def restore_option():
-    """config_option_update changes the running config, and CKAN keeps the
-    first value it saw in a process-wide cache; reset both around each test."""
-    from ckan.common import config
-    from ckan.lib import app_globals
-
-    def reset():
-        app_globals._CONFIG_CACHE.pop(OPTION, None)
-        config.pop(OPTION, None)
-
-    reset()
-    yield
-    reset()
-
-
 def _dataset(**fields):
     sysadmin = factories.Sysadmin()
     org = factories.Organization()

@@ -26,6 +26,8 @@ RDF. Tests therefore need to cover more than the HTML forms.
 | Translations | English, `sv` and `sv_SE` render help texts and messages; the `sv` and `sv_SE` catalogues stay identical; extraction finds every template string. |
 | CKAN 2.11 and 2.12 | Queries that read a dataset's extras work with both storage layouts (`package_extra` on 2.11, `package.extras` on 2.12). |
 | Example schema | The shipped example schema loads and works. |
+| Schema copy | `ckan actor-registry schema` puts the registry field where ckanext-dcat's free-text contact point was in `dcat_ap_full` and keeps that one as a legacy field; in CKAN the copy shows both while the migration is open (page and export show the old value until a contact point is chosen), hides the old one once it is closed, and a form save keeps the old value in both cases. |
+| Migration from dcat | ckanext-dcat's free-text contact point is read before Maintainer and Author, grouped and linked like them, and a change after linking is flagged; datasets linked before without a stored dcat contact point keep their fingerprint. |
 
 The supported, reproducible test run builds an isolated CKAN environment with
 PostgreSQL, Solr and Redis. It also downloads the official DCAT-AP 3.0.1 SHACL

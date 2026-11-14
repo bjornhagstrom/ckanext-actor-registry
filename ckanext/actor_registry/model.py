@@ -6,9 +6,10 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, bind
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT as PG_TEXT
 
 
-# The two scheming fields the registry links datasets through. Only these keys
-# may be interpolated into SQL below.
-_EXTRA_KEYS = ("publisher_actor_id", "contact_point_ids")
+# The two scheming fields the registry links datasets through, and ckanext-dcat's
+# free-text contact point that the migration reads. Only these keys may be
+# interpolated into SQL below.
+_EXTRA_KEYS = ("publisher_actor_id", "contact_point_ids", "contact")
 _extras_are_a_column = None
 
 

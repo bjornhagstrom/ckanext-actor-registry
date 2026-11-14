@@ -7,8 +7,13 @@ datasets an editor selects to a new or existing contact point.
 
 Rules (see docs/CATALOGUE_SETUPS.md):
 
-- Maintainer is the source; Author only when a dataset has no Maintainer. When
-  both are set and differ, the author is shown as "also mentioned".
+- ckanext-dcat's free-text contact point (the repeating field ``contact`` of
+  its schemas) is the source when the dataset has one, because ckanext-dcat
+  exports it before Maintainer: what is exported is what is migrated. The first
+  one is used; a second one is shown as "also mentioned".
+- Otherwise Maintainer is the source; Author only when a dataset has no
+  Maintainer. When both are set and differ, the author is shown as "also
+  mentioned".
 - The original fields are never changed. Linking only sets
   ``contact_point_ids``, through ``package_patch``.
 - A dataset with registry contact points is done and is not listed.
@@ -16,7 +21,8 @@ Rules (see docs/CATALOGUE_SETUPS.md):
 
 Every decision is appended to ``actor_registry_migration_decision``.
 
-Step 2, changes in the source: when Maintainer or Author changes on a linked
+Step 2, changes in the source: when the free-text contact details (dcat's
+contact point, Maintainer or Author) change on a linked
 dataset, its fingerprint no longer matches the decision, and the dataset is
 listed as "changed since linking". The editor updates the contact point, links
 another one, or keeps it as it is; each choice is a new decision with the new
@@ -39,6 +45,11 @@ from ckanext.actor_registry import helpers, validation
 from ckanext.actor_registry import model as registry_model
 
 SOURCE_FIELDS = ("maintainer", "maintainer_email", "author", "author_email")
+# ckanext-dcat's free-text contact point. Kept out of SOURCE_FIELDS: it only
+# takes part in a fingerprint when it has a value, so datasets linked before it
+# was read do not all turn up as "changed since linking".
+DCAT_CONTACT_FIELD = "contact"
+ALL_SOURCE_FIELDS = SOURCE_FIELDS + (DCAT_CONTACT_FIELD,)
 LINKED, SKIPPED, UNSKIPPED, KEPT = "linked", "skipped", "unskipped", "kept"
 ACTIONS = ("create", "existing", "skip")
 CHANGE_ACTIONS = ("update", "existing", "create", "keep")
@@ -58,12 +69,14 @@ class MigrationDecision(toolkit.BaseModel):
     source_values = Column(Text, nullable=True)
 
     def values(self):
-        """The Maintainer/Author values the decision was made on, or None."""
+        """The source values the decision was made on, or None."""
         try:
             values = json.loads(self.source_values or "null")
         except ValueError:
             return None
-        return dict(zip(SOURCE_FIELDS, values)) if isinstance(values, list) and len(values) == 4 else None
+        if not isinstance(values, list) or len(values) not in (len(SOURCE_FIELDS), len(ALL_SOURCE_FIELDS)):
+            return None
+        return _values_dict(values)
 
 
 # --- Normalising the free-text fields --------------------------------------------------
@@ -86,26 +99,129 @@ def normalise_email(value):
     return address, True
 
 
+def _get(row, field):
+    return row.get(field) if isinstance(row, dict) else getattr(row, field, None)
+
+
+def _dcat_entries(value):
+    """The stored extra (a JSON list of objects) or an already parsed list, as a list of dicts."""
+    if isinstance(value, str):
+        try:
+            value = json.loads(value) if value.strip() else []
+        except ValueError:
+            return []
+    if not isinstance(value, list):
+        return []
+    return [entry for entry in value if isinstance(entry, dict)]
+
+
+def _translations(value):
+    """A translated subfield (ckanext-fluent, e.g. ``name_translated``) as {language: text}."""
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return {}
+    if not isinstance(value, dict):
+        return {}
+    return {str(lang): clean(text) for lang, text in value.items() if clean(text)}
+
+
+def _translated_name(entry):
+    """``name``, or else the translation in the site's default language, or else the first one."""
+    name = clean(entry.get("name"))
+    if name:
+        return name
+    translations = _translations(entry.get("name_translated"))
+    default = toolkit.config.get("ckan.locale_default") or "en"
+    for lang in [default] + sorted(translations):
+        if translations.get(lang):
+            return translations[lang]
+    return ""
+
+
+def dcat_contacts(value):
+    """ckanext-dcat's free-text contact points as ``[{"name", "email"}]``.
+
+    ``value`` is the stored extra (a JSON list of objects) or an already parsed
+    list. A contact point with only a translated name (``name_translated``, as in
+    ckanext-dcat's multilingual schema) gets the one in the site's default
+    language. Entries without a name and an email are left out; anything that
+    is not a list of objects gives ``[]``.
+    """
+    contacts = []
+    for entry in _dcat_entries(value):
+        name, email = _translated_name(entry), clean(entry.get("email"))
+        if name or email:
+            contacts.append({"name": name, "email": email})
+    return contacts
+
+
+def _contacts_text(contacts):
+    return "; ".join(
+        (item["name"] + (" <%s>" % item["email"] if item["email"] else "")).strip() if item["name"]
+        else item["email"] for item in contacts)
+
+
+def _dcat_text(value):
+    """ckanext-dcat's contact points as one text for the page: name, every
+    translation of the name ("Desk (en)"), and email, so that a change in any
+    of them shows under *Changed since linking*."""
+    shown = []
+    for entry in _dcat_entries(value):
+        name = clean(entry.get("name"))
+        names = ([name] if name else []) + [
+            "%s (%s)" % (text, lang) for lang, text in sorted(_translations(entry.get("name_translated")).items())]
+        email = clean(entry.get("email"))
+        if names or email:
+            shown.append({"name": " / ".join(names), "email": email})
+    return _contacts_text(shown) if shown else ""
+
+
 def source_values(row):
-    return [clean(getattr(row, field, None) if not isinstance(row, dict) else row.get(field))
-            for field in SOURCE_FIELDS]
+    """The values a dataset's contact details come from, as a list: the four
+    Maintainer/Author fields, plus ckanext-dcat's contact points as one text
+    when the dataset has any."""
+    values = [clean(_get(row, field)) for field in SOURCE_FIELDS]
+    text = _dcat_text(_get(row, DCAT_CONTACT_FIELD))
+    if text:
+        values.append(text)
+    return values
 
 
 def fingerprint(row):
-    return hashlib.sha256(json.dumps(source_values(row)).encode("utf-8")).hexdigest()
+    """A hash of the contact details, to see that they changed after a decision.
+
+    The four Maintainer/Author fields as before; ckanext-dcat's contact points as
+    structured values (name, email, every translation of the name), not as the
+    text shown, so that "Desk <desk@example.org>" as a name is not the same as
+    the name "Desk" with that email. Unchanged for a dataset without them.
+    """
+    values = [clean(_get(row, field)) for field in SOURCE_FIELDS]
+    entries = [[clean(entry.get("name")), clean(entry.get("email")),
+                sorted(_translations(entry.get("name_translated")).items())]
+               for entry in _dcat_entries(_get(row, DCAT_CONTACT_FIELD))]
+    entries = [entry for entry in entries if entry[0] or entry[1] or entry[2]]
+    if entries:
+        values.append(entries)
+    return hashlib.sha256(json.dumps(values).encode("utf-8")).hexdigest()
 
 
 def contact_source(row):
     """Where a dataset's contact details come from, or None when it has none.
 
     Returns ``{"source", "name", "email", "email_valid", "raw_email", "also"}``;
-    ``also`` is the author as ``{"name", "email"}`` when it is set next to a
-    different maintainer.
+    ``source`` is ``contact`` (ckanext-dcat's contact point), ``maintainer``
+    or ``author``. ``also`` is a second dcat contact point, or the author when
+    it is set next to a different maintainer, as ``{"name", "email"}``.
     """
-    get = (lambda field: row.get(field)) if isinstance(row, dict) else (lambda field: getattr(row, field, None))
-    maintainer = (clean(get("maintainer")), clean(get("maintainer_email")))
-    author = (clean(get("author")), clean(get("author_email")))
-    if any(maintainer):
+    contacts = dcat_contacts(_get(row, DCAT_CONTACT_FIELD))
+    maintainer = (clean(_get(row, "maintainer")), clean(_get(row, "maintainer_email")))
+    author = (clean(_get(row, "author")), clean(_get(row, "author_email")))
+    if contacts:
+        source, name, raw_email = DCAT_CONTACT_FIELD, contacts[0]["name"], contacts[0]["email"]
+        also = dict(contacts[1]) if len(contacts) > 1 else None
+    elif any(maintainer):
         source, (name, raw_email) = "maintainer", maintainer
         also = None
         if any(author) and (author[0].casefold(), author[1].lower()) != (name.casefold(), raw_email.lower()):
@@ -170,11 +286,12 @@ def _scoped_datasets(user, types):
         return []
     sql = (
         "SELECT id, name, title, owner_org, private, maintainer, maintainer_email, author, "
-        "author_email, {contacts} AS contact_point_ids FROM package "
+        "author_email, {contacts} AS contact_point_ids, {dcat_contact} AS contact FROM package "
         "WHERE state = 'active' AND type = ANY(:types) "
         "AND (:all_datasets OR owner_org = ANY(:org_ids)) "
         "ORDER BY lower(coalesce(nullif(title, ''), name)), name"
-    ).format(contacts=registry_model.extra_text("contact_point_ids"))
+    ).format(contacts=registry_model.extra_text("contact_point_ids"),
+             dcat_contact=registry_model.extra_text(DCAT_CONTACT_FIELD))
     array = ARRAY(PG_TEXT)
     statement = text(sql).bindparams(bindparam("types", type_=array), bindparam("org_ids", type_=array))
     return ckan_model.Session.execute(
@@ -212,19 +329,21 @@ def survey(user, types=None):
                       ckan_model.Session.query(ckan_model.Group).filter(ckan_model.Group.id.in_(org_ids))}
 
     counts = {"old": 0, "linked": 0, "skipped": 0, "remaining": 0, "no_contact": 0, "changed": 0}
-    pending, linked_rows = [], []
+    pending, linked_rows, without_source = [], [], []
     for row in rows:
         details = contact_source(row)
         has_contact_points = bool(helpers._id_list(row.contact_point_ids))
         if details is None:
             if not has_contact_points:
                 counts["no_contact"] += 1
+            else:
+                without_source.append(row.id)
             continue
         counts["old"] += 1
         details.update({
             "id": row.id, "name_slug": row.name, "title": row.title or row.name,
             "organization": org_titles.get(row.owner_org, ""), "private": bool(row.private),
-            "fingerprint": fingerprint(row), "values": dict(zip(SOURCE_FIELDS, source_values(row))),
+            "fingerprint": fingerprint(row), "values": _values_dict(source_values(row)),
             "contact_point_ids": helpers._id_list(row.contact_point_ids),
         })
         if has_contact_points:
@@ -233,7 +352,14 @@ def survey(user, types=None):
             continue
         pending.append(details)
 
-    decisions = latest_decisions([item["id"] for item in pending + linked_rows])
+    decisions = latest_decisions([item["id"] for item in pending + linked_rows] + without_source)
+    # Linked through the migration, but the old value is gone since (a schema
+    # without the field, and the dataset was saved): still a migrated dataset.
+    for package_id in without_source:
+        decision = decisions.get(package_id)
+        if decision and decision.status in (LINKED, KEPT):
+            counts["old"] += 1
+            counts["linked"] += 1
     changed = []
     for item in linked_rows:
         decision = decisions.get(item["id"])
@@ -311,13 +437,28 @@ class MigrationError(Exception):
     """A decision that cannot be applied at all (nothing was changed)."""
 
 
+def _values_dict(values):
+    """``source_values`` as a dict over ALL_SOURCE_FIELDS ("" for a missing dcat contact)."""
+    result = dict.fromkeys(ALL_SOURCE_FIELDS, "")
+    result.update(zip(ALL_SOURCE_FIELDS, values))
+    return result
+
+
+def _values_list(values):
+    """The inverse of _values_dict: the list ``source_values`` gave."""
+    listed = [values.get(field, "") for field in SOURCE_FIELDS]
+    if values.get(DCAT_CONTACT_FIELD):
+        listed.append(values[DCAT_CONTACT_FIELD])
+    return listed
+
+
 def _record(package_id, status, details, user_id, contact_point_id=None):
     values = details.get("values")
     ckan_model.Session.add(MigrationDecision(
         id=str(uuid.uuid4()), package_id=package_id, status=status, source=details["source"],
         fingerprint=details["fingerprint"], contact_point_id=contact_point_id, user_id=user_id,
         created=datetime.utcnow(),
-        source_values=json.dumps([values[field] for field in SOURCE_FIELDS]) if values else None))
+        source_values=json.dumps(_values_list(values)) if values else None))
 
 
 def _user_id(user):
@@ -414,7 +555,7 @@ def _active_contact_point(contact_point_id):
 
 
 def resolve_change(user, package_id, action, name="", email="", contact_point_id=""):
-    """Decide what to do with a linked dataset whose Maintainer/Author changed.
+    """Decide what to do with a linked dataset whose free-text contact details changed.
 
     ``update`` changes the linked contact point itself (for every dataset
     that uses it), ``existing``/``create`` puts another contact point in its

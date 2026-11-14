@@ -19,9 +19,10 @@ Reusable publishers and contact points for CKAN metadata.
   and the migration page;
 - **[Migrating existing contact details](#already-have-datasets-migrate-your-contact-details)**:
   turn CKAN's free-text Maintainer and Author fields into shared contact points;
-- **[Installation and supported versions](docs/INSTALLATION.md)**: which CKAN and
-  ckanext-scheming versions are tested, configuration, the database migration and the
-  pitfalls to avoid;
+- **[Installation and supported versions](docs/INSTALLATION.md)**: the choices to make
+  first, which CKAN and ckanext-scheming versions are tested, configuration, the database
+  migration and the pitfalls to avoid ([AGENTS.md](AGENTS.md) has the same for an AI assistant
+  doing the installation);
 - **[Run it with Docker Compose](examples/ckan-2.12/README.md)**: a complete example (CKAN
   2.11 or 2.12, PostgreSQL, Solr, Redis) with a smoke test, for trying the extension or as
   a starting point;
@@ -64,8 +65,8 @@ permissions.
 ## Already have datasets? Migrate your contact details
 
 Most catalogues start with contact details typed as free text into CKAN's own *Maintainer* and *Author*
-fields, repeated on many datasets. The **Migrate to Actor Registry** page (`/actor-registry/migrate`) turns
-them into shared contact points:
+fields, or into the free-text *Contact points* field of ckanext-dcat's schemas, repeated on many datasets.
+The **Migrate to Actor Registry** page (`/actor-registry/migrate`) turns them into shared contact points:
 
 - it finds the contact details on the datasets you may edit and groups them by email address (or by name
   when there is no valid address), showing the different spellings in use;
@@ -159,9 +160,16 @@ dataset fields appear and CKAN's form is unchanged. With Scheming, the form
 and dataset page show exactly the fields in your schema, as with any Scheming
 schema: the example schemas leave out Author, Maintainer, licence, tags and
 version to stay short, so those do not appear. Add them back to your schema
-if you need them, for example during a transition. Values already stored on
-existing datasets stay in the database and in the API; they are only not
-shown when the schema lacks the field, and they are **not** copied into the
+if you need them, for example during a transition. **A value stored in a
+field your schema lacks does not survive the next save of the form:** the
+form only sends the fields in the schema, and CKAN then clears the others
+(CKAN's own columns such as Maintainer, and extras alike). Until then it is
+not shown on the page, but still in the database and in the API. To keep old
+values while you migrate, keep the fields in your schema with this
+extension's legacy snippets (`ckan actor-registry schema` does this for
+Maintainer, Author and ckanext-dcat's contact point, as does
+`actor_registry_migration_schema.yaml` for Maintainer and Author): shown while the migration is open, then hidden
+but sent along with every save. Old values are **not** copied into the
 registry automatically (see "Activating on an existing installation with
 datasets" below).
 
@@ -444,6 +452,37 @@ A complete, localised (`en`, `sv`, `sv_SE`) example schema ships with the extens
 and is used by the tests: `ckanext.actor_registry.examples:actor_registry_schema.yaml`.
 It is an integration example, not a universal metadata schema.
 
+**Already have a catalogue?** Then start from the schema it uses, not from
+an example. The extension never changes a schema by itself, but it can write
+your own copy of one with the registry's contact points:
+
+```console
+python -m ckanext.actor_registry.schema_tool ckanext.dcat.schemas:dcat_ap_full.yaml -o /srv/app/dataset_schema.yaml
+```
+
+Without ckanext-dcat, the source is your current Scheming schema, or
+`ckanext.scheming:ckan_dataset.yaml` (CKAN's own form) if you do not use
+Scheming yet. The copy gets the field `contact_point_ids`, and the free-text
+contact fields stay in it as legacy fields: ckanext-dcat's repeating `contact`
+(right after the new field, as *Contact points (free text)*, snippets
+`legacy_dcat_contact.html`) and CKAN's Author, Maintainer and their emails
+(snippets `legacy_contact.html`; without dcat's `contact`, the new field goes
+after them). A legacy field is never `required`, since it is hidden once the
+migration is closed. While the
+migration is open they are editable in the form, and shown on the page and
+exported as long as the dataset has no registry contact point; once the
+migration is closed they are hidden and not exported, but sent along with every
+save so that the values are never cleared. Everything else is copied as it is.
+Nothing from the source schema ships with this extension: the copy is made from
+the version installed where you run the command, so run it again after
+upgrading the source. With a CKAN configuration, `ckan actor-registry schema
+SOURCE -o FILE` does the same. Point `scheming.dataset_schemas` at the copy
+(`file:///srv/app/dataset_schema.yaml`), use the profile
+`actor_registry_euro_dcat_ap_3` if you have ckanext-dcat, migrate the old
+values on the migration page, and close the migration there when you are done.
+[docs/INSTALLATION.md](docs/INSTALLATION.md) starts with a table of the choices
+to make.
+
 The field names shown above are part of the 0.x data contract. Datasets store
 registry UUIDs in these fields (`publisher_actor_id` as a string,
 `contact_point_ids` as a list). The display snippets resolve them to readable
@@ -524,8 +563,11 @@ one-time cleanup pass after activation.
 
 **Migrate to Actor Registry (`/actor-registry/migrate`).** If your datasets
 already hold contact details in CKAN's own free-text fields, this page turns
-them into shared contact points. It reads Maintainer, and Author only when a
-dataset has no maintainer, on the datasets that have no contact point yet,
+them into shared contact points. It reads ckanext-dcat's free-text contact
+point (the field `contact`) when a dataset has one, because ckanext-dcat
+exports it before Maintainer; otherwise Maintainer, and Author only when a
+dataset has no maintainer. A second dcat contact point is shown as "also
+mentioned". It reads them on the datasets that have no contact point yet,
 and groups them by email address (or by name when there is no valid
 address), showing the spellings used and any existing contact point with the
 same address. For each group you create a contact point, link to an existing
@@ -534,15 +576,18 @@ later round. One email address may back several contact points. The page
 shows how many datasets are linked, skipped and remaining.
 
 While the old fields are still in use, editors may keep changing them. When
-Maintainer or Author changes on a dataset after it was linked, the page lists
+Maintainer, Author or ckanext-dcat's contact point (including a translation of
+its name) changes on a dataset after it was linked, the page lists
 it under *Changed since linking*, with the old and new values, and you choose:
 update the contact point (for every dataset that uses it), link this dataset
 to another contact point, create a new one, or keep it as it is.
 
 **Closing the migration.** When you are done, a sysadmin closes the migration
-on the same page. Maintainer and Author are then hidden in forms and on
-dataset pages, for everyone including sysadmins, and are no longer exported;
-their values stay stored, and saving a dataset keeps them. It takes effect at
+on the same page. The old contact fields (Maintainer, Author and, in a schema
+made by `ckan actor-registry schema`, ckanext-dcat's free-text contact point)
+are then hidden in forms and on dataset pages, for everyone including
+sysadmins, and are no longer exported; their values stay stored, and saving a
+dataset keeps them. It takes effect at
 once, without a restart, and the migration can be reopened. If datasets are
 still without a contact point, or have unhandled changes, the page says how
 many and asks you to confirm. Closing sets
@@ -550,7 +595,10 @@ many and asks you to confirm. Closing sets
 [Installation](docs/INSTALLATION.md#ckans-own-contact-fields-in-the-dcat-export)).
 
 Hiding needs one thing in your schema: give the old fields the extension's
-`legacy_contact.html` snippets, which show them while the migration is open:
+snippets for old fields, which show them while the migration is open:
+`legacy_contact.html` for CKAN's own fields and `legacy_dcat_contact.html` for
+ckanext-dcat's `contact`. `ckan actor-registry schema` sets both for you; by
+hand, it looks like this:
 
 ```yaml
 - field_name: maintainer
@@ -562,8 +610,10 @@ Hiding needs one thing in your schema: give the old fields the extension's
 
 A schema without these fields has nothing to hide. A theme that overrides
 Scheming's `additional_info.html` block itself must leave out rows with
-`display_snippet: legacy_contact.html` while the migration is closed, as the
-extension's own version does.
+`display_snippet: legacy_contact.html` or `legacy_dcat_contact.html` while the
+migration is closed or the dataset has registry contact points, as the
+extension's own version does; otherwise the page shows what the export leaves
+out.
 
 The original fields are never changed: linking only sets the contact points,
 through a partial update that checks `package_update` for each dataset. A

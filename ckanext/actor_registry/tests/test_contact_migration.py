@@ -1,6 +1,7 @@
 """Migrate to Actor Registry, step 1 (contact points): the rules, every variant
 of the free-text contact fields, faulty data, permissions and the page."""
 
+import json
 import uuid
 
 import pytest
@@ -94,6 +95,96 @@ def test_fingerprint_follows_the_values_but_not_whitespace():
     assert cm.fingerprint(_row(maintainer="Desk", author="Ann")) != base
 
 
+# ckanext-dcat's free-text contact point (the repeating field "contact" of its schemas)
+
+DCAT_DESK = [{"name": "Open Data Desk", "email": "Desk@Example.org", "uri": "", "url": ""}]
+
+
+@pytest.mark.parametrize("stored, expected", [
+    (json.dumps(DCAT_DESK), [{"name": "Open Data Desk", "email": "Desk@Example.org"}]),
+    (DCAT_DESK, [{"name": "Open Data Desk", "email": "Desk@Example.org"}]),
+    (json.dumps([{"name": "", "email": "", "uri": "https://example.org/x"}]), []),
+    (json.dumps([{"name": "  A  b ", "email": ""}, "text", None]), [{"name": "A b", "email": ""}]),
+    ("not json", []), ("", []), (None, []), (json.dumps({"name": "Desk"}), []), ("[]", []),
+])
+def test_dcat_contacts_are_read_from_the_stored_value(stored, expected):
+    assert cm.dcat_contacts(stored) == expected
+
+
+def test_a_dcat_contact_point_is_the_source_before_maintainer():
+    details = cm.contact_source(_row(contact=json.dumps(DCAT_DESK), maintainer="GIS Support",
+                                     maintainer_email="gis@example.org"))
+    assert details["source"] == "contact"
+    assert (details["name"], details["email"]) == ("Open Data Desk", "desk@example.org")
+    assert details["also"] is None
+
+
+def test_a_second_dcat_contact_point_is_also_mentioned():
+    contacts = DCAT_DESK + [{"name": "GIS Support", "email": "gis@example.org"}]
+    details = cm.contact_source(_row(contact=json.dumps(contacts)))
+    assert details["also"] == {"name": "GIS Support", "email": "gis@example.org"}
+
+
+def test_an_empty_dcat_contact_point_falls_back_to_maintainer():
+    details = cm.contact_source(_row(contact=json.dumps([{"name": "", "email": ""}]), maintainer="Desk"))
+    assert details["source"] == "maintainer"
+
+
+def test_without_a_dcat_contact_point_the_fingerprint_is_the_one_from_before():
+    # Datasets linked before the dcat field was read must not all turn up as changed.
+    import hashlib
+    values = ["Desk", "desk@example.org", "", ""]
+    before = hashlib.sha256(json.dumps(values).encode("utf-8")).hexdigest()
+    assert cm.fingerprint(_row(maintainer="Desk", maintainer_email="desk@example.org")) == before
+    assert cm.fingerprint(_row(maintainer="Desk", maintainer_email="desk@example.org", contact="[]")) == before
+    assert cm.fingerprint(_row(maintainer="Desk", maintainer_email="desk@example.org",
+                               contact=json.dumps(DCAT_DESK))) != before
+
+
+# ckanext-dcat's multilingual schema stores the name as name_translated (found by Codex's
+# release review of 0.5.0): without it a contact point with only a translated name was lost.
+TRANSLATED = {"en": "Open Data Desk", "sv": "Öppna data-disken"}
+
+
+@pytest.mark.ckan_config("ckan.locale_default", "sv")
+@pytest.mark.parametrize("entry, expected", [
+    ({"name_translated": TRANSLATED, "email": "desk@example.org"}, {"name": "Öppna data-disken", "email": "desk@example.org"}),
+    ({"name_translated": TRANSLATED}, {"name": "Öppna data-disken", "email": ""}),
+    ({"name_translated": json.dumps({"de": "Datenstelle", "fr": "Bureau"})}, {"name": "Datenstelle", "email": ""}),
+    ({"name": "Desk", "name_translated": TRANSLATED}, {"name": "Desk", "email": ""}),
+])
+def test_a_dcat_contact_point_with_only_a_translated_name_is_read(entry, expected):
+    assert cm.dcat_contacts([entry]) == [expected]
+    assert cm.contact_source(_row(contact=json.dumps([entry])))["name"] == expected["name"]
+
+
+@pytest.mark.ckan_config("ckan.locale_default", "sv")
+def test_a_change_to_a_translated_name_changes_the_fingerprint_and_the_values_shown():
+    # The page lists what changed from the values shown; a change only in a language other
+    # than the default must show there too, not only in the hash (fable's review of 0.5.0).
+    before = _row(contact=json.dumps([{"name_translated": TRANSLATED, "email": "desk@example.org"}]))
+    after = _row(contact=json.dumps([{"name_translated": dict(TRANSLATED, en="Data Desk"), "email": "desk@example.org"}]))
+    assert cm.fingerprint(after) != cm.fingerprint(before)
+    assert cm.source_values(after)[-1] != cm.source_values(before)[-1]
+    assert "Data Desk (en)" in cm.source_values(after)[-1] and "Öppna data-disken (sv)" in cm.source_values(after)[-1]
+
+
+def test_the_fingerprint_tells_a_removed_email_from_an_email_written_into_the_name():
+    with_email = _row(contact=json.dumps([{"name": "Desk", "email": "desk@example.org"}]))
+    in_the_name = _row(contact=json.dumps([{"name": "Desk <desk@example.org>", "email": ""}]))
+    assert cm.source_values(with_email) == cm.source_values(in_the_name)  # the text shown is the same
+    assert cm.fingerprint(with_email) != cm.fingerprint(in_the_name)
+
+
+def test_stored_decision_values_with_and_without_a_dcat_contact_point():
+    old = cm.MigrationDecision(source_values=json.dumps(["Desk", "", "", ""]))
+    assert old.values() == {"maintainer": "Desk", "maintainer_email": "", "author": "",
+                            "author_email": "", "contact": ""}
+    new = cm.MigrationDecision(source_values=json.dumps(["", "", "", "", "Open Data Desk <desk@example.org>"]))
+    assert new.values()["contact"] == "Open Data Desk <desk@example.org>"
+    assert cm.MigrationDecision(source_values=json.dumps(["a", "b"])).values() is None
+
+
 # --- With a database ----------------------------------------------------------------------
 
 integration = [
@@ -144,8 +235,8 @@ def _set_column(dataset_id, **values):
     """Write faulty data straight into the database, as old imports may have."""
     package = ckan_model.Package.get(dataset_id)
     for key, value in values.items():
-        if key == "contact_point_ids":
-            package.extras = dict(package.extras, contact_point_ids=value)
+        if key in ("contact_point_ids", "contact"):
+            package.extras = dict(package.extras, **{key: value})
         else:
             setattr(package, key, value)
     ckan_model.Session.commit()
@@ -488,6 +579,57 @@ def test_a_change_after_linking_is_flagged_with_before_and_after():
     assert item["values"]["maintainer_email"] == "opendata@example.org"
     assert item["contact_point"].id == contact.id and item["contact_point_in_dataset"]
     assert item["usage"] == 1
+
+
+@_mark
+def test_dcat_contact_points_are_migrated_like_maintainer():
+    sysadmin = factories.Sysadmin()
+    org = _org()
+    linked_before = _dataset(org, maintainer="Old Desk", maintainer_email="old@example.org")
+    cm.apply(sysadmin["name"], "create", [linked_before["id"]], name="Old Desk", email="old@example.org")
+    first, second = _dataset(org), _dataset(org, maintainer="GIS Support")
+    _set_column(first["id"], contact=json.dumps(DCAT_DESK))
+    _set_column(second["id"], contact=json.dumps([{"name": "Desk", "email": "desk@example.org"}]))
+    data = cm.survey(sysadmin["name"])
+    [candidate] = data["candidates"]
+    assert candidate["key"] == "email:desk@example.org"
+    assert {item["source"] for item in candidate["datasets"]} == {"contact"}
+    assert data["counts"]["old"] == 3 and data["changed"] == []
+
+    linked, failures, contact = cm.apply(sysadmin["name"], "create", [first["id"], second["id"]],
+                                         name="Open Data Desk", email="desk@example.org")
+    assert len(linked) == 2 and not failures
+    shown = helpers.call_action("package_show", id=first["id"])
+    assert shown["contact_point_ids"] == [contact.id]
+    assert json.loads(ckan_model.Package.get(first["id"]).extras["contact"]) == DCAT_DESK  # never changed
+
+    _set_column(first["id"], contact=json.dumps([{"name": "Open Data Desk", "email": "new@example.org"}]))
+    [item] = cm.survey(sysadmin["name"])["changed"]
+    assert item["previous"]["contact"] == "Open Data Desk <Desk@Example.org>"
+    assert item["values"]["contact"] == "Open Data Desk <new@example.org>"
+
+
+@_mark
+def test_a_migrated_dataset_whose_old_value_is_gone_still_counts_as_linked():
+    sysadmin = factories.Sysadmin()
+    dataset = _dataset(_org())
+    _set_column(dataset["id"], contact=json.dumps(DCAT_DESK))
+    cm.apply(sysadmin["name"], "create", [dataset["id"]], name="Open Data Desk", email="desk@example.org")
+    package = ckan_model.Package.get(dataset["id"])
+    package.extras = {key: value for key, value in package.extras.items() if key != "contact"}
+    ckan_model.Session.commit()
+    counts = cm.survey(sysadmin["name"])["counts"]
+    assert (counts["old"], counts["linked"], counts["remaining"], counts["no_contact"]) == (1, 1, 0, 0)
+
+
+@_page_mark
+def test_the_page_names_the_dcat_contact_point_as_the_source(app):
+    sysadmin = factories.SysadminWithToken()
+    dataset = _dataset(_org())
+    _set_column(dataset["id"], contact=json.dumps(DCAT_DESK + [{"name": "GIS Support", "email": ""}]))
+    html = _get(app, sysadmin)
+    assert "Contact point (free text)" in html and "from Maintainer" not in html
+    assert "Also mentioned:" in html and "GIS Support" in html
 
 
 @_mark

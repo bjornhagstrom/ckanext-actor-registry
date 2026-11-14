@@ -1,7 +1,8 @@
 {% ckan_extends %}
 {#-
   Leaves out the rows of CKAN's own contact fields (display_snippet
-  legacy_contact.html) once the migration to the registry is closed. Same
+  legacy_contact.html) and of ckanext-dcat's free-text contact point
+  (legacy_dcat_contact.html) once the migration to the registry is closed. Same
   loop as ckanext-scheming's own template otherwise. A theme that overrides
   this block itself (listed before actor_registry) must add the same check.
 -#}
@@ -13,13 +14,14 @@
   {#- Hidden when the migration is closed, and when the dataset has registry
       contact points: the DCAT export then leaves these fields out, and the
       page shows what is exported. -#}
+  {%- set legacy_snippets = ['legacy_contact.html', 'legacy_dcat_contact.html'] -%}
   {%- set legacy_hidden = not h.actor_registry_legacy_contact_fields_in_use()
                           or h.contactpoints_display(pkg_dict.get('contact_point_ids')) -%}
   {%- for field in schema.dataset_fields -%}
     {%- if field.field_name not in exclude_fields
         and field.display_snippet is not none
-        and not (legacy_hidden and field.display_snippet == 'legacy_contact.html') -%}
-      <tr{% if field.display_snippet == 'legacy_contact.html' %} data-legacy-contact-row{% endif %}>
+        and not (legacy_hidden and field.display_snippet in legacy_snippets) -%}
+      <tr{% if field.display_snippet in legacy_snippets %} data-legacy-contact-row{% endif %}>
         <th scope="row" class="dataset-label">{{
           h.scheming_language_text(field.label) }}</th>
         <td class="dataset-details"{%

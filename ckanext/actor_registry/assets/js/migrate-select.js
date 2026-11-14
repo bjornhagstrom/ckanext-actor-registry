@@ -64,9 +64,10 @@
     update();
   }
 
-  // The rows in the order of a heading: text compared as Swedish text with numbers as numbers, an empty cell last.
+  // The rows in the order of a heading: text compared in the page's language with numbers as numbers, an empty cell last.
   function compareBy(key) {
-    var collator = typeof Intl !== 'undefined' && Intl.Collator ? new Intl.Collator('sv', { numeric: true, sensitivity: 'base' }) : null;
+    var lang = (document.documentElement && document.documentElement.lang) || undefined;
+    var collator = typeof Intl !== 'undefined' && Intl.Collator ? new Intl.Collator(lang, { numeric: true, sensitivity: 'base' }) : null;
     return function (a, b) {
       var x = a.getAttribute('data-' + key) || '', y = b.getAttribute('data-' + key) || '';
       if (!x && y) return 1;

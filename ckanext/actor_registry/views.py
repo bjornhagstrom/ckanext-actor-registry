@@ -840,7 +840,7 @@ def migrate_close():
         toolkit.h.flash_error(str(error))
     else:
         toolkit.h.flash_success(toolkit._(
-            "The migration is closed. Maintainer and Author are hidden and no longer exported."))
+            "The migration is closed. The old contact fields are hidden and no longer exported."))
     return redirect(toolkit.url_for("actor_registry.migrate_index") + "#close")
 
 
@@ -849,7 +849,7 @@ def migrate_reopen():
     _require_sysadmin()
     contact_migration.set_closed(g.user, False)
     toolkit.h.flash_success(toolkit._(
-        "The migration is open again. Maintainer and Author are shown and exported as before."))
+        "The migration is open again. The old contact fields are shown and exported as before."))
     return redirect(toolkit.url_for("actor_registry.migrate_index") + "#close")
 
 

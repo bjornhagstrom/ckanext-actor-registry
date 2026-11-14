@@ -6,11 +6,15 @@
 {% block subtitle %}{{ _('Migrate to Actor Registry') }}{% endblock %}
 {% block breadcrumb_content %}<li class="active">{{ _('Migrate to Actor Registry') }}</li>{% endblock %}
 {% block primary_content_inner %}
+  {#- Where the contact details come from: ckanext-dcat's free-text contact point, Maintainer or Author (contact_migration.contact_source). -#}
+  {% macro source_label(item) %}{% if item.source == 'contact' %}{{ _('Contact point (free text)') }}{% elif item.source == 'maintainer' %}{{ _('Maintainer') }}{% else %}{{ _('Author') }}{% endif %}{% endmacro %}
+  {% macro source_from(item) %}{% if item.source == 'contact' %}{{ _('from Contact point (free text)') }}{% elif item.source == 'maintainer' %}{{ _('from Maintainer') }}{% else %}{{ _('from Author') }}{% endif %}{% endmacro %}
+  {% macro also_label(item) %}{% if item.source == 'contact' %}{{ _('Also mentioned:') }}{% else %}{{ _('Author also mentioned:') }}{% endif %}{% endmacro %}
   {% macro dataset_label(item) %}<a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>
                         {% if item.organization %}<span class="text-muted">· {{ item.organization }}</span>{% endif %}
                         {% if item.private %}<span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}
-                        <span class="text-muted">· {{ _('from Maintainer') if item.source == 'maintainer' else _('from Author') }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
-                        {% if item.also %}<br><small data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}{% endmacro %}
+                        <span class="text-muted">· {{ source_from(item) }}: {{ item.name or '–' }}{% if item.raw_email %} &lt;{{ item.raw_email }}&gt;{% endif %}</span>
+                        {% if item.also %}<br><small data-also-mentioned>{{ also_label(item) }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}{% endmacro %}
   {% asset 'actor_registry/migrate-select' %}
   {# The datasets of a group as a table (the same for a small and a large group): one box in the heading for all or none, headings that sort the rows.
      named: the boxes are posted as dataset_ids (a small group, works without JavaScript); not named: a large group, where JavaScript posts the ones that are left out. #}
@@ -31,8 +35,8 @@
               <td><input class="form-check-input" type="checkbox" value="{{ item.id }}" {% if named %}name="dataset_ids" id="d-{{ number }}-{{ loop.index }}"{% else %}id="i-{{ number }}-{{ loop.index }}"{% endif %} data-include-box checked aria-label="{{ item.title }}"></td>
               <td><a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>{% if item.private %} <span class="badge bg-secondary">{{ _('Private') }}</span>{% endif %}</td>
               <td>{{ item.organization or '–' }}</td>
-              <td>{{ _('Maintainer') if item.source == 'maintainer' else _('Author') }}</td>
-              <td>{{ item.name or '–' }}{% if item.also %}<br><small class="text-muted" data-also-mentioned>{{ _('Author also mentioned:') }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}</td>
+              <td>{{ source_label(item) }}</td>
+              <td>{{ item.name or '–' }}{% if item.also %}<br><small class="text-muted" data-also-mentioned>{{ also_label(item) }} {{ item.also.name or '–' }}{% if item.also.email %} &lt;{{ item.also.email }}&gt;{% endif %}</small>{% endif %}</td>
               <td>{{ item.raw_email or '–' }}</td>
             </tr>
           {% endfor %}
@@ -41,13 +45,13 @@
     </div>
   {% endmacro %}
   <h1 class="page-heading">{{ _('Migrate to Actor Registry') }}</h1>
-  <p>{{ _("Contact details are often stored as free text in CKAN's own fields, Maintainer and Author, and repeated on many datasets. Here you turn them into shared contact points and link the datasets to them. Maintainer is used first, and Author only when a dataset has no maintainer.") }}</p>
+  <p>{{ _("Contact details are often stored as free text in CKAN's own fields, Maintainer and Author, and repeated on many datasets. Here you turn them into shared contact points and link the datasets to them. Maintainer is used first, and Author only when a dataset has no maintainer.") }} {{ _("A contact point typed as free text in ckanext-dcat's contact points field is used before both, as in ckanext-dcat's export.") }}</p>
   <p class="text-muted">{{ _('The original fields are never changed. A dataset that has a contact point is done and is no longer listed. You only see the datasets you may edit.') }}</p>
 
   {% if closed %}
-    <div class="alert alert-success" data-migration-status="closed"><strong>{{ _('Migration closed.') }}</strong> {{ _('Maintainer and Author are hidden and no longer exported. Their values are still stored.') }}</div>
+    <div class="alert alert-success" data-migration-status="closed"><strong>{{ _('Migration closed.') }}</strong> {{ _('The old contact fields are hidden and no longer exported. Their values are still stored.') }}</div>
   {% else %}
-    <div class="alert alert-info" data-migration-status="open"><strong>{{ _('Migration in progress.') }}</strong> {{ _('Maintainer and Author are still shown and used in the DCAT export for datasets without a contact point.') }}</div>
+    <div class="alert alert-info" data-migration-status="open"><strong>{{ _('Migration in progress.') }}</strong> {{ _('The old contact fields are still shown and used in the DCAT export for datasets without a contact point.') }}</div>
   {% endif %}
 
   {% if not data.types %}
@@ -58,7 +62,7 @@
       <h2 class="h4">{{ _('Overview') }}</h2>
       <table class="table table-sm w-auto">
         <tbody>
-          <tr><th scope="row">{{ _('Datasets with contact details in Maintainer or Author') }}</th><td data-count="old">{{ counts.old }}</td></tr>
+          <tr><th scope="row">{{ _('Datasets with contact details in free-text fields') }}</th><td data-count="old">{{ counts.old }}</td></tr>
           <tr><th scope="row">{{ _('of which linked to a contact point') }}</th><td data-count="linked">{{ counts.linked }}</td></tr>
           <tr><th scope="row">{{ _('of which changed since linking') }}</th><td data-count="changed">{% if counts.changed %}<a href="#changed"><strong>{{ counts.changed }}</strong></a>{% else %}0{% endif %}</td></tr>
           <tr><th scope="row">{{ _('of which skipped') }}</th><td data-count="skipped">{{ counts.skipped }}{% if counts.skipped %} · <a href="{{ h.url_for('actor_registry.migrate_index', show_skipped=1) }}#skipped">{{ _('Show') }}</a>{% endif %}</td></tr>
@@ -71,7 +75,7 @@
     {% if data.changed %}
       <section class="mb-4" id="changed" data-migration-changed>
         <h2 class="h4">{{ _('Changed since linking') }}</h2>
-        <p>{{ _('Maintainer or Author has changed on these datasets after they were linked. Decide whether the contact point should follow the change.') }}</p>
+        <p>{{ _('The free-text contact details have changed on these datasets after they were linked. Decide whether the contact point should follow the change.') }}</p>
         {% for item in data.changed %}
           {% set contact = item.contact_point %}
           {% set can_update = contact and contact.active and item.contact_point_in_dataset %}
@@ -80,7 +84,7 @@
             <table class="table table-sm w-auto mb-2">
               <tbody>
                 <tr><th scope="row">{{ _('Linked to') }}</th><td>{% if contact %}<a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=contact.id) }}">{{ contact.name }}</a>{% if contact.email %} &lt;{{ contact.email }}&gt;{% endif %}{% if not contact.active %} <span class="badge bg-secondary">{{ _('Inactive') }}</span>{% endif %}{% if not item.contact_point_in_dataset %} <span class="badge bg-warning text-dark">{{ _('no longer on the dataset') }}</span>{% endif %}{% else %}–{% endif %}</td></tr>
-                {% for field, label in [('maintainer', _('Maintainer')), ('maintainer_email', _('Maintainer email')), ('author', _('Author')), ('author_email', _('Author email'))] %}
+                {% for field, label in [('maintainer', _('Maintainer')), ('maintainer_email', _('Maintainer email')), ('author', _('Author')), ('author_email', _('Author email')), ('contact', _('Contact point (free text)'))] %}
                   {% set before = item.previous[field] if item.previous else none %}
                   {% set now = item['values'][field] %}
                   {% if before is none or before != now %}
@@ -260,15 +264,15 @@
       <section class="mt-4 p-3 border rounded" id="close" data-migration-close>
         {% if closed %}
           <h2 class="h4">{{ _('Reopen the migration') }}</h2>
-          <p>{{ _('Shows Maintainer and Author again and uses them in the export for datasets without a contact point.') }}</p>
+          <p>{{ _('Shows the old contact fields again and uses them in the export for datasets without a contact point.') }}</p>
           <form method="post" action="{{ h.url_for('actor_registry.migrate_reopen') }}">
             {{ h.csrf_input() }}
             <button type="submit" class="btn btn-secondary">{{ _('Reopen the migration') }}</button>
           </form>
         {% else %}
           <h2 class="h4">{{ _('Close the migration') }}</h2>
-          <p>{{ _('Closing hides Maintainer and Author in forms and on dataset pages, for everyone including sysadmins, and stops exporting them. Nothing is deleted: the values stay stored, and you can reopen the migration at any time. It takes effect at once, without a restart.') }}</p>
-          <p class="small text-muted">{{ _('Hiding works for schemas whose Maintainer and Author fields use the legacy_contact.html snippets; schemas without those fields are not affected.') }}</p>
+          <p>{{ _("Closing hides the old contact fields (Maintainer, Author and ckanext-dcat's free-text contact point) in forms and on dataset pages, for everyone including sysadmins, and stops exporting them. Nothing is deleted: the values stay stored and are kept when a dataset is saved, and you can reopen the migration at any time. It takes effect at once, without a restart.") }}</p>
+          <p class="small text-muted">{{ _("Hiding works for fields that use the extension's snippets for old fields: legacy_contact.html for Maintainer and Author, legacy_dcat_contact.html for ckanext-dcat's contact point (added by ckan actor-registry schema). Other fields are not affected.") }}</p>
           <form method="post" action="{{ h.url_for('actor_registry.migrate_close') }}">
             {{ h.csrf_input() }}
             {% if close_check.needs_confirmation %}

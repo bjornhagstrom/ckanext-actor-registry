@@ -1,0 +1,8 @@
+{#-
+  Display of ckanext-dcat's free-text contact point while a catalogue moves to
+  the registry: dcat's own display. The row is left out once the migration is
+  closed or the dataset has registry contact points (see
+  scheming/package/snippets/additional_info.html), as the DCAT export does.
+-#}
+{%- snippet 'scheming/display_snippets/repeating_subfields.html', field=field, data=data,
+    entity_type=entity_type, object_type=object_type -%}

@@ -53,8 +53,9 @@ function build(total) {
   return { form, parts, plainInputs, boxes, master, posted, includeList, headings, body, rows };
 }
 
-function load(scene) {
+function load(scene, lang = 'sv') {
   const document = {
+    documentElement: { lang },
     readyState: 'complete',
     querySelectorAll: () => [scene.form],
     createElement: () => ({ setAttribute() {} })
@@ -111,8 +112,10 @@ scene.body.moved = [];
 scene.headings[0].fire('click');
 assert.deepStrictEqual(scene.body.moved.map((row) => row.getAttribute('data-title')), ['Set 3', 'Set 2', 'Set 1']);
 
-// The comparison: numbers as numbers, text as Swedish text (å, ä, ö last), an empty cell last.
+// The comparison: numbers as numbers, text in the page's language, an empty cell last.
+// Swedish puts å, ä, ö last; English and German sort ä with a.
 const row = (value) => ({ getAttribute: () => value });
-const order = (values) => values.map(row).sort(exported.compareBy('x')).map((r) => r.getAttribute());
-assert.deepStrictEqual(order(['Set 10', 'Set 2', '', 'Äng', 'Zon', 'Ada']), ['Ada', 'Set 2', 'Set 10', 'Zon', 'Äng', '']);
+const order = (compareBy, values) => values.map(row).sort(compareBy('x')).map((r) => r.getAttribute());
+assert.deepStrictEqual(order(exported.compareBy, ['Set 10', 'Set 2', '', 'Äng', 'Zon', 'Ada']), ['Ada', 'Set 2', 'Set 10', 'Zon', 'Äng', '']);
+assert.deepStrictEqual(order(load(build(1), 'de').compareBy, ['Zon', 'Äng', 'Ada']), ['Ada', 'Äng', 'Zon']);
 console.log('ok');

@@ -4,7 +4,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan import model as ckan_model
 
-from ckanext.actor_registry import actions, auth, helpers, model, validators, views
+from ckanext.actor_registry import actions, auth, cli, helpers, model, validators, views
 
 
 @toolkit.blanket.config_declarations
@@ -17,6 +17,7 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.ITranslation)
     plugins.implements(plugins.IValidators)
+    plugins.implements(plugins.IClick)
 
     def update_config(self, config):
         toolkit.add_template_directory(config, "templates")
@@ -46,6 +47,9 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
 
     def i18n_domain(self):
         return "ckanext-actor-registry"
+
+    def get_commands(self):
+        return cli.get_commands()
 
     def get_blueprint(self):
         return views.blueprint

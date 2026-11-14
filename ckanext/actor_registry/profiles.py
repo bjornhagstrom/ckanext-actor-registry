@@ -32,7 +32,7 @@ class ActorRegistryEuropeanDCATAP3Profile(EuropeanDCATAP3Profile):
         # these in after_dataset_show, which leaked back into resource-form
         # validation and caused a "__junk" error for any dataset with a
         # contact point or publisher assigned).
-        dataset_dict = self._with_resolved_contact_and_publisher(dataset_dict)
+        dataset_dict = self._with_resolved_contact_and_publisher(_without_unshown_dcat_contact(dataset_dict))
         # ckanext-dcat adds a contact point from the free-text fields whenever
         # they have a value, even next to the registry's contact points. Leave
         # them out when the registry has contact points for the dataset, and
@@ -153,18 +153,53 @@ def _author(dataset_dict):
     return {"name": name, "email": email} if name or email else None
 
 
-def _shown_legacy_fields(dataset_dict):
-    """The free-text contact fields the dataset page shows. With a Scheming
-    schema, those in it; without one, CKAN's own page shows them all."""
+def _schema_fields(dataset_dict):
+    """The fields of the dataset's Scheming schema by name, or None without one."""
     try:
         from ckanext.scheming.helpers import scheming_get_dataset_schema
         schema = scheming_get_dataset_schema(dataset_dict.get("type") or "dataset")
     except Exception:
         schema = None
     if not schema:
+        return None
+    return {field.get("field_name"): field for field in schema.get("dataset_fields", [])}
+
+
+def _schema_field_names(dataset_dict):
+    """The field names of the dataset's Scheming schema, or None without one."""
+    fields = _schema_fields(dataset_dict)
+    return None if fields is None else set(fields)
+
+
+def _shown_legacy_fields(dataset_dict):
+    """The free-text contact fields the dataset page shows. With a Scheming
+    schema, those in it; without one, CKAN's own page shows them all."""
+    names = _schema_field_names(dataset_dict)
+    if names is None:
         return LEGACY_CONTACT_KEYS
-    names = {field.get("field_name") for field in schema.get("dataset_fields", [])}
     return tuple(key for key in LEGACY_CONTACT_KEYS if key in names)
+
+
+def _without_unshown_dcat_contact(dataset_dict):
+    """A copy of dataset_dict without ckanext-dcat's free-text ``contact`` when
+    the dataset page does not show it: the dataset's schema has no such field,
+    or it is the legacy field made by ``ckan actor-registry schema``
+    (``legacy_dcat_contact.html``) and the migration is closed. Registry contact points, resolved afterwards,
+    replace it anyway."""
+    if not dataset_dict.get("contact") and not any(
+            extra.get("key") == "contact" for extra in dataset_dict.get("extras") or []):
+        return dataset_dict
+    fields = _schema_fields(dataset_dict)
+    if fields is None:
+        return dataset_dict
+    field = fields.get("contact")
+    legacy = field is not None and field.get("display_snippet") == "legacy_dcat_contact.html"
+    if field is not None and not (legacy and not legacy_contact_fields_in_use()):
+        return dataset_dict
+    dataset_dict = {key: value for key, value in dataset_dict.items() if key != "contact"}
+    if dataset_dict.get("extras"):
+        dataset_dict["extras"] = [extra for extra in dataset_dict["extras"] if extra.get("key") != "contact"]
+    return dataset_dict
 
 
 def _is_uri(value):

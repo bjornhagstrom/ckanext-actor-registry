@@ -6,6 +6,9 @@ FROM ckan/ckan-base:${CKAN_VERSION}
 
 ARG SCHEMING_SPEC="ckanext-scheming==3.1.0"
 ARG DCAT_SPEC="ckanext-dcat==2.4.4"
+# Only for the test of translated contact point names (dcat_ap_multilingual). The release on
+# PyPI (1.0.0) is from the Pylons era and does not load on CKAN 2.11/2.12, so a fixed commit.
+ARG FLUENT_SPEC="ckanext-fluent @ https://github.com/ckan/ckanext-fluent/archive/eb5581ac952cd1d0d3ceac78b43adb97e7068895.tar.gz"
 # "-e" (editable) by default. Older CKAN 2.11 images install CKAN itself with an editable
 # finder that claims the `ckanext` namespace, so an editable install of an extension is not
 # importable there; set EXTENSION_INSTALL_FLAG to an empty string for a regular install. (Not named PIP_EDITABLE: pip reads that variable itself.)
@@ -14,7 +17,8 @@ ARG EXTENSION_INSTALL_FLAG="-e"
 USER root
 
 RUN pip install --no-cache-dir "${DCAT_SPEC}" && \
-    pip install --no-cache-dir "${SCHEMING_SPEC}"
+    pip install --no-cache-dir "${SCHEMING_SPEC}" && \
+    pip install --no-cache-dir "${FLUENT_SPEC}"
 
 COPY . /srv/app/src_extensions/ckanext-actor-registry
 WORKDIR /srv/app/src_extensions/ckanext-actor-registry
