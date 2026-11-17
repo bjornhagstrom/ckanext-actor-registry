@@ -310,13 +310,15 @@ def datasets_for_contact_point(contact_point_id):
 MISSING_MODES = ("none", "no_publisher", "no_contact_point", "either")
 
 
-def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, per_page=10):
+def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, per_page=10, only_org_ids=None,
+                    field_types=None, filters=None):
     """One page of the datasets linked to registry records, plus the total.
 
     Reads straight from the database (the source of truth; the search index
     can hold stale documents) and returns ``(rows, total)``, ``rows`` being
-    ``{"id", "name", "title", "organization", "private", "modified"}`` dicts
-    sorted by title, A-Z (``organization`` is the owner organisation's title).
+    ``{"id", "name", "title", "owner_org", "organization", "private", "modified",
+    "has_publisher", "has_contact_point"}`` dicts sorted by title, A-Z (``organization``
+    is the owner organisation's title).
 
     ``link`` is ``"publisher"`` (``publisher_actor_id`` equals one of
     ``subject_ids``) or ``"contact_point"`` (``contact_point_ids`` lists one
@@ -331,16 +333,114 @@ def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, pe
     the same query that counts and pages: private datasets are included
     only for sysadmins or when the dataset's organisation is in ``org_ids``
     (the viewer's organisations). The caller must never post-filter.
+    ``only_org_ids`` (a list) further keeps only the datasets of those organisations,
+    e.g. to count what an editor may edit.
+
+    ``field_types`` (``{"publisher": types, "contact_point": types}``) makes a dataset
+    lack a publisher or a contact point only when its type has that field, so a schema
+    without the publisher field never puts its datasets on the To do list for it; rows
+    then also say ``publisher_field`` and ``contact_point_field``. Without it every type
+    is taken to have both fields. Rows also give ``publisher_id`` and ``contact_point_ids``.
+
+    ``filters`` (the To do page, 0.6.0) narrows the list: ``q`` text in the title, name or
+    description, ``tag`` a list of tag names (all of them), ``org`` a list of organisation ids
+    (any of them).
     """
+    query = _dataset_query(link, subject_ids, is_sysadmin, org_ids, only_org_ids, field_types, filters)
+    if query is None:
+        return [], 0
+    where, params, statement = query["where"], query["params"], query["statement"]
+    publisher_missing, contact_points_missing = query["publisher_missing"], query["contact_points_missing"]
+    publisher_field, contact_point_field = query["publisher_field"], query["contact_point_field"]
+    session = model.Session
+    total = session.execute(statement("SELECT count(*) FROM package WHERE " + where), params).scalar()
+    page = max(int(page), 1)
+    rows = session.execute(
+        statement(
+            "SELECT id, name, title, owner_org, private, metadata_modified, "
+            "NOT " + publisher_missing + " AS has_publisher, NOT " + contact_points_missing
+            + " AS has_contact_point, " + publisher_field + " AS publisher_field, " + contact_point_field
+            + " AS contact_point_field, " + extra_text("publisher_actor_id") + " AS publisher_id, "
+            + contact_ids_jsonb() + " AS contact_point_ids FROM package WHERE " + where
+            + " ORDER BY lower(coalesce(nullif(title, ''), name)), name LIMIT :limit OFFSET :offset"
+        ),
+        dict(params, limit=per_page, offset=(page - 1) * per_page),
+    ).fetchall()
+    # The organisation's title for each row (2026-10-04: the lists show where a
+    # dataset lives and when it last changed). A second, separate query keeps
+    # the paged query on the package table alone.
+    org_titles = {}
+    owner_ids = {r.owner_org for r in rows if r.owner_org}
+    if owner_ids:
+        org_titles = {
+            g.id: g.title or g.name
+            for g in session.query(model.Group).filter(model.Group.id.in_(owner_ids))
+        }
+    return [
+        {"id": r.id, "name": r.name, "title": r.title or r.name, "owner_org": r.owner_org,
+         "organization": org_titles.get(r.owner_org, ""), "private": bool(r.private),
+         "modified": r.metadata_modified, "has_publisher": bool(r.has_publisher),
+         "has_contact_point": bool(r.has_contact_point), "publisher_field": bool(r.publisher_field),
+         "contact_point_field": bool(r.contact_point_field), "publisher_id": r.publisher_id or "",
+         "contact_point_ids": [str(item) for item in (r.contact_point_ids or [])]}
+        for r in rows
+    ], total
+
+
+def linked_dataset_facets(link, is_sysadmin=False, org_ids=(), only_org_ids=None, field_types=None, filters=None,
+                          limit=200):
+    """The tags and organisations of the datasets ``linked_datasets`` lists with the same
+    arguments, for the To do page's filters (0.6.0): ``{"tags": [(name, count)], "organizations":
+    [(id, title, count)]}``, the most common first. The tags count with every filter, since
+    another tag narrows the list further; the organisations leave their own filter out, since
+    another organisation widens it."""
+    filters = dict(filters or {})
+    session = model.Session
+    facets = {}
+    for key in ("tags", "organizations"):
+        query = _dataset_query(link, [], is_sysadmin, org_ids, only_org_ids, field_types,
+                               {k: v for k, v in filters.items() if key == "tags" or k != "org"})
+        if query is None:
+            return {"tags": [], "organizations": []}
+        if key == "tags":
+            sql = ("SELECT t.name, count(*) AS n FROM (SELECT id FROM package WHERE " + query["where"]
+                   + ") p JOIN package_tag pt ON pt.package_id = p.id AND pt.state = 'active' "
+                   "JOIN tag t ON t.id = pt.tag_id GROUP BY t.name ORDER BY n DESC, lower(t.name) LIMIT :facet_limit")
+            facets[key] = [(r.name, r.n) for r in session.execute(
+                query["statement"](sql), dict(query["params"], facet_limit=limit))]
+        else:
+            sql = ("SELECT g.id, coalesce(nullif(g.title, ''), g.name) AS title, count(*) AS n FROM "
+                   "(SELECT owner_org FROM package WHERE " + query["where"] + ") p "
+                   "JOIN \"group\" g ON g.id = p.owner_org "
+                   "GROUP BY g.id, g.title, g.name ORDER BY lower(coalesce(nullif(g.title, ''), g.name))")
+            facets[key] = [(r.id, r.title, r.n) for r in session.execute(query["statement"](sql), query["params"])]
+    return facets
+
+
+def _filter_values(value):
+    """A filter's values as a list: the To do page sends a list, a single string still works."""
+    if not value:
+        return []
+    return [value] if isinstance(value, str) else [item for item in value if item]
+
+
+def _dataset_query(link, subject_ids, is_sysadmin, org_ids, only_org_ids, field_types, filters):
+    """The WHERE clause, its parameters and the pieces ``linked_datasets`` and
+    ``linked_dataset_facets`` build their statements from; None when nothing can match."""
+    filters = filters or {}
     subject_ids = [str(item) for item in subject_ids if item]
     if link not in MISSING_MODES and not subject_ids:
-        return [], 0
+        return None
     publisher = extra_text("publisher_actor_id")
+    publisher_missing = "({publisher} IS NULL OR {publisher} = '')".format(publisher=publisher)
+    contact_points_missing = "({contacts} = '[]'::jsonb)".format(contacts=contact_ids_jsonb())
+    publisher_field = contact_point_field = "true"
+    if field_types is not None:
+        publisher_field = "(type = ANY(:publisher_types))"
+        contact_point_field = "(type = ANY(:contact_point_types))"
+        publisher_missing = "({} AND {})".format(publisher_field, publisher_missing)
+        contact_points_missing = "({} AND {})".format(contact_point_field, contact_points_missing)
     if link in MISSING_MODES:
-        publisher_missing = "({publisher} IS NULL OR {publisher} = '')".format(publisher=publisher)
-        contact_points_missing = (
-            "({contacts} = '[]'::jsonb)"
-        ).format(contacts=contact_ids_jsonb())
         link_clause = {
             "none": "{p} AND {c}",
             "no_publisher": "{p}",
@@ -362,39 +462,42 @@ def linked_datasets(link, subject_ids, is_sysadmin=False, org_ids=(), page=1, pe
     params = {"all_visible": bool(is_sysadmin), "org_ids": [str(item) for item in org_ids]}
     if link not in MISSING_MODES:
         params["subject_ids"] = subject_ids
+    if only_org_ids is not None:
+        where += " AND owner_org = ANY(:only_org_ids)"
+        params["only_org_ids"] = [str(item) for item in only_org_ids]
+    q = (filters.get("q") or "").strip()
+    if q:
+        where += (" AND (title ILIKE :q ESCAPE '\\' OR name ILIKE :q ESCAPE '\\'"
+                  " OR coalesce(notes, '') ILIKE :q ESCAPE '\\')")
+        params["q"] = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    # Several tags narrow the list (a dataset has them all), several organisations widen it (a dataset
+    # belongs to one of them), as in CKAN's own search.
+    for number, tag in enumerate(_filter_values(filters.get("tag"))):
+        where += (" AND EXISTS (SELECT 1 FROM package_tag pt JOIN tag t ON t.id = pt.tag_id"
+                  " WHERE pt.package_id = package.id AND pt.state = 'active' AND t.name = :tag_%d)" % number)
+        params["tag_%d" % number] = tag
+    orgs = _filter_values(filters.get("org"))
+    if orgs:
+        where += " AND owner_org = ANY(:filter_orgs)"
+        params["filter_orgs"] = orgs
+    if field_types is not None:
+        params["publisher_types"] = sorted(field_types.get("publisher") or [])
+        params["contact_point_types"] = sorted(field_types.get("contact_point") or [])
 
     def statement(sql):
         binds = [bindparam("org_ids", type_=array)]
         if link not in MISSING_MODES:
             binds.append(bindparam("subject_ids", type_=array))
+        if only_org_ids is not None:
+            binds.append(bindparam("only_org_ids", type_=array))
+        # Only the ones this statement uses: the count leaves out the row's columns.
+        binds += [bindparam(name, type_=array) for name in ("publisher_types", "contact_point_types", "filter_orgs")
+                  if ":" + name in sql]
         return text(sql).bindparams(*binds)
 
-    session = model.Session
-    total = session.execute(statement("SELECT count(*) FROM package WHERE " + where), params).scalar()
-    page = max(int(page), 1)
-    rows = session.execute(
-        statement(
-            "SELECT id, name, title, owner_org, private, metadata_modified FROM package WHERE " + where
-            + " ORDER BY lower(coalesce(nullif(title, ''), name)), name LIMIT :limit OFFSET :offset"
-        ),
-        dict(params, limit=per_page, offset=(page - 1) * per_page),
-    ).fetchall()
-    # The organisation's title for each row (2026-10-04: the lists show where a
-    # dataset lives and when it last changed). A second, separate query keeps
-    # the paged query on the package table alone.
-    org_titles = {}
-    owner_ids = {r.owner_org for r in rows if r.owner_org}
-    if owner_ids:
-        org_titles = {
-            g.id: g.title or g.name
-            for g in session.query(model.Group).filter(model.Group.id.in_(owner_ids))
-        }
-    return [
-        {"id": r.id, "name": r.name, "title": r.title or r.name,
-         "organization": org_titles.get(r.owner_org, ""), "private": bool(r.private),
-         "modified": r.metadata_modified}
-        for r in rows
-    ], total
+    return {"where": where, "params": params, "statement": statement,
+            "publisher_missing": publisher_missing, "contact_points_missing": contact_points_missing,
+            "publisher_field": publisher_field, "contact_point_field": contact_point_field}
 
 
 def datasets_without_actor_link():

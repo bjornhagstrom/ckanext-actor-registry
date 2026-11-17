@@ -136,3 +136,107 @@ def replace(user, kind, old_id, new_id):
             continue
         changed.append(dataset)
     return changed, failures
+
+
+def publisher_types():
+    """Dataset types whose Scheming schema has the publisher field (``publisher_actor_id``)."""
+    try:
+        from ckanext.scheming.helpers import scheming_dataset_schemas
+        schemas = scheming_dataset_schemas() or {}
+    except Exception:  # Scheming not installed or not loaded: no schema has the field.
+        return set()
+    return {dataset_type for dataset_type, schema in schemas.items()
+            if any(field.get("field_name") == "publisher_actor_id" for field in schema.get("dataset_fields", []))}
+
+
+def field_types():
+    """``{"publisher": types, "contact_point": types}``: the dataset types that have each field."""
+    return {"publisher": publisher_types(), "contact_point": set(contact_migration.migratable_types())}
+
+
+def _locked_links(package_id):
+    """``(publisher, contact point ids)`` as stored, read with the dataset's row locked until
+    the transaction ends."""
+    # Lock first, then read in a statement of its own: on CKAN 2.11 the links are in package_extra,
+    # and a statement that had to wait for the lock would read them from before the wait.
+    ckan_model.Session.execute(text("SELECT id FROM package WHERE id = :id FOR UPDATE"), {"id": package_id})
+    sql = "SELECT {publisher} AS publisher, {contacts} AS contacts FROM package WHERE id = :id".format(
+        publisher=registry_model.extra_text("publisher_actor_id"), contacts=registry_model.contact_ids_jsonb())
+    row = ckan_model.Session.execute(text(sql), {"id": package_id}).first()
+    if row is None:
+        return "", []
+    return (row.publisher or "").strip(), [item for item in (row.contacts or []) if item]
+
+
+def assign(user, dataset_ids, actor_id="", contact_point_id=""):
+    """Set a publisher and/or a contact point on the chosen datasets where it is missing
+    (0.6.0, the "To do" list).
+
+    Only what a dataset lacks is set: a dataset that already has a publisher (or a contact
+    point) keeps it and is counted in ``skipped``, so a stale page can never overwrite one.
+    A dataset whose type has no such field is reported in ``failures``. Every change goes
+    through ``package_patch`` as ``user``. Returns ``{"actor", "contact_point", "changed",
+    "skipped", "failures"}``: ``changed`` and ``skipped`` are ``{"publisher": [...],
+    "contact_point": [...]}`` lists of datasets, ``failures`` a list of ``(title, message)``."""
+    actor_id, contact_point_id = (actor_id or "").strip(), (contact_point_id or "").strip()
+    if not actor_id and not contact_point_id:
+        raise CleanupError(toolkit._("Choose a publisher or a contact point."))
+    actor = registry_model.get_actor(actor_id) if actor_id else None
+    if actor_id and (actor is None or not actor.active):
+        raise CleanupError(toolkit._("Choose an active publisher."))
+    contact_point = registry_model.get_contact_point(contact_point_id) if contact_point_id else None
+    if contact_point_id and (contact_point is None or not contact_point.active):
+        raise CleanupError(toolkit._("Choose an active contact point."))
+    dataset_ids = [item for item in dict.fromkeys(dataset_ids or []) if item]
+    if not dataset_ids:
+        raise CleanupError(toolkit._("Select at least one dataset."))
+
+    types = field_types()
+    wanted = [kind for kind, record in (("publisher", actor), ("contact_point", contact_point)) if record]
+    no_field = {"publisher": toolkit._("This kind of dataset has no publisher field."),
+                "contact_point": toolkit._("This kind of dataset has no contact point field.")}
+    result = {"actor": actor, "contact_point": contact_point, "failures": [],
+              "changed": {"publisher": [], "contact_point": []}, "skipped": {"publisher": [], "contact_point": []}}
+    for dataset_id in dataset_ids:
+        try:
+            current = toolkit.get_action("package_show")({"user": user}, {"id": dataset_id})
+        except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
+            result["failures"].append((dataset_id, toolkit._("The dataset was not found.")))
+            continue
+        dataset = {"id": current["id"], "name": current.get("name"),
+                   "title": current.get("title") or current.get("name") or dataset_id}
+        kinds = [kind for kind in wanted if current.get("type") in types[kind]]
+        for kind in wanted:
+            if kind not in kinds:
+                result["failures"].append((dataset["title"], no_field[kind]))
+        if not kinds:
+            continue
+        # Lock the dataset's row and read its links from the database under the lock, so that a
+        # publisher or contact point another editor saves meanwhile is never overwritten: their save
+        # waits until package_patch below commits (which releases the lock), or it came first and is seen here.
+        publisher, contacts = _locked_links(current["id"])
+        patch = {}
+        for kind in kinds:
+            if (publisher if kind == "publisher" else contacts):
+                result["skipped"][kind].append(dataset)
+            elif kind == "publisher":
+                patch["publisher_actor_id"] = actor.id
+            else:
+                patch["contact_point_ids"] = [contact_point.id]
+        if not patch:
+            ckan_model.Session.rollback()
+            continue
+        try:
+            toolkit.get_action("package_patch")({"user": user}, dict(patch, id=current["id"]))
+        except toolkit.ValidationError as error:
+            ckan_model.Session.rollback()
+            result["failures"].append((dataset["title"], contact_migration._summary(error)))
+            continue
+        except toolkit.NotAuthorized:
+            ckan_model.Session.rollback()
+            result["failures"].append((dataset["title"], toolkit._("You may not edit this dataset.")))
+            continue
+        for kind, field_name in (("publisher", "publisher_actor_id"), ("contact_point", "contact_point_ids")):
+            if field_name in patch:
+                result["changed"][kind].append(dataset)
+    return result

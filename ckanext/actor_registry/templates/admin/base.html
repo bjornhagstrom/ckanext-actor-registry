@@ -10,6 +10,6 @@
 {% block content_primary_nav %}
   {% if c.userobj and c.userobj.sysadmin %}{{ super() }}{% endif %}
   {% if h.actor_registry_admin_tab() and c.userobj and c.userobj.sysadmin %}
-    {{ h.actor_registry_nav_item('actor_registry.actors_index', 'actor_registry.', _('Actor registry'), 'building') }}
+    {{ h.actor_registry_nav_item('actor_registry.todo_index', 'actor_registry.', _('Actor registry'), 'building') }}
   {% endif %}
 {% endblock %}

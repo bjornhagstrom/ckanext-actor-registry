@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from ckan import authz
@@ -148,12 +149,110 @@ def _viewer_visibility():
     return False, [org["id"] for org in orgs]
 
 
-def _linked_datasets(link, subject_ids, page=1, per_page=PREVIEW_SIZE):
+def _linked_datasets(link, subject_ids, page=1, per_page=PREVIEW_SIZE, filters=None):
     is_sysadmin, org_ids = _viewer_visibility()
+    # A dataset lacks a publisher or a contact point only when its type has the field (0.6.0).
+    field_types = cleanup.field_types() if link in registry_model.MISSING_MODES else None
     rows, total = registry_model.linked_datasets(
-        link, subject_ids, is_sysadmin=is_sysadmin, org_ids=org_ids, page=page, per_page=per_page
+        link, subject_ids, is_sysadmin=is_sysadmin, org_ids=org_ids, page=page, per_page=per_page,
+        field_types=field_types, filters=filters,
     )
     return {"rows": rows, "total": total}
+
+
+TODO_FILTER_LIMIT = 10
+
+
+def _todo_filters(source):
+    """The To do page's search and filters (0.6.0): text, tags (a dataset has them all) and
+    organisations (it belongs to one of them). ``source`` is ``request.args`` or ``request.form``."""
+    filters = {}
+    q = (source.get("q") or "").strip()[:200]
+    if q:
+        filters["q"] = q
+    for key in ("tag", "org"):
+        values = []
+        for value in source.getlist(key):
+            value = (value or "").strip()[:200]
+            if value and value not in values:
+                values.append(value)
+        if values:
+            filters[key] = values[:TODO_FILTER_LIMIT]
+    return filters
+
+
+def _todo_url(missing, filters, **args):
+    """The To do page with these filters; it opens at the filters (or ``_anchor``), not at the top."""
+    args.setdefault("_anchor", "todo-filters")
+    return toolkit.url_for("actor_registry.todo_index", missing=missing, **dict(filters, **args))
+
+
+def _todo_facets(missing, filters):
+    """The tags and organisations to add to the filters, and the chosen ones, each with a link that removes it."""
+    is_sysadmin, org_ids = _viewer_visibility()
+    facets = registry_model.linked_dataset_facets(
+        MISSING_FILTERS[missing], is_sysadmin=is_sysadmin, org_ids=org_ids,
+        field_types=cleanup.field_types(), filters=filters)
+    chosen_tags, chosen_orgs = filters.get("tag", []), filters.get("org", [])
+    # A chosen organisation keeps its name when none of its datasets is left (after the last one was saved).
+    titles = {item[0]: item[1] for item in facets["organizations"]}
+    for org_id in chosen_orgs:
+        if org_id not in titles:
+            group = ckan_model.Group.get(org_id)
+            if group is not None and group.is_organization and group.state == "active":
+                titles[org_id] = group.title or group.name
+    facets["tags"] = [item for item in facets["tags"] if item[0] not in chosen_tags]
+    facets["organizations"] = [item for item in facets["organizations"] if item[0] not in chosen_orgs]
+
+    def without(key, value):
+        rest = dict(filters, **{key: [item for item in filters[key] if item != value]})
+        return _todo_url(missing, {k: v for k, v in rest.items() if v})
+    facets["chosen"] = (
+        [{"label": toolkit._("Tag: {name}").format(name=tag), "url": without("tag", tag)} for tag in chosen_tags]
+        + [{"label": toolkit._("Organization: {name}").format(name=titles.get(org_id, org_id)), "url": without("org", org_id)}
+           for org_id in chosen_orgs])
+    return facets
+
+
+def _todo_tabs():
+    """The tabs of To do (0.6.0): what is missing, and, for those who may clean up, the inactive or
+    removed publishers and contact points that datasets still use (the clean-up page)."""
+    tabs = [{"url": toolkit.url_for("actor_registry.todo_index"), "label": toolkit._("Missing"),
+             "count": helpers.todo_count(), "endpoint": "actor_registry.todo_index"}]
+    if contact_migration.can_migrate(g.user):
+        tabs.append({"url": toolkit.url_for("actor_registry.cleanup_index"), "label": toolkit._("Inactive or removed"),
+                     "count": helpers.cleanup_count(), "endpoint": "actor_registry.cleanup_index"})
+    return tabs
+
+
+def _contact_point_tabs():
+    """The tabs of Contact points (0.6.0): the list, and while the migration is open, creating contact
+    points from the datasets' old contact fields (the migration page). That tab shows while datasets
+    wait or skipped ones are left, and always for a sysadmin, who may need it for datasets harvested
+    or imported later; its number counts only those that wait."""
+    tabs = [{"url": toolkit.url_for("actor_registry.contactpoints_index", list=1), "label": toolkit._("Contact points"),
+             "count": 0, "endpoint": "actor_registry.contactpoints_index"}]
+    if not contact_migration.can_migrate(g.user):
+        return tabs
+    on_it = request.endpoint == "actor_registry.migrate_index"
+    if not on_it and contact_migration.is_closed():
+        return tabs
+    counts = helpers.migration_counts()
+    if on_it or counts["remaining"] or counts["skipped"] or authz.is_sysadmin(g.user):
+        tabs.append({"url": toolkit.url_for("actor_registry.migrate_index"),
+                     "label": toolkit._("Create contact points from the datasets"),
+                     "count": counts["remaining"], "endpoint": "actor_registry.migrate_index"})
+    return tabs
+
+
+def _names(rows):
+    """The names of the publishers and contact points set on the rows, for To do (0.6.0)."""
+    actors = {item.id: item.name for item in all_actors(True)}
+    contact_points = {item.id: item.name for item in all_contact_points(True)}
+    for row in rows:
+        row["publisher_name"] = actors.get(row.get("publisher_id"), "")
+        row["contact_point_names"] = [contact_points.get(item, "") for item in row.get("contact_point_ids", [])]
+    return rows
 
 
 def _page_number():
@@ -179,9 +278,21 @@ def contactpoints_index():
     # 2026-09-19, samma beslut/mönster som för actors_index: inaktiva
     # kontaktpunkter döljs som standard, en kryssruta visar dem igen.
     show_inactive = request.args.get("show_inactive") == "1"
+    everything = all_contact_points(True)
+    # While datasets wait for the migration, Contact points opens on it from the menu (0.6.0); with only skipped ones
+    # left it opens on the list. Any address with an argument shows the list: the tab "Contact points" and the
+    # registry's own links (list=1), and the box for inactive ones (show_inactive).
+    if contact_migration.can_migrate(g.user) and not contact_migration.is_closed() and not request.args:
+        if helpers.migration_remaining_count():
+            return redirect(toolkit.url_for("actor_registry.migrate_index"))
     return toolkit.render(
         "actor_registry/contactpoints_index.html",
-        extra_vars={"items": all_contact_points(show_inactive), "show_inactive": show_inactive},
+        extra_vars={"items": everything if show_inactive else [item for item in everything if item.active],
+                    "show_inactive": show_inactive,
+                    "tabs": _contact_point_tabs(),
+                    "migration_closed": contact_migration.is_closed(),
+                    # The box (and its help text) only when there is something to show (0.6.0).
+                    "inactive_count": sum(1 for item in everything if not item.active)},
     )
 
 
@@ -191,7 +302,7 @@ def contactpoints_new():
     values = _contact_values()
     if request.method == "POST" and values["name"]:
         item_id = str(uuid.uuid4())
-        values["uri"] = values["uri"] or toolkit.url_for("actor_registry.contactpoints_show", item_id=item_id, _external=True)
+        values["uri"] = values["uri"] or toolkit.url_for("actor_registry.contactpoints_show", item_id=item_id, _external=True, locale="default")
         field_error = _contact_error(values)
         if field_error:
             toolkit.h.flash_error(field_error)
@@ -199,7 +310,7 @@ def contactpoints_new():
             toolkit.h.flash_error(toolkit._("The URI is already used by a publisher or contact point."))
         elif _commit(ContactPoint(id=item_id, **values), toolkit._("The URI is already used by a contact point.")):
             toolkit.h.flash_success(toolkit._("The contact point has been created."))
-            return redirect(toolkit.url_for("actor_registry.contactpoints_index"))
+            return redirect(toolkit.url_for("actor_registry.contactpoints_index", list=1))
     elif request.method == "POST":
         toolkit.h.flash_error(toolkit._("Name or role is required."))
     return toolkit.render("actor_registry/contactpoint_form.html", extra_vars={"item": values, "actors": all_actors(), "is_new": True})
@@ -212,7 +323,7 @@ def contactpoints_quick_create():
     if not values["name"]:
         return jsonify({"success": False, "error": toolkit._("Name or role is required.")}), 400
     item_id = str(uuid.uuid4())
-    values["uri"] = values["uri"] or toolkit.url_for("actor_registry.contactpoints_show", item_id=item_id, _external=True)
+    values["uri"] = values["uri"] or toolkit.url_for("actor_registry.contactpoints_show", item_id=item_id, _external=True, locale="default")
     values["active"] = True
     field_error = _contact_error(values)
     if field_error:
@@ -314,7 +425,7 @@ def contactpoints_edit(item_id):
                     setattr(item, key, value)
             if not has_conflict and _commit(item, toolkit._("The URI is already used by a contact point.")):
                 toolkit.h.flash_success(toolkit._("The contact point has been updated."))
-                return redirect(toolkit.url_for("actor_registry.contactpoints_index"))
+                return redirect(toolkit.url_for("actor_registry.contactpoints_index", list=1))
     return toolkit.render("actor_registry/contactpoint_form.html", extra_vars={"item": item, "actors": all_actors(), "is_new": False})
 
 
@@ -337,7 +448,7 @@ def contactpoints_delete(item_id):
         toolkit.h.flash_success(
             toolkit._('The contact point "{name}" has been permanently deleted.').format(name=result["name"])
         )
-        return redirect(toolkit.url_for("actor_registry.contactpoints_index"))
+        return redirect(toolkit.url_for("actor_registry.contactpoints_index", list=1))
 
     linked_datasets = _linked_datasets("contact_point", [item_id])
 
@@ -360,8 +471,8 @@ MISSING_FILTERS = {
 }
 
 
-def _missing_filter():
-    key = request.args.get("missing", "both")
+def _missing_filter(default="both"):
+    key = request.args.get("missing", default)
     if key not in MISSING_FILTERS:
         abort(404)
     return key
@@ -376,11 +487,11 @@ def _missing_labels():
     ]
 
 
-def _missing_counts(selected, selected_total):
-    """How many datasets each choice of "Missing:" lists, for the viewer. One count query each; the chosen one is already known."""
+def _missing_counts(selected, selected_total, filters=None):
+    """How many datasets each choice of "Missing" lists, for the viewer. One count query each; the chosen one is already known."""
     counts = {}
     for key, link in MISSING_FILTERS.items():
-        counts[key] = selected_total if key == selected else _linked_datasets(link, [], per_page=1)["total"]
+        counts[key] = selected_total if key == selected else _linked_datasets(link, [], per_page=1, filters=filters)["total"]
     return counts
 
 
@@ -393,9 +504,32 @@ def _missing_heading(key, total):
     }[key].format(n=total)
 
 
+TODO_DEFAULT = "either"
+
+
+def _assign_choices(rows):
+    """What the To do list needs to let the viewer set links: the ids of the rows they may edit
+    and the active publishers and contact points. None when they may edit none of the rows."""
+    all_datasets, org_ids = contact_migration.editable_scope(g.user)
+    org_ids = set(org_ids)
+    ids = {row["id"] for row in rows if all_datasets or row.get("owner_org") in org_ids}
+    if not ids:
+        return None
+    editable = [row for row in rows if row["id"] in ids]
+    return {
+        "ids": ids, "actors": all_actors(), "contact_points": all_contact_points(),
+        # A choice in the bars only when some editable row lacks it (and its type has the field).
+        "publisher": any(row["publisher_field"] and not row["has_publisher"] for row in editable),
+        "contact_point": any(row["contact_point_field"] and not row["has_contact_point"] for row in editable),
+    }
+
+
 @blueprint.route("/actors")
 def actors_index():
     _require_login()
+    # The list of datasets that lack a publisher or a contact point moved to its own page (0.6.0).
+    if "missing" in request.args:
+        return redirect(toolkit.url_for("actor_registry.todo_index", missing=request.args.get("missing")), code=301)
 
     # 2026-09-19, Björns beslut: mergade/pensionerade aktörer (active=False)
     # ska vara dolda som standard -- de är sammanslagningsrester, inte
@@ -404,40 +538,160 @@ def actors_index():
     # gjorde listan skräpig.
     show_merged = request.args.get("show_merged") == "1"
 
-    missing = _missing_filter()
-    unlinked_datasets = _linked_datasets(MISSING_FILTERS[missing], [])
-
+    everything = all_actors(True)
     return toolkit.render(
         "actor_registry/actors_index.html",
         extra_vars={
-            "items": all_actors(show_merged),
+            "items": everything if show_merged else [item for item in everything if item.active],
             "show_merged": show_merged,
-            "unlinked_datasets": unlinked_datasets,
-            "missing": missing,
-            "missing_labels": _missing_labels(),
-            "missing_counts": _missing_counts(missing, unlinked_datasets["total"]),
-            "missing_heading": _missing_heading(missing, unlinked_datasets["total"]),
+            # The box (and its help text) only when there are merged or retired publishers,
+            # and merging only when there are two to merge (0.6.0).
+            "retired_count": sum(1 for item in everything if not item.active),
+            "active_count": sum(1 for item in everything if item.active),
         },
     )
 
 
 @blueprint.route("/actors/unlinked-datasets")
 def actors_unlinked_datasets():
-    """All datasets that lack a publisher and/or a contact point (see ``missing``), paginated."""
+    """Moved to the To do page (0.6.0); old links still lead there."""
+    # Without ``missing`` this list meant "both", unlike To do's default.
+    args = {"missing": request.args.get("missing", "both")}
+    if "page" in request.args:
+        args["page"] = request.args["page"]
+    return redirect(toolkit.url_for("actor_registry.todo_index", **args), code=301)
+
+
+@blueprint.route("/actor-registry/todo", strict_slashes=False)
+def todo_index():
+    """The datasets that lack a publisher and/or a contact point (see ``missing``), paginated,
+    where an editor sets them on one row or on many at once (0.6.0)."""
     _require_login()
-    missing = _missing_filter()
+    missing = _missing_filter(TODO_DEFAULT)
     page = _page_number()
-    data = _linked_datasets(MISSING_FILTERS[missing], [], page=page, per_page=LIST_PAGE_SIZE)
-    if page > 1 and not data["rows"]:
-        abort(404)
+    filters = _todo_filters(request.args)
+    data = _linked_datasets(MISSING_FILTERS[missing], [], page=page, per_page=LIST_PAGE_SIZE, filters=filters)
+    last = max(1, -(-data["total"] // LIST_PAGE_SIZE))
+    # After the last rows of the last page are done, that page no longer exists: go to the new last one.
+    if page > last:
+        return redirect(_todo_url(missing, filters, page=last, _anchor="todo-list"))
+    _names(data["rows"])
     return toolkit.render(
-        "actor_registry/linked_datasets.html",
+        "actor_registry/todo.html",
         extra_vars={
-            "item": None, "kind": "unlinked", "link": MISSING_FILTERS[missing], "data": data,
-            "missing": missing, "heading": _missing_heading(missing, data["total"]),
-            "pager": _dataset_pager("actor_registry.actors_unlinked_datasets", page, data["total"], missing=missing),
+            "data": data, "missing": missing, "page": page, "filters": filters,
+            "facets": _todo_facets(missing, filters),
+            "tabs": _todo_tabs(),
+            "missing_labels": _missing_labels(),
+            "missing_counts": _missing_counts(missing, data["total"], filters),
+            "heading": _missing_heading(missing, data["total"]),
+            "pager": _dataset_pager("actor_registry.todo_index", page, data["total"], missing=missing,
+                                    _anchor="todo-list", **filters),
+            "assign": _assign_choices(data["rows"]),
         },
     )
+
+
+def _flash_assignments(results):
+    """One message per publisher and contact point that was set, however many groups of rows it was saved in."""
+    changed = {"publisher": {}, "contact_point": {}}
+    skipped = {"publisher": 0, "contact_point": 0}
+    failures = []
+    for result in results:
+        for kind, record in (("publisher", result["actor"]), ("contact_point", result["contact_point"])):
+            if result["changed"][kind]:
+                name, count = changed[kind].get(record.id, (record.name, 0))
+                changed[kind][record.id] = (name, count + len(result["changed"][kind]))
+            skipped[kind] += len(result["skipped"][kind])
+        failures += result["failures"]
+    for name, count in changed["publisher"].values():
+        toolkit.h.flash_success(toolkit.ungettext(
+            "{name} is now the publisher of {count} dataset.",
+            "{name} is now the publisher of {count} datasets.", count).format(count=count, name=name))
+    for name, count in changed["contact_point"].values():
+        toolkit.h.flash_success(toolkit.ungettext(
+            "{name} is now the contact point of {count} dataset.",
+            "{name} is now the contact point of {count} datasets.", count).format(count=count, name=name))
+    if skipped["publisher"]:
+        toolkit.h.flash_notice(toolkit.ungettext(
+            "{count} dataset already had a publisher and kept it.",
+            "{count} datasets already had a publisher and kept it.", skipped["publisher"]
+        ).format(count=skipped["publisher"]))
+    if skipped["contact_point"]:
+        toolkit.h.flash_notice(toolkit.ungettext(
+            "{count} dataset already had a contact point and kept it.",
+            "{count} datasets already had a contact point and kept it.", skipped["contact_point"]
+        ).format(count=skipped["contact_point"]))
+    for title, message in failures:
+        toolkit.h.flash_error(toolkit._("Could not update {title}: {message}").format(title=title, message=message))
+    return bool(changed["publisher"] or changed["contact_point"])
+
+
+ROW_CHOICE = re.compile(r"^(publisher|contact_point)_for_(.+)$")
+
+
+def _todo_plan(form):
+    """What one Save on the To do list sets: ``({dataset id: [publisher id, contact point id]}, ticked ids
+    that get nothing)``. Each row's own choices count, and the box's choices go to the ticked rows; a
+    row's own choice comes first. The box is the one whose button was pressed, or, without
+    JavaScript to keep the two in step, the other one when that one is empty."""
+    plan = {}
+    for key in form.keys():
+        match = ROW_CHOICE.match(key)
+        value = (form.get(key) or "").strip()
+        if match and value:
+            plan.setdefault(match.group(2), ["", ""])[0 if match.group(1) == "publisher" else 1] = value
+    pressed = form.get("assign_from", "")
+    pressed = pressed if pressed in ("top", "bottom") else "top"
+    other = "bottom" if pressed == "top" else "top"
+    box = [(form.get(name + pressed) or form.get(name + other) or "").strip()
+           for name in ("publisher_actor_id_", "contact_point_id_")]
+    left_out = []
+    for dataset_id in dict.fromkeys(item for item in form.getlist("dataset_ids") if item):
+        choice = plan.setdefault(dataset_id, ["", ""])
+        choice[0], choice[1] = choice[0] or box[0], choice[1] or box[1]
+        if not any(choice):
+            del plan[dataset_id]
+            left_out.append(dataset_id)
+    return plan, left_out
+
+
+@blueprint.route("/actor-registry/todo/assign", methods=["POST"])
+def todo_assign():
+    """Save the To do list (0.6.0): every row's own choices, and the box's choices on the ticked rows.
+    Only what a dataset lacks is set (cleanup.assign)."""
+    _require_migration_access()
+    missing = request.form.get("missing", TODO_DEFAULT)
+    if missing not in MISSING_FILTERS:
+        missing = TODO_DEFAULT
+    try:
+        page = max(int(request.form.get("page", "1")), 1)
+    except ValueError:
+        page = 1
+    filters = _todo_filters(request.form)
+    plan, left_out = _todo_plan(request.form)
+    if not plan:
+        toolkit.h.flash_error(toolkit._("Choose in the box what the selected datasets should get.") if left_out else
+                              toolkit._("Nothing to save. Choose on a row, or select datasets and choose in the box."))
+    else:
+        # The rows that get the same are saved together, in the order they came.
+        groups = {}
+        for dataset_id, choice in plan.items():
+            groups.setdefault(tuple(choice), []).append(dataset_id)
+        results = []
+        for (actor_id, contact_point_id), dataset_ids in groups.items():
+            try:
+                results.append(cleanup.assign(g.user, dataset_ids, actor_id, contact_point_id))
+            except cleanup.CleanupError as error:
+                toolkit.h.flash_error(str(error))
+        if _flash_assignments(results):
+            toolkit.h.flash_notice(toolkit._("A dataset that no longer lacks what this list shows leaves it."))
+        if left_out:
+            toolkit.h.flash_notice(toolkit.ungettext(
+                "{count} selected dataset got nothing: nothing was chosen in the box.",
+                "{count} selected datasets got nothing: nothing was chosen in the box.", len(left_out)
+            ).format(count=len(left_out)))
+    return redirect(_todo_url(missing, filters, page=page, _anchor="todo-list"))
 
 
 @blueprint.route("/actors/new", methods=["GET", "POST"])
@@ -446,7 +700,7 @@ def actors_new():
     values = _actor_values()
     if request.method == "POST" and values["name"]:
         item_id = str(uuid.uuid4())
-        values["uri"] = values["uri"] or toolkit.url_for("actor_registry.actors_show", item_id=item_id, _external=True)
+        values["uri"] = values["uri"] or toolkit.url_for("actor_registry.actors_show", item_id=item_id, _external=True, locale="default")
         identifier_error = _actor_error(values)
         if identifier_error:
             toolkit.h.flash_error(identifier_error)
@@ -467,7 +721,7 @@ def actors_quick_create():
     if not values["name"]:
         return jsonify({"success": False, "error": toolkit._("Name is required.")}), 400
     item_id = str(uuid.uuid4())
-    values["uri"] = values["uri"] or toolkit.url_for("actor_registry.actors_show", item_id=item_id, _external=True)
+    values["uri"] = values["uri"] or toolkit.url_for("actor_registry.actors_show", item_id=item_id, _external=True, locale="default")
     values["active"] = True
     identifier_error = _actor_error(values)
     if identifier_error:
@@ -750,7 +1004,7 @@ def _require_migration_access():
 def migrate_index():
     _require_migration_access()
     data = contact_migration.survey(g.user)
-    helpers.prime_counts(migration=data["counts"]["remaining"] + data["counts"]["changed"])
+    helpers.prime_counts(migration=data["counts"])
     total = len(data["candidates"])
     # After the last group of the last page is linked, that page no longer exists: show the new last one.
     page = min(_page_number(), max(1, -(-total // MIGRATION_PAGE_SIZE)))
@@ -766,8 +1020,11 @@ def migrate_index():
         "large_group": MIGRATION_LARGE_GROUP,
         "pager": pager,
         "all_contact_points": all_contact_points(),
-        "show_skipped": request.args.get("show_skipped") == "1",
+        # With only skipped datasets left, they are what the page is for: shown at once.
+        "show_skipped": request.args.get("show_skipped") == "1" or (
+            not data["counts"]["remaining"] and bool(data["counts"]["skipped"])),
         "closed": contact_migration.is_closed(),
+        "tabs": _contact_point_tabs(),
         "close_check": contact_migration.close_check(g.user) if authz.is_sysadmin(g.user) else None,
     })
 
@@ -808,29 +1065,6 @@ def migrate_unskip():
     return redirect(toolkit.url_for("actor_registry.migrate_index", show_skipped=1))
 
 
-@blueprint.route("/actor-registry/migrate/change", methods=["POST"], strict_slashes=False)
-def migrate_change():
-    _require_migration_access()
-    action = request.form.get("action", "")
-    try:
-        contact_point = contact_migration.resolve_change(
-            g.user, request.form.get("dataset_id", ""), action,
-            name=request.form.get("name", ""), email=request.form.get("email", ""),
-            contact_point_id=request.form.get("contact_point_id", ""),
-        )
-    except contact_migration.MigrationError as error:
-        toolkit.h.flash_error(str(error))
-    else:
-        if action == "keep":
-            toolkit.h.flash_success(toolkit._("The change is accepted; the contact point stays as it is."))
-        elif action == "update":
-            toolkit.h.flash_success(toolkit._("{name} has been updated everywhere it is used.").format(
-                name=contact_point.name))
-        else:
-            toolkit.h.flash_success(toolkit._("The dataset is now linked to {name}.").format(name=contact_point.name))
-    return redirect(toolkit.url_for("actor_registry.migrate_index") + "#changed")
-
-
 @blueprint.route("/actor-registry/migrate/close", methods=["POST"], strict_slashes=False)
 def migrate_close():
     _require_sysadmin()
@@ -866,6 +1100,7 @@ def cleanup_index():
         "actors": all_actors(),
         "contact_points": all_contact_points(),
         "is_sysadmin": authz.is_sysadmin(g.user),
+        "tabs": _todo_tabs(),
     })
 
 

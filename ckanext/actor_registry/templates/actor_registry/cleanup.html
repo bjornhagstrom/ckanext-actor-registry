@@ -1,8 +1,8 @@
 {% extends "actor_registry/base.html" %}
 {#- Clean-up of inactive or missing registry records that datasets still use.
     See cleanup.py. Plain forms, no JavaScript. -#}
-{% block subtitle %}{{ _('Cleanup') }}{% endblock %}
-{% block breadcrumb_content %}<li class="active">{{ _('Cleanup') }}</li>{% endblock %}
+{% block subtitle %}{{ _('To do') }}{% endblock %}
+{% block breadcrumb_content %}<li class="active">{{ _('To do') }}</li>{% endblock %}
 
 {% macro replace_form(entry, records, kind, label_remove) %}
   <form method="post" action="{{ h.url_for('actor_registry.cleanup_replace') }}" class="d-flex flex-wrap gap-2 align-items-center">
@@ -26,7 +26,9 @@
 {% endmacro %}
 
 {% block primary_content_inner %}
-  <h1 class="page-heading">{{ _('Cleanup') }}</h1>
+  {#- The second tab of To do (0.6.0). -#}
+  <h1 class="page-heading">{{ _('To do') }}</h1>
+  {% snippet 'actor_registry/snippets/page_tabs.html', tabs=tabs %}
   <p>{{ _('Publishers and contact points that have been deactivated keep working on the datasets that already use them, but can no longer be chosen. Here you find the ones still in use, and datasets that point to records that no longer exist, and replace them on the datasets you may edit.') }}</p>
 
   {% if not (data.publishers or data.contact_points or data.missing) %}

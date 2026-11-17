@@ -1,0 +1,10 @@
+{#- Tabs at the top of a registry page (0.6.0): To do (Missing, Inactive or removed) and Contact points (the list, Create
+    contact points from the datasets). ``tabs`` is a list of {url, label, count, endpoint}; the tab of the current page is marked. -#}
+{% if tabs|length > 1 %}
+<ul class="nav nav-tabs mb-3">
+  {% for tab in tabs %}
+    {% set current = request.endpoint == tab.endpoint %}
+    <li class="nav-item"><a class="nav-link{{ ' active' if current else '' }}" href="{{ tab.url }}"{% if current %} aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count %} <span class="badge text-bg-warning">{{ tab.count }}</span>{% endif %}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}

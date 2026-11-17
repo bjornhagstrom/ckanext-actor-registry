@@ -180,23 +180,43 @@ def cleanup_count():
     return _once_per_request("cleanup", lambda: cleanup.count(user))
 
 
-def _migration_waiting(data):
-    return data["counts"]["remaining"] + data["counts"]["changed"]
-
-
 def prime_counts(**counts):
-    """A page that has just computed its own survey hands the number to the navigation, which would compute it again."""
+    """A page that has just computed its own survey hands the numbers to the navigation, which would compute them again."""
     cache = g.__dict__.setdefault("_actor_registry_counts", {})
     cache.update(counts)
 
 
+def migration_counts():
+    """The migration's numbers for the current user: ``{"remaining", "skipped", ...}`` as in
+    ``contact_migration.survey`` (all 0 when not allowed)."""
+    from ckanext.actor_registry import contact_migration
+    user = getattr(g, "user", None)
+    if not user or not contact_migration.can_migrate(user):
+        return {"remaining": 0, "skipped": 0}
+    return _once_per_request("migration", lambda: contact_migration.survey(user)["counts"])
+
+
 def migration_remaining_count():
-    """Datasets that still wait to be migrated or that changed since they were linked, for the current user (0 when not allowed)."""
+    """Datasets that still wait to be migrated, for the current user (0 when not allowed)."""
+    return migration_counts()["remaining"]
+
+
+
+def todo_count():
+    """Datasets the current user may edit that lack a publisher or a contact point, for the
+    number next to "To do" (0 when they may edit none)."""
     from ckanext.actor_registry import contact_migration
     user = getattr(g, "user", None)
     if not user or not contact_migration.can_migrate(user):
         return 0
-    return _once_per_request("migration", lambda: _migration_waiting(contact_migration.survey(user)))
+
+    def count():
+        all_datasets, org_ids = contact_migration.editable_scope(user)
+        from ckanext.actor_registry import cleanup
+        return model.linked_datasets("either", [], is_sysadmin=True, per_page=1,
+                                     only_org_ids=None if all_datasets else org_ids,
+                                     field_types=cleanup.field_types())[1]
+    return _once_per_request("todo", count)
 
 
 def nav_item(endpoint, prefix, label, icon, count=0, pills=False):
@@ -204,7 +224,8 @@ def nav_item(endpoint, prefix, label, icon, count=0, pills=False):
     with ``prefix``), and has a small number next to the label when something waits. ``pills`` makes an entry of
     the submenu (Bootstrap pills) instead of an Administration tab."""
     from flask import request
-    active = (request.endpoint or "").startswith(prefix)
+    # ``prefix`` may be a tuple: To do also covers the clean-up page, Contact points the migration (0.6.0).
+    active = (request.endpoint or "").startswith(tuple(prefix) if isinstance(prefix, (list, tuple)) else prefix)
     badge = Markup(' <span class="badge text-bg-warning" data-nav-count>{}</span>').format(count) if count else ""
     link = Markup('<i class="fa fa-{}"></i> {}{}').format(icon, label, badge)
     if pills:

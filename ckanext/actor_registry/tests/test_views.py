@@ -67,6 +67,10 @@ def test_registry_index_rejects_anonymous_but_allows_normal_users(app):
 
 def test_sysadmin_can_open_registry_management(app):
     sysadmin = factories.SysadminWithToken()
+    for number in (1, 2):  # merging only shows when there are two to merge (0.6.0)
+        ckan_model.Session.add(model.Actor(id=f"merge-candidate-{number}", name=f"Board {number}", actor_kind="organization",
+                                      uri=f"https://example.org/a/merge-{number}", active=True))
+    ckan_model.Session.commit()
 
     response = app.get("/actors", headers=_auth_headers(sysadmin))
 
@@ -76,7 +80,7 @@ def test_sysadmin_can_open_registry_management(app):
     assert b"Merge selected publishers" in response.data
 
 
-def test_registry_index_lists_datasets_without_any_actor_link(app):
+def test_the_todo_page_lists_datasets_without_any_actor_link(app):
     sysadmin = factories.SysadminWithToken()
     actor = model.Actor(
         id="linking-actor-view",
@@ -98,7 +102,7 @@ def test_registry_index_lists_datasets_without_any_actor_link(app):
     ckan_model.Session.add(linked_pkg)
     ckan_model.Session.commit()
 
-    response = app.get("/actors", headers=_auth_headers(sysadmin))
+    response = app.get("/actor-registry/todo?missing=both", headers=_auth_headers(sysadmin))
 
     assert response.status_code == 200
     assert "Datasets missing both a publisher and a contact point" in response.body

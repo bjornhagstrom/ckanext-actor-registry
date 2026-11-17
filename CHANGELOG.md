@@ -5,6 +5,64 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
+Upgrade from 0.5.0: take a backup, install the package, run `ckan db upgrade -p actor_registry` (migration 009, which cannot
+be undone) and restart CKAN.
+
+### Added
+
+- A *To do* page (`/actor-registry/todo`), first in the registry's menu with the number of datasets the user may edit that lack
+  a publisher or a contact point, plus what there is to clean up. It lists the datasets that lack one (*Show datasets that lack*,
+  *Either* by default), and on each row the user may edit, a choice of publisher and of contact point where one is missing, shown
+  so that it stands out; what is already set is shown by name, with an Edit link that opens the dataset's form at that field. A bar above and below the
+  list holds what the ticked rows should get, with *Select all*. One Save, in either bar, saves it all: each row's own choices and
+  the bar's choices on the ticked rows (a row's own choice first); its button says how many datasets that is, or what is missing.
+  A search (title, name, description) and filters on tags (a dataset has all of them) and organisations (any of them) narrow the
+  list, so datasets on one theme can get the same at once; a tag or organisation applies as soon as it is chosen, and each chosen
+  one is shown with a link that removes it. A save, a filter and the page links come back to the list, not to the top of the page,
+  and the messages are shown at the list. Each list has *Create new…*, which saves a new publisher or contact point (name, and kind
+  or email) and chooses it. Ticked rows are shaded and rows with a choice that is not saved are marked *Not saved*; leaving the
+  page with anything ticked or chosen asks first, saying what would be lost. Every change goes through `package_patch`; a
+  publisher or contact point that is already set is never overwritten (the dataset row is locked while it is read and saved), and
+  the messages say how many datasets got each publisher and contact point, how many kept theirs, that a dataset which no longer
+  lacks what the list shows leaves it, and how many ticked rows got nothing. A dataset only lacks a publisher or a contact point
+  when its type's schema has that field, so with a schema without the publisher field the page asks only for contact points.
+- *Publisher or organization?* in the left column of Publishers: why a publisher is set besides the organisation. The dataset
+  form's publisher field links to it.
+- A table of contents in the left column of the registry's pages that have one: the page's headings, shown when there are two or
+  more, kept in view while scrolling on a wide screen, with the heading being read in bold (a heading chosen in the list, and
+  at the bottom of the page the last one).
+
+### Changed
+
+- The registry's menu is To do, Publishers and Contact points. *Cleanup* is the second tab of To do (*Inactive or removed*), and
+  the migration is the second tab of Contact points (*Create contact points from the datasets*). While the migration is open, the
+  tab is shown while datasets wait or skipped ones are left, and always for a sysadmin. While datasets wait, *Contact points*
+  in the menu opens on the tab; with only skipped ones left it opens on the list, and the tab opens on the skipped ones. A sysadmin reopens a closed migration from a link under the
+  contact points. The addresses of both pages are unchanged. Publishers says that publishers are
+  not taken from the datasets.
+- The list of datasets that lack a publisher or a contact point moved from the *Publishers* page to *To do*. The old addresses
+  (`/actors?missing=…`, `/actors/unlinked-datasets`) redirect there, and the Administration tab, the dashboard tab and the
+  migration page's link lead there. A theme that overrides `actor_registry/actors_index.html` or
+  `actor_registry/linked_datasets.html` must drop the list from its copy: those templates no longer get its variables.
+- A publisher or contact point created on a page in another language than the default got that language in its URI
+  (`…/sv/actors/<id>`). New records get a URI without it, and migration 009 removes it from the URIs the registry made
+  (one segment that is a language CKAN knows, then the record's page and its own id). Any other URI is left as it is.
+- A dataset with a registry contact point hides the old contact fields (Maintainer, Author, ckanext-dcat's contact point) in the form
+  too, as the page and the export already did, also while the migration is open. Their values are still sent along with every save.
+  If a hidden value fails validation (an old "n/a" in a schema that validates the email fields), the field is shown again with its
+  error, so the editor can correct it instead of being unable to save the dataset.
+- Migration page: the overview shows the datasets whose contact details are only in the free-text fields (of which skipped) and the
+  datasets linked to a contact point (all of them, also those linked in the form), instead of a total that never changes once datasets are linked and a "remaining" row.
+- Publishers page: the "Show merged/retired publishers too" box and its help text only appear when there are such publishers, and
+  merging only when there are at least two active publishers. Contact points page: the same for "Show inactive contact points too".
+
+### Removed
+
+- Migration page: *Changed since linking* and its choices (update the contact point, link another one, create a new one, keep it).
+  With the old fields hidden on a linked dataset there is nothing left to follow up; decisions stored by earlier versions are kept.
+
 ## [0.5.0] - 2026-11-14
 
 No database migration. To move a catalogue's existing schema over to the registry, use the new schema tool
@@ -423,7 +481,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.3.1...v0.4.0

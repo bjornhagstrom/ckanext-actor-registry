@@ -90,3 +90,19 @@ def test_no_prompt_when_the_contact_point_is_set(app):
     html = app.get(f"/dataset/{dataset['name']}",
                    headers={"Authorization": sysadmin["token"]}).get_data(as_text=True)
     assert "data-dataset-actor-link-prompt" not in html
+
+
+def test_to_do_asks_only_for_what_the_schema_has(app):
+    """0.6.0: without a publisher field, a dataset with a contact point is done, and the To do
+    page and its number never ask for a publisher."""
+    contact_id = _contact_point()
+    _dataset(contact_point_ids=[contact_id])
+    headers = {"Authorization": factories.SysadminWithToken()["token"]}
+    done = app.get("/en/actor-registry/todo", headers=headers).get_data(as_text=True)
+    assert "Nothing to do here." in done and "data-nav-count" not in done
+
+    _dataset()
+    html = app.get("/en/actor-registry/todo", headers=headers).get_data(as_text=True)
+    assert "Datasets missing a publisher or a contact point (1)" in html
+    assert 'name="publisher_actor_id_top"' not in html and 'name="contact_point_id_top"' in html
+    assert "No such field" in html and 'select id="publisher-for-' not in html

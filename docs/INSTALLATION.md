@@ -127,9 +127,12 @@ Things that go wrong if missed (the example above handles all of them):
   them into the ini file with `ckan config-tool` in a start-up script that runs before the
   web server starts (the example's entrypoint script does exactly that).
 
-After a restart, check one existing dataset: its edit form shows *Contact
-points* and the old contact fields with their values, and its page still shows
-the contact details and the other fields you rely on. A catalogue that did not
+After a restart, check one existing dataset that has no contact point from the
+registry yet: its edit form shows *Contact points* and the old contact fields with
+their values, and its page still shows the contact details and the other fields
+you rely on. Once a dataset has a registry contact point (or the migration is
+closed), the old fields are hidden in its form too, but their values are kept; a
+hidden field whose stored value fails validation is shown again with its error. A catalogue that did not
 use Scheming before will see some differences on the page, since Scheming
 shows the fields of the schema (no free extras, for example, and an email
 address instead of the name as link text).
@@ -165,7 +168,7 @@ when your schema no longer shows them. A sysadmin can also change it at runtime,
 without a restart, by closing or reopening the migration on
 `/actor-registry/migrate`; a value saved there overrides the ini file. The stored values are never changed;
 they stay in the database and the API. DCAT-AP requires a contact point, so
-check the registry's worklist for datasets that still lack one first.
+check the registry's *To do* page for datasets that still lack one first.
 
 ## Database migration
 

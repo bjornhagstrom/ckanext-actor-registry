@@ -45,7 +45,7 @@
   {%- set selected_values = data.get(field.field_name, []) -%}
   {%- set unavailable = h.contactpoints_unavailable(selected_values) -%}
   <select multiple
-      id="field-{{ field.field_name }}" name="{{ field.field_name }}"
+      id="field-{{ field.field_name }}" name="{{ field.field_name }}" style="scroll-margin-top: 6rem"
       class="form-control" data-module="autocomplete"
       data-module-placeholder="{{ _('Search and select contact point…') }}">
     {%- if groups.recent -%}
@@ -69,7 +69,7 @@
   <div class="mt-2" data-contactpoints-preview aria-live="polite"><p class="help-block">{{ _('Select a contact point to see its details here.') }}</p></div>
 
   {% if c.userobj %}
-    <a class="btn btn-link btn-sm mt-2" href="{{ h.url_for('actor_registry.contactpoints_index') }}" target="_blank" rel="noopener" data-contactpoints-manage><i class="fa fa-external-link" aria-hidden="true"></i> {{ _('Manage contact points') }}</a>
+    <a class="btn btn-link btn-sm mt-2" href="{{ h.url_for('actor_registry.contactpoints_index', list=1) }}" target="_blank" rel="noopener" data-contactpoints-manage><i class="fa fa-external-link" aria-hidden="true"></i> {{ _('Manage contact points') }}</a>
     <button type="button" class="btn btn-secondary btn-sm mt-2" data-contactpoints-toggle>
       <i class="fa fa-plus" aria-hidden="true"></i> {{ _('Create new contact point') }}
     </button>

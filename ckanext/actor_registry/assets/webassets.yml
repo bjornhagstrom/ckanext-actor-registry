@@ -26,3 +26,32 @@ actor-merge-select:
   extra:
     preload:
       - base/main
+assign-links:
+  output: actor_registry/%(version)s_assign-links.js
+  contents:
+    - js/assign-links.js
+  extra:
+    preload:
+      - base/main
+todo-filters:
+  output: actor_registry/%(version)s_todo-filters.js
+  contents:
+    - js/todo-filters.js
+  extra:
+    preload:
+      - base/main
+page-toc:
+  output: actor_registry/%(version)s_page-toc.js
+  contents:
+    - js/page-toc.js
+  extra:
+    preload:
+      - base/main
+page-toc-css:
+  output: actor_registry/%(version)s_page-toc.css
+  contents:
+    - css/page-toc.css
+todo-css:
+  output: actor_registry/%(version)s_todo.css
+  contents:
+    - css/todo.css

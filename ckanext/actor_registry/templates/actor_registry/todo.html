@@ -1,0 +1,167 @@
+{#- To do (0.6.0): the datasets that lack a publisher and/or a contact point, where an editor sets
+    them. Each row the viewer may edit has a box and its own choices; the same bar above and below
+    the list holds the choices for the ticked rows, so it is seen at once and still at hand after a
+    long list. One Save, in either bar, saves it all: every row's own choices, and the bar's choices
+    on the ticked rows (a row's own choice comes first; views._todo_plan). Only what a row lacks can
+    be chosen, and nothing already set is overwritten (cleanup.assign); what is set has an Edit link
+    to the dataset's form, and what is missing stands out. ``assign`` comes from
+    views._assign_choices and is none when the viewer may edit none of the rows.
+    A search and filters on tags (all of them) and organisations (any of them) narrow the list, so
+    datasets on one theme can get the same publisher or contact point at once. Every link and form
+    of the page leads back to the filters or the list, not to the top of the page, and the messages
+    of a save are shown at the list.
+    With JavaScript (assign-links.js): "Select all", a count on the Save button, rows marked while
+    ticked or chosen and not saved, a question before leaving the page with any of that unsaved,
+    "Create new…" in each list and the scroll position kept over a save; (todo-filters.js) the
+    filters apply as soon as something is chosen. The second tab is the clean-up page. -#}
+{% extends "actor_registry/base.html" %}
+{% block subtitle %}{{ _('To do') }}{% endblock %}
+{% block breadcrumb_content %}<li class="active">{{ _('To do') }}</li>{% endblock %}
+{#- The messages are shown at the list (below), where the work goes on. -#}
+{% block flash_inner %}{% endblock %}
+{#- The whole width: the table has a column per field. -#}
+{% block secondary %}{% endblock %}
+{% block wrapper_class %} registry-wide{% endblock %}
+
+{% macro contact_point_label(item) -%}{{ item.name }}{% if item.email %} ({{ item.email }}){% endif %}{%- endmacro %}
+
+{% macro choices(name, id, label, items, kind, label_hidden=false, small=false, option_label=none) -%}
+<label for="{{ id }}" class="{{ 'visually-hidden' if label_hidden else 'form-label mb-0' }}">{{ label }}</label>
+<select id="{{ id }}" name="{{ name }}" class="form-select{{ ' form-select-sm' if small else '' }} w-auto" data-assign-kind="{{ kind }}"{% if not small %} data-assign-choice="{{ name.rsplit('_', 1)[0] }}"{% endif %}>
+  <option value="">{{ _('Choose…') }}</option>
+  {% for item in items %}<option value="{{ item.id }}">{{ option_label(item) if option_label else item.name }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+
+{% macro bar(where) -%}
+<div class="my-3 p-2 border rounded" data-assign-bar>
+  {% if where == 'top' %}<p class="mb-2">{{ _('Select datasets in the list and choose here what they should get. Save saves this and the choices on every row. Only what is missing is filled in.') }}</p>{% endif %}
+  <div class="d-flex flex-wrap gap-3 align-items-center">
+    {% set select_all = _('Select all') %}
+    <label class="form-check-label" hidden data-assign-all-wrap><input type="checkbox" class="form-check-input me-1" data-assign-all aria-label="{{ select_all }}"> {{ select_all }}</label>
+    {% if assign.publisher %}<span class="d-inline-flex gap-2 align-items-center">{{ choices('publisher_actor_id_' ~ where, 'assign-publisher-' ~ where, _('Publisher'), assign.actors, 'publisher') }}</span>{% endif %}
+    {% if assign.contact_point %}<span class="d-inline-flex gap-2 align-items-center">{{ choices('contact_point_id_' ~ where, 'assign-contact-point-' ~ where, _('Contact point'), assign.contact_points, 'contact_point', option_label=contact_point_label) }}</span>{% endif %}
+    <button type="submit" class="btn btn-primary" name="assign_from" value="{{ where }}" data-assign-save
+            data-i18n-none="{{ _('Nothing to save yet') }}"
+            data-i18n-pick="{{ _('Choose what the selected datasets should get') }}"
+            data-i18n-one="{{ _('Save (1 dataset)') }}"
+            data-i18n-many="{{ _('Save ({count} datasets)') }}">{{ _('Save') }}</button>
+  </div>
+</div>
+{%- endmacro %}
+
+{% block primary_content_inner %}
+{% asset 'actor_registry/assign-links' %}
+{% asset 'actor_registry/todo-filters' %}
+{% asset 'actor_registry/todo-css' %}
+<h1 class="page-heading">{{ _('To do') }}</h1>
+{% snippet 'actor_registry/snippets/page_tabs.html', tabs=tabs %}
+<p>{{ _('Datasets that lack a publisher or a contact point. Choose on the rows, or select several datasets and choose what they should all get, and save it all at once. Only what is missing can be set here; to change what is already set, use Edit on the row.') }}</p>
+
+<form method="get" action="{{ h.url_for('actor_registry.todo_index') }}#todo-filters" id="todo-filters" class="d-flex flex-wrap gap-2 align-items-end mb-2" role="search" data-todo-filters>
+  <input type="hidden" name="missing" value="{{ missing }}">
+  {% for tag in filters.tag or [] %}<input type="hidden" name="tag" value="{{ tag }}">{% endfor %}
+  {% for org in filters.org or [] %}<input type="hidden" name="org" value="{{ org }}">{% endfor %}
+  <div><label for="todo-q" class="form-label mb-0">{{ _('Search') }}</label><input id="todo-q" type="search" name="q" value="{{ filters.q or '' }}" class="form-control" placeholder="{{ _('Title or description') }}"></div>
+  {% if facets.tags %}<div><label for="todo-tag" class="form-label mb-0">{{ _('Tag') }}</label><select id="todo-tag" name="tag" class="form-select w-auto" data-filter-auto><option value="">{{ _('Add a tag…') }}</option>{% for name, count in facets.tags %}<option value="{{ name }}">{{ name }} ({{ count }})</option>{% endfor %}</select></div>{% endif %}
+  {% if facets.organizations %}<div><label for="todo-org" class="form-label mb-0">{{ _('Organization') }}</label><select id="todo-org" name="org" class="form-select w-auto" data-filter-auto><option value="">{{ _('Add an organization…') }}</option>{% for id, title, count in facets.organizations %}<option value="{{ id }}">{{ title }} ({{ count }})</option>{% endfor %}</select></div>{% endif %}
+  <button type="submit" class="btn btn-secondary" data-filter-button>{{ _('Filter') }}</button>
+  {% if filters %}<a class="btn btn-link" href="{{ h.url_for('actor_registry.todo_index', missing=missing, _anchor='todo-filters') }}">{{ _('Clear the filters') }}</a>{% endif %}
+</form>
+{% if facets.chosen %}
+<ul class="list-unstyled d-flex flex-wrap gap-2 mb-2" aria-label="{{ _('Chosen filters') }}" data-todo-chosen>
+  {% for item in facets.chosen %}<li><a class="badge rounded-pill text-bg-light border text-decoration-none" href="{{ item.url }}">{{ item.label }} <span aria-hidden="true">×</span><span class="visually-hidden"> {{ _('Remove') }}</span></a></li>{% endfor %}
+</ul>
+{% endif %}
+{% if facets.tags or filters.tag or facets.organizations or filters.org %}
+<p class="small text-muted mb-3" data-todo-filter-help>
+  {%- if facets.tags or filters.tag %}{{ _('Choose a tag to add it. With several tags, the list shows the datasets that have all of them.') }} {% endif -%}
+  {%- if facets.organizations or filters.org %}{{ _('With several organizations, it shows the datasets of any of them.') }} {% endif -%}
+  {{ _('Remove a filter with ×.') }}
+</p>
+{% endif %}
+
+{% set show_text = _('Show datasets that lack') %}
+<ul class="nav nav-pills mb-3 align-items-center" aria-label="{{ show_text }}"><li class="nav-item me-2">{{ show_text }}</li>{% for key, label in missing_labels %}<li class="nav-item"><a class="nav-link{{ ' active' if key == missing else '' }}"{% if key == missing %} aria-current="page"{% endif %} href="{{ h.url_for('actor_registry.todo_index', missing=key, _anchor='todo-filters', **filters) }}">{{ label }} ({{ missing_counts[key] }})</a></li>{% endfor %}</ul>
+
+<div id="todo-list">
+<div class="todo-messages" data-todo-messages>
+  {% for category, message in h.get_flashed_messages(with_categories=true) %}
+  <div class="alert alert-dismissible fade show {{ category }}" role="alert">{{ h.literal(message) }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button></div>
+  {% endfor %}
+</div>
+<h2>{{ heading }}</h2>
+</div>
+{% if not data.rows %}
+<p>{{ _('No datasets match the filters.') if filters else _('Nothing to do here.') }}</p>
+{% else %}
+{% if assign %}
+<form method="post" action="{{ h.url_for('actor_registry.todo_assign') }}" data-assign-links
+      data-i18n-leave="{{ _('You have changes on this page that are not saved ({details}). Leave the page anyway?') }}"
+      data-i18n-chosen-one="{{ _('1 row with a choice') }}"
+      data-i18n-chosen-many="{{ _('{count} rows with a choice') }}"
+      data-i18n-selected-one="{{ _('1 selected row') }}"
+      data-i18n-selected-many="{{ _('{count} selected rows') }}"
+      data-i18n-create-new="{{ _('Create new…') }}">
+{{ h.csrf_input() }}
+<input type="hidden" name="missing" value="{{ missing }}"><input type="hidden" name="page" value="{{ page }}">
+{% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+{% for tag in filters.tag or [] %}<input type="hidden" name="tag" value="{{ tag }}">{% endfor %}
+{% for org in filters.org or [] %}<input type="hidden" name="org" value="{{ org }}">{% endfor %}
+{{ bar('top') }}
+{% else %}
+<p>{{ _('Open each dataset to add what is missing.') }}</p>
+{% endif %}
+<div class="table-responsive">
+<table class="table align-middle">
+  <thead><tr>{% if assign %}<th scope="col"><span class="visually-hidden">{{ _('Select') }}</span></th>{% endif %}<th scope="col">{{ _('Dataset') }}</th><th scope="col">{{ _('Publisher') }}</th><th scope="col">{{ _('Contact point') }}</th></tr></thead>
+  <tbody>
+  {% for dataset in data.rows %}
+  {% set editable = assign and dataset.id in assign.ids %}
+  {# Edit opens the dataset's form at the field itself. #}
+  {% macro edit_link(field) %}{% if editable %} <a class="small ms-1" href="{{ h.url_for('dataset.edit', id=dataset.name, _anchor='field-' ~ field) }}" data-todo-edit>{{ _('Edit') }}<span class="visually-hidden"> {{ dataset.title }}</span></a>{% endif %}{% endmacro %}
+  <tr data-assign-row="{{ dataset.id }}">
+    {% if assign %}<td>{% if editable %}<input type="checkbox" class="form-check-input" name="dataset_ids" value="{{ dataset.id }}" aria-label="{{ _('Select {title}').format(title=dataset.title) }}" data-assign-dataset>{% endif %}</td>{% endif %}
+    <td class="todo-title">
+      <a href="{{ h.url_for('dataset.read', id=dataset.name) }}">{{ dataset.title }}</a>{% if dataset.private %} <span class="dataset-private badge bg-secondary"><i class="fa fa-lock" aria-hidden="true"></i> {{ _('Private') }}</span>{% endif %}
+      <span class="badge text-bg-info" hidden data-unsaved-badge>{{ _('Not saved') }}</span>
+      <div class="text-muted small">{% if dataset.organization %}{{ dataset.organization }}{% endif %}{% if dataset.organization and dataset.modified %} · {% endif %}{% if dataset.modified %}{{ _('Updated {date}').format(date=h.render_datetime(dataset.modified)) }}{% endif %}</div>
+    </td>
+    {% if not dataset.publisher_field %}<td><span class="text-muted">{{ _('No such field') }}</span></td>
+    {% elif dataset.has_publisher %}<td><span data-assign-current>{{ dataset.publisher_name or _('Set') }}</span>{{ edit_link('publisher_actor_id') }}</td>
+    {% else %}<td class="todo-missing" data-todo-missing>{% if editable %}{{ choices('publisher_for_' ~ dataset.id, 'publisher-for-' ~ dataset.id, _('Publisher of {title}').format(title=dataset.title), assign.actors, 'publisher', label_hidden=true, small=true) }}{% else %}{{ _('Missing') }}{% endif %}</td>{% endif %}
+    {% if not dataset.contact_point_field %}<td><span class="text-muted">{{ _('No such field') }}</span></td>
+    {% elif dataset.has_contact_point %}<td><span data-assign-current>{{ dataset.contact_point_names|select|join(', ') or _('Set') }}</span>{{ edit_link('contact_point_ids') }}</td>
+    {% else %}<td class="todo-missing" data-todo-missing>{% if editable %}{{ choices('contact_point_for_' ~ dataset.id, 'contact-point-for-' ~ dataset.id, _('Contact point of {title}').format(title=dataset.title), assign.contact_points, 'contact_point', label_hidden=true, small=true, option_label=contact_point_label) }}{% else %}{{ _('Missing') }}{% endif %}</td>{% endif %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if assign %}
+{{ bar('bottom') }}
+</form>
+{#- "Create new…" in a list opens one of these (assign-links.js); it is saved at once, like the dataset form's quick create,
+    and chosen in that list. -#}
+{% for kind, title, endpoint in [('publisher', _('New publisher'), h.url_for('actor_registry.actors_quick_create')),
+                                 ('contact_point', _('New contact point'), h.url_for('actor_registry.contactpoints_quick_create'))] %}
+<dialog class="border rounded p-3" data-create-dialog="{{ kind }}" data-endpoint="{{ endpoint }}" aria-labelledby="create-{{ kind }}-title"
+        data-i18n-failed="{{ _('It could not be saved. Reload the page and try again.') }}">
+  <h2 class="h4" id="create-{{ kind }}-title">{{ title }}</h2>
+  <div class="alert alert-danger" hidden data-create-error></div>
+  {{ h.csrf_input() }}
+  <div class="mb-2"><label class="form-label" for="create-{{ kind }}-name">{{ _('Name') if kind == 'publisher' else _('Name or role') }} *</label><input class="form-control" id="create-{{ kind }}-name" data-field="name" required></div>
+  {% if kind == 'publisher' %}
+  <div class="mb-2"><label class="form-label" for="create-publisher-kind">{{ _('Kind') }}</label><select class="form-select" id="create-publisher-kind" data-field="actor_kind"><option value="organization">{{ _('Organization') }}</option><option value="person">{{ _('Person') }}</option></select></div>
+  {% else %}
+  <div class="mb-2"><label class="form-label" for="create-contact_point-email">{{ _('Email') }}</label><input class="form-control" type="email" id="create-contact_point-email" data-field="email"></div>
+  {% endif %}
+  <p class="small text-muted">{{ _('You can add more details on its own page later.') }}</p>
+  <button type="button" class="btn btn-primary" data-create-save>{{ _('Save and select') }}</button>
+  <button type="button" class="btn btn-link" data-create-cancel>{{ _('Cancel') }}</button>
+</dialog>
+{% endfor %}
+{% endif %}
+{{ pager.pager() }}
+{% endif %}
+{% endblock %}

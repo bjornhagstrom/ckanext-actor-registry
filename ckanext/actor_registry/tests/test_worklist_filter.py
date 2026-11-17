@@ -1,6 +1,6 @@
-"""The /actors worklist of datasets that lack something can show datasets missing
-both a publisher and a contact point (the default), only a publisher, only a contact
-point, or either one."""
+"""The To do page (/actor-registry/todo, 0.6.0; before, a worklist on /actors) lists the
+datasets that lack something: either a publisher or a contact point (the default), both,
+only a publisher or only a contact point."""
 
 import uuid
 
@@ -29,7 +29,7 @@ def _headers():
 
 
 def _links(html):
-    return sorted(a.get_text(strip=True) for a in BeautifulSoup(html, "html.parser").select("ul.dataset-list li a"))
+    return sorted(a.get_text(strip=True) for a in BeautifulSoup(html, "html.parser").select("table tbody td.todo-title > a"))
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def four_datasets(org):
 @pytest.mark.parametrize(
     "missing, expected",
     [
-        (None, ["C saknar båda"]),  # the default is unchanged: missing BOTH
+        (None, ["A saknar utgivare", "B saknar kontaktpunkt", "C saknar båda"]),  # the default: either
         ("both", ["C saknar båda"]),
         ("publisher", ["A saknar utgivare", "C saknar båda"]),
         ("contact_point", ["B saknar kontaktpunkt", "C saknar båda"]),
@@ -76,51 +76,74 @@ def four_datasets(org):
 def test_each_filter_lists_the_right_datasets(app, four_datasets, missing, expected):
     query = f"?missing={missing}" if missing else ""
 
-    index = app.get(f"/en/actors{query}", headers=_headers()).get_data(as_text=True)
-    full = app.get(f"/en/actors/unlinked-datasets{query}", headers=_headers()).get_data(as_text=True)
+    page = app.get(f"/en/actor-registry/todo{query}", headers=_headers()).get_data(as_text=True)
 
-    assert _links(index) == expected
-    assert _links(full) == expected
-    assert "D har båda" not in index and "D har båda" not in full
+    assert _links(page) == expected
+    assert "D har båda" not in page
 
 
 def test_the_heading_and_the_active_button_follow_the_choice(app, four_datasets):
-    page = app.get("/en/actors?missing=either", headers=_headers()).get_data(as_text=True)
+    page = app.get("/en/actor-registry/todo?missing=either", headers=_headers()).get_data(as_text=True)
     soup = BeautifulSoup(page, "html.parser")
 
     assert "Datasets missing a publisher or a contact point (3)" in page
-    assert soup.select_one("h2#worklist").get_text(strip=True).endswith("(3)")
-    # (the registry's own submenu is also a list of pills; the filter is the one that follows the heading)
+    # (the registry's own submenu is also a list of pills; the filter is the other one)
     active = soup.select("ul.nav-pills:not(.registry-submenu) a.nav-link.active")
     assert [a.get_text(strip=True) for a in active] == ["Either (3)"]  # each choice shows how many datasets it lists
-    # all four choices are offered as links that keep the choice
     hrefs = [a["href"] for a in soup.select("ul.nav-pills:not(.registry-submenu) a.nav-link")]
     assert any("missing=publisher" in h for h in hrefs) and any("missing=contact_point" in h for h in hrefs)
 
 
+def test_each_row_says_which_link_is_set(app, four_datasets):
+    soup = BeautifulSoup(app.get("/en/actor-registry/todo", headers=_headers()).get_data(as_text=True), "html.parser")
+    rows = {row.select_one("td a").get_text(strip=True): row for row in soup.select("table tbody tr")}
+    # A row offers a choice only for what it lacks.
+    assert rows["A saknar utgivare"].select('select[name^="publisher_for_"]')
+    assert not rows["A saknar utgivare"].select('select[name^="contact_point_for_"]')
+    assert not rows["B saknar kontaktpunkt"].select('select[name^="publisher_for_"]')
+    assert rows["B saknar kontaktpunkt"].select('select[name^="contact_point_for_"]')
+    assert len(rows["C saknar båda"].select("select")) == 2
+
+
 def test_the_filter_is_translated(app, four_datasets):
-    page = app.get("/sv/actors?missing=publisher", headers=_headers()).get_data(as_text=True)
+    page = app.get("/sv/actor-registry/todo?missing=publisher", headers=_headers()).get_data(as_text=True)
 
     assert "Datamängder utan utgivare (2)" in page
-    assert "Saknar:" in page
+    assert "Visa datamängder som saknar" in page and "Att åtgärda" in page
 
 
 def test_an_unknown_filter_is_a_404(app, four_datasets):
-    assert app.get("/actors?missing=bogus", headers=_headers(), expect_errors=True).status_code == 404
-    assert app.get("/actors/unlinked-datasets?missing=bogus", headers=_headers(), expect_errors=True).status_code == 404
+    assert app.get("/actor-registry/todo?missing=bogus", headers=_headers(), expect_errors=True).status_code == 404
+
+
+@pytest.mark.parametrize("old, new", [
+    ("/actors?missing=publisher", "/actor-registry/todo?missing=publisher"),
+    ("/actors/unlinked-datasets", "/actor-registry/todo?missing=both"),
+    ("/actors/unlinked-datasets?missing=contact_point&page=2", "/actor-registry/todo?missing=contact_point&page=2"),
+])
+def test_the_old_addresses_lead_to_the_new_page(app, old, new):
+    response = app.get(old, headers=_headers(), follow_redirects=False)
+    assert response.status_code == 301
+    assert response.headers["Location"].endswith(new)
 
 
 def test_pagination_keeps_the_choice(app, org):
     for n in range(25):
         _dataset(org, f"Saknar {n:02d}")
 
-    first = app.get("/en/actors/unlinked-datasets?missing=publisher", headers=_headers()).get_data(as_text=True)
-    second = app.get("/en/actors/unlinked-datasets?missing=publisher&page=2", headers=_headers()).get_data(as_text=True)
+    first = app.get("/en/actor-registry/todo?missing=publisher", headers=_headers()).get_data(as_text=True)
+    second = app.get("/en/actor-registry/todo?missing=publisher&page=2", headers=_headers()).get_data(as_text=True)
 
     assert len(_links(first)) == 20 and len(_links(second)) == 5
     assert "missing=publisher" in first and "page=2" in first  # the pager link carries both
-    index = app.get("/en/actors?missing=publisher", headers=_headers()).get_data(as_text=True)
-    assert "Show all 25" in index and "missing=publisher" in index
+
+
+def test_a_page_after_the_last_goes_to_the_last(app, org):
+    for n in range(3):
+        _dataset(org, f"Saknar {n:02d}")
+    response = app.get("/actor-registry/todo?missing=publisher&page=9", headers=_headers(), follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/actor-registry/todo?missing=publisher&page=1#todo-list")
 
 
 def test_private_datasets_stay_hidden_in_every_mode(app, org):
@@ -129,13 +152,16 @@ def test_private_datasets_stay_hidden_in_every_mode(app, org):
     outsider = {"Authorization": factories.UserWithToken()["token"]}
 
     for missing in ("both", "publisher", "contact_point", "either"):
-        html = app.get(f"/actors/unlinked-datasets?missing={missing}", headers=outsider).get_data(as_text=True)
+        html = app.get(f"/actor-registry/todo?missing={missing}", headers=outsider).get_data(as_text=True)
         assert "Publik utan allt" in html and "Hemlig utan allt" not in html, missing
+        assert "data-assign-links" not in html  # may edit none of them: nothing to set
 
 
 def test_the_empty_state_says_so(app, org):
-    page = app.get("/en/actors?missing=contact_point", headers=_headers()).get_data(as_text=True)
+    page = app.get("/en/actor-registry/todo?missing=contact_point", headers=_headers()).get_data(as_text=True)
+    assert "Nothing to do here." in page
 
-    assert "No datasets are missing this." in page
-    default = app.get("/en/actors", headers=_headers()).get_data(as_text=True)
-    assert "All datasets have at least one publisher or contact point linked." in default
+
+def test_the_publishers_page_no_longer_has_the_list(app, four_datasets):
+    page = app.get("/en/actors", headers=_headers()).get_data(as_text=True)
+    assert "C saknar båda" not in page and "Missing:" not in page

@@ -3,8 +3,8 @@
   Migrate to Actor Registry, step 1: contact points. Find -> Review -> Link.
   See contact_migration.py for the rules. Plain forms; JavaScript only makes the long lists easier (migrate-select.js).
 -#}
-{% block subtitle %}{{ _('Migrate to Actor Registry') }}{% endblock %}
-{% block breadcrumb_content %}<li class="active">{{ _('Migrate to Actor Registry') }}</li>{% endblock %}
+{% block subtitle %}{{ _('Create contact points from the datasets') }} - {{ _('Contact points') }}{% endblock %}
+{% block breadcrumb_content %}<li class="active">{{ _('Contact points') }}</li>{% endblock %}
 {% block primary_content_inner %}
   {#- Where the contact details come from: ckanext-dcat's free-text contact point, Maintainer or Author (contact_migration.contact_source). -#}
   {% macro source_label(item) %}{% if item.source == 'contact' %}{{ _('Contact point (free text)') }}{% elif item.source == 'maintainer' %}{{ _('Maintainer') }}{% else %}{{ _('Author') }}{% endif %}{% endmacro %}
@@ -44,7 +44,8 @@
       </table>
     </div>
   {% endmacro %}
-  <h1 class="page-heading">{{ _('Migrate to Actor Registry') }}</h1>
+  <h1 class="page-heading">{{ _('Contact points') }}</h1>
+  {% snippet 'actor_registry/snippets/page_tabs.html', tabs=tabs %}
   <p>{{ _("Contact details are often stored as free text in CKAN's own fields, Maintainer and Author, and repeated on many datasets. Here you turn them into shared contact points and link the datasets to them. Maintainer is used first, and Author only when a dataset has no maintainer.") }} {{ _("A contact point typed as free text in ckanext-dcat's contact points field is used before both, as in ckanext-dcat's export.") }}</p>
   <p class="text-muted">{{ _('The original fields are never changed. A dataset that has a contact point is done and is no longer listed. You only see the datasets you may edit.') }}</p>
 
@@ -62,76 +63,13 @@
       <h2 class="h4">{{ _('Overview') }}</h2>
       <table class="table table-sm w-auto">
         <tbody>
-          <tr><th scope="row">{{ _('Datasets with contact details in free-text fields') }}</th><td data-count="old">{{ counts.old }}</td></tr>
-          <tr><th scope="row">{{ _('of which linked to a contact point') }}</th><td data-count="linked">{{ counts.linked }}</td></tr>
-          <tr><th scope="row">{{ _('of which changed since linking') }}</th><td data-count="changed">{% if counts.changed %}<a href="#changed"><strong>{{ counts.changed }}</strong></a>{% else %}0{% endif %}</td></tr>
+          <tr><th scope="row">{{ _('Datasets with contact details only in free-text fields') }}</th><td data-count="free_text"><strong>{{ counts.remaining + counts.skipped }}</strong></td></tr>
           <tr><th scope="row">{{ _('of which skipped') }}</th><td data-count="skipped">{{ counts.skipped }}{% if counts.skipped %} · <a href="{{ h.url_for('actor_registry.migrate_index', show_skipped=1) }}#skipped">{{ _('Show') }}</a>{% endif %}</td></tr>
-          <tr><th scope="row">{{ _('of which remaining') }}</th><td data-count="remaining"><strong>{{ counts.remaining }}</strong></td></tr>
-          <tr><th scope="row">{{ _('Datasets with no contact details at all') }}</th><td data-count="no_contact">{{ counts.no_contact }}{% if counts.no_contact %} · <a href="{{ h.url_for('actor_registry.actors_unlinked_datasets', missing='contact_point') }}">{{ _('Add contact points') }}</a>{% endif %}</td></tr>
+          <tr><th scope="row">{{ _('Datasets linked to a contact point') }}</th><td data-count="linked">{{ counts.linked }}</td></tr>
+          <tr><th scope="row">{{ _('Datasets with no contact details at all') }}</th><td data-count="no_contact">{{ counts.no_contact }}{% if counts.no_contact %} · <a href="{{ h.url_for('actor_registry.todo_index', missing='contact_point') }}">{{ _('Add contact points') }}</a>{% endif %}</td></tr>
         </tbody>
       </table>
     </section>
-
-    {% if data.changed %}
-      <section class="mb-4" id="changed" data-migration-changed>
-        <h2 class="h4">{{ _('Changed since linking') }}</h2>
-        <p>{{ _('The free-text contact details have changed on these datasets after they were linked. Decide whether the contact point should follow the change.') }}</p>
-        {% for item in data.changed %}
-          {% set contact = item.contact_point %}
-          {% set can_update = contact and contact.active and item.contact_point_in_dataset %}
-          <div class="mb-3 p-3 border rounded" data-changed-dataset="{{ item.id }}">
-            <h3 class="h5 mb-1"><a href="{{ h.url_for('dataset.read', id=item.name_slug) }}">{{ item.title }}</a>{% if item.organization %} <small class="text-muted">· {{ item.organization }}</small>{% endif %}</h3>
-            <table class="table table-sm w-auto mb-2">
-              <tbody>
-                <tr><th scope="row">{{ _('Linked to') }}</th><td>{% if contact %}<a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=contact.id) }}">{{ contact.name }}</a>{% if contact.email %} &lt;{{ contact.email }}&gt;{% endif %}{% if not contact.active %} <span class="badge bg-secondary">{{ _('Inactive') }}</span>{% endif %}{% if not item.contact_point_in_dataset %} <span class="badge bg-warning text-dark">{{ _('no longer on the dataset') }}</span>{% endif %}{% else %}–{% endif %}</td></tr>
-                {% for field, label in [('maintainer', _('Maintainer')), ('maintainer_email', _('Maintainer email')), ('author', _('Author')), ('author_email', _('Author email')), ('contact', _('Contact point (free text)'))] %}
-                  {% set before = item.previous[field] if item.previous else none %}
-                  {% set now = item['values'][field] %}
-                  {% if before is none or before != now %}
-                    <tr data-changed-field="{{ field }}"><th scope="row">{{ label }}</th><td>{% if item.previous %}<del>{{ before or '–' }}</del> → {% endif %}<ins>{{ now or '–' }}</ins></td></tr>
-                  {% endif %}
-                {% endfor %}
-              </tbody>
-            </table>
-            <form method="post" action="{{ h.url_for('actor_registry.migrate_change') }}">
-              {{ h.csrf_input() }}
-              <input type="hidden" name="dataset_id" value="{{ item.id }}">
-              <div class="row g-2 mb-2">
-                <p class="small mb-0">{{ _('Details for an updated or new contact point, taken from the new values:') }}</p>
-                <div class="col-md-6"><label class="form-label small" for="cn-{{ loop.index }}">{{ _('Name or role') }}</label><input class="form-control form-control-sm" id="cn-{{ loop.index }}" name="name" value="{{ item.name or (contact.name if contact else '') }}"></div>
-                <div class="col-md-6"><label class="form-label small" for="ce-{{ loop.index }}">{{ _('Email') }}</label><input class="form-control form-control-sm" id="ce-{{ loop.index }}" name="email" value="{{ item.email or (contact.email if contact else '') or '' }}"></div>
-              </div>
-              {% if can_update %}
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="action" value="update" id="c-update-{{ loop.index }}" checked>
-                  <label class="form-check-label radio" for="c-update-{{ loop.index }}">{{ _('Update the contact point') }}
-                    <span class="text-muted">({% trans count=item.usage %}changes it on {{ count }} dataset{% pluralize %}changes it on all {{ count }} datasets that use it{% endtrans %})</span></label>
-                </div>
-              {% endif %}
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="action" value="existing" id="c-existing-{{ loop.index }}" {% if not can_update %}checked{% endif %}>
-                <label class="form-check-label radio" for="c-existing-{{ loop.index }}">{{ _('Link this dataset to another contact point') }}</label>
-              </div>
-              <div class="ms-4 mb-2">
-                <select class="form-select form-select-sm" name="contact_point_id" aria-label="{{ _('Existing contact point') }}">
-                  <option value="">{{ _('Select contact point…') }}</option>
-                  {% for other in all_contact_points %}{% if not contact or other.id != contact.id %}<option value="{{ other.id }}">{{ other.name }}{% if other.email %} ({{ other.email }}){% endif %}</option>{% endif %}{% endfor %}
-                </select>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="action" value="create" id="c-create-{{ loop.index }}">
-                <label class="form-check-label radio" for="c-create-{{ loop.index }}">{{ _('Create a new contact point for this dataset from the new details') }}</label>
-              </div>
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="action" value="keep" id="c-keep-{{ loop.index }}">
-                <label class="form-check-label radio" for="c-keep-{{ loop.index }}">{{ _('Keep it as it is (the change is accepted and no longer flagged)') }}</label>
-              </div>
-              <button type="submit" class="btn btn-primary btn-sm">{{ _('Apply') }}</button>
-            </form>
-          </div>
-        {% endfor %}
-      </section>
-    {% endif %}
 
     <h2 class="h4">{{ _('Contact details to migrate') }}</h2>
     {% if not candidates %}
@@ -279,7 +217,6 @@
               <div class="alert alert-warning" data-close-warning>
                 <ul class="mb-2">
                   {% if close_check.no_contact_point %}<li>{% trans count=close_check.no_contact_point %}{{ count }} dataset will have no contact point in the export. A contact point is required in DCAT-AP.{% pluralize %}{{ count }} datasets will have no contact point in the export. A contact point is required in DCAT-AP.{% endtrans %}</li>{% endif %}
-                  {% if close_check.changed %}<li>{% trans count=close_check.changed %}{{ count }} linked dataset has unhandled changes.{% pluralize %}{{ count }} linked datasets have unhandled changes.{% endtrans %}</li>{% endif %}
                 </ul>
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="confirm" value="1" id="close-confirm">

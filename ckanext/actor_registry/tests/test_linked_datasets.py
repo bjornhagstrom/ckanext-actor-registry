@@ -303,7 +303,7 @@ def test_english_pages_say_publisher_not_actor(app, org):
     headers = _headers(factories.SysadminWithToken())
 
     for path in (f"/en/actors/{actor}", f"/en/actors/{actor}/datasets", f"/en/actors/{actor}/edit",
-                 f"/en/actors/{actor}/delete", "/en/actors", "/en/actors/new",
+                 f"/en/actors/{actor}/delete", "/en/actors", "/en/actors/new", "/en/actor-registry/todo",
                  f"/en/contactpoints/{contact}", f"/en/contactpoints/{contact}/delete"):
         soup = BeautifulSoup(app.get(path, headers=headers).get_data(as_text=True), "html.parser")
         for tag in soup(["script", "style"]):
@@ -313,37 +313,39 @@ def test_english_pages_say_publisher_not_actor(app, org):
         assert not re.search(r"\bactors?\b", text, re.I), (path, re.findall(r".{20}\bactors?\b.{20}", text, re.I)[:3])
 
 
-# --- "Datasets without a publisher link" on /actors ------------------------------------
+# --- The datasets that lack a link, on the To do page (0.6.0; before, on /actors) ---------
 
 
-def test_actors_index_lists_unlinked_datasets_from_the_database(app, org):
+def _todo_links(html):
+    return [a.get_text(strip=True) for a in BeautifulSoup(html, "html.parser").select("table tbody td a")]
+
+
+def test_the_todo_page_lists_unlinked_datasets_from_the_database(app, org):
     actor = _actor()
     _dataset(org, "Har utgivare", publisher_actor_id=actor)
     for n in range(12):
         _dataset(org, f"Saknar {n:02d}")
     headers = _headers(factories.SysadminWithToken())
 
-    html = app.get("/en/actors", headers=headers).get_data(as_text=True)
+    html = app.get("/en/actor-registry/todo?missing=both", headers=headers).get_data(as_text=True)
 
     assert "Datasets missing both a publisher and a contact point (12)" in html
-    listed = [t for t in _links(html) if t.startswith("Saknar")]
-    assert len(listed) == 10 and listed[0] == "Saknar 00"
+    listed = [t for t in _todo_links(html) if t.startswith("Saknar")]
+    assert len(listed) == 12 and listed[0] == "Saknar 00"
     assert "Har utgivare" not in html
-    assert "Show all 12" in html and "/actors/unlinked-datasets" in html
 
 
-def test_unlinked_datasets_page_paginates_and_requires_login(app, org):
+def test_the_todo_page_paginates_and_requires_login(app, org):
     for n in range(25):
         _dataset(org, f"Saknar {n:02d}")
     headers = _headers(factories.SysadminWithToken())
 
-    assert app.get("/actors/unlinked-datasets").status_code == 403
-    first = app.get("/actors/unlinked-datasets", headers=headers).get_data(as_text=True)
-    second = app.get("/actors/unlinked-datasets?page=2", headers=headers).get_data(as_text=True)
+    assert app.get("/actor-registry/todo").status_code == 403
+    first = app.get("/actor-registry/todo?missing=both", headers=headers).get_data(as_text=True)
+    second = app.get("/actor-registry/todo?missing=both&page=2", headers=headers).get_data(as_text=True)
 
-    assert len([t for t in _links(first) if t.startswith("Saknar")]) == 20
-    assert [t for t in _links(second) if t.startswith("Saknar")] == [f"Saknar {n:02d}" for n in range(20, 25)]
-    assert app.get("/actors/unlinked-datasets?page=99", headers=headers).status_code == 404
+    assert len([t for t in _todo_links(first) if t.startswith("Saknar")]) == 20
+    assert [t for t in _todo_links(second) if t.startswith("Saknar")] == [f"Saknar {n:02d}" for n in range(20, 25)]
 
 
 def test_a_dataset_with_only_a_contact_point_or_only_a_publisher_is_not_unlinked(app, org):
@@ -353,9 +355,9 @@ def test_a_dataset_with_only_a_contact_point_or_only_a_publisher_is_not_unlinked
     _dataset(org, "Ingenting")
     headers = _headers(factories.SysadminWithToken())
 
-    page = app.get("/actors/unlinked-datasets", headers=headers).get_data(as_text=True)
+    page = app.get("/actor-registry/todo?missing=both", headers=headers).get_data(as_text=True)
 
-    assert _links(page) == ["Ingenting"]
+    assert _todo_links(page) == ["Ingenting"]
 
 
 def test_unlinked_list_hides_private_datasets_from_non_members(app, org):
@@ -363,12 +365,12 @@ def test_unlinked_list_hides_private_datasets_from_non_members(app, org):
     _dataset(org, "Hemlig olänkad", private=True)
     outsider = factories.UserWithToken()
 
-    html = app.get("/actors/unlinked-datasets", headers=_headers(outsider)).get_data(as_text=True)
+    html = app.get("/actor-registry/todo", headers=_headers(outsider)).get_data(as_text=True)
 
     assert "Publik olänkad" in html and "Hemlig olänkad" not in html
 
 
-def test_actors_index_does_not_use_the_search_index(app, org, monkeypatch):
+def test_the_registry_pages_do_not_use_the_search_index(app, org, monkeypatch):
     _dataset(org, "Olänkad")
     headers = _headers(factories.SysadminWithToken())
     from ckan.plugins import toolkit
@@ -383,7 +385,7 @@ def test_actors_index_does_not_use_the_search_index(app, org, monkeypatch):
     monkeypatch.setattr(toolkit, "get_action", guarded)
 
     assert app.get("/actors", headers=headers).status_code == 200
-    assert app.get("/actors/unlinked-datasets", headers=headers).status_code == 200
+    assert app.get("/actor-registry/todo", headers=headers).status_code == 200
 
 
 # The public pages for a publisher and a contact point (2026-10-04).
@@ -450,7 +452,7 @@ def test_each_choice_of_missing_shows_how_many_datasets_it_lists(app, org):
     _dataset(org, "Ingen av dem")
     _dataset(org, "Ingen heller")
     headers = _headers(factories.SysadminWithToken())
-    html = app.get("/en/actors", headers=headers).get_data(as_text=True)
+    html = app.get("/en/actor-registry/todo", headers=headers).get_data(as_text=True)
     pills = {a.get_text(strip=True): None for a in BeautifulSoup(html, "html.parser").select("ul.nav-pills a")}
     # Each choice counts the datasets that LACK that: no publisher = 3, no contact point = 3, lacking either = 4.
     assert {"Both (2)", "Publisher (3)", "Contact point (3)", "Either (4)"} <= set(pills)

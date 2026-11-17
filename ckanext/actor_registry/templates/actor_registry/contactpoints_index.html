@@ -8,9 +8,12 @@
     <h1 class="page-heading mb-0">{{ _('Contact points') }}</h1>
     <a class="btn btn-primary" href="{{ h.url_for('actor_registry.contactpoints_new') }}"><i class="fa fa-plus"></i> {{ _('New contact point') }}</a>
   </div>
+  {% snippet 'actor_registry/snippets/page_tabs.html', tabs=tabs %}
   <p>{{ _('Contact points are managed here and can be reused by multiple datasets. Changes take effect everywhere without editing each dataset.') }}</p>
-  <form method="get" class="mb-1"><label class="checkbox"><input type="checkbox" name="show_inactive" value="1" {% if show_inactive %}checked{% endif %} onchange="this.form.submit()"> {{ _('Show inactive contact points too') }}</label></form>
+  {% if inactive_count or show_inactive %}
+  <form method="get" class="mb-1"><input type="hidden" name="list" value="1"><label class="checkbox"><input type="checkbox" name="show_inactive" value="1" {% if show_inactive %}checked{% endif %} onchange="this.form.submit()"> {{ _('Show inactive contact points too') }}</label></form>
   <p class="text-muted small">{{ _('Deactivating a contact point (rather than deleting it) keeps its web address (URI) resolving if anything already links to or has cached it, and keeps existing dataset references valid. Inactive contact points are hidden here by default; check the box above to see them too, for example before permanently deleting one you are sure is no longer needed.') }}</p>
+  {% endif %}
   <table class="table table-striped align-middle">
     <thead><tr><th>{{ _('Name or role') }}</th><th>{{ _('Email') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
     <tbody>
@@ -25,6 +28,9 @@
       {% endfor %}
     </tbody>
   </table>
+  {% if migration_closed and c.userobj and c.userobj.sysadmin %}
+    <p class="text-muted small" data-migration-closed-link>{{ _('Taking contact points from the old fields of the datasets is closed.') }} <a href="{{ h.url_for('actor_registry.migrate_index') }}#close">{{ _('Open it again') }}</a></p>
+  {% endif %}
 {% endblock %}
 {% block secondary_content %}
   <section class="module module-narrow module-shallow"><h2 class="module-heading">{{ _('Central management') }}</h2><div class="module-content"><p>{{ _('Deactivate a contact point when it should no longer be selectable. Existing references keep working.') }}</p></div></section>

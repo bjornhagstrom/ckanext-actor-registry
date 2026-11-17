@@ -8,7 +8,7 @@ own fields), and writes your own copy with the registry's
 stay in the copy as legacy fields: ckanext-dcat's repeating field ``contact``
 with ``legacy_dcat_contact.html``, CKAN's Author, Maintainer and their emails
 with ``legacy_contact.html``. They are shown and editable while the migration
-is open, then hidden but kept, because CKAN removes a stored value that a
+is open and the dataset has no registry contact point, otherwise hidden but kept, because CKAN removes a stored value that a
 save does not send. Nothing from
 the source schema is shipped with this extension; the copy is made from the
 version installed where you run it, so run it again after upgrading the source.

@@ -246,6 +246,13 @@ def test_while_open_the_old_field_is_edited_shown_and_exported_until_a_contact_p
     page, export = _page_and_export(app, dataset)
     assert "desk@example.org" in page and "desk@example.org" in export
     assert "old@example.org" not in page and "old@example.org" not in export
+    # 0.6.0: with a contact point the form hides the old field too, as the page does, and keeps its value.
+    form = _edit_form(app, sysadmin, dataset)
+    assert 'id="field-contact-0-name"' not in form
+    hidden = dict(re.findall(r'<input type="hidden" name="(contact-[\w-]+)" value="([^"]*)" data-legacy-contact-hidden>', form))
+    assert hidden["contact-0-email"] == "old@example.org"
+    stored = _save_form(app, sysadmin, dataset, contact_point_ids=desk.id, **hidden)
+    assert json.loads(stored.extras["contact"])[0]["email"] == "old@example.org"
 
 
 TWO_OLD = OLD + [{"name": "GIS Support", "email": "gis@example.org", "uri": "https://example.org/gis", "url": ""}]
@@ -432,6 +439,14 @@ def test_without_dcat_the_old_fields_are_edited_while_open_and_kept_once_closed(
     assert (stored.maintainer, stored.maintainer_email, stored.version) == ("Old Desk", "old@example.org", "1.0")
     assert [tag.name for tag in stored.get_tags()] == ["water"]
     assert "desk@example.org" in app.get(f"/dataset/{dataset['name']}").get_data(as_text=True)
+
+    # 0.6.0: reopened, a dataset with a contact point still hides the old fields in the form;
+    # one without shows them.
+    cm.set_closed(sysadmin["name"], False)
+    form = _edit_form(app, sysadmin, dataset)
+    assert 'id="field-maintainer_email"' not in form and 'value="old@example.org" data-legacy-contact-hidden' in form
+    _, other = _dataset(maintainer="Other Desk")
+    assert 'id="field-maintainer"' in _edit_form(app, sysadmin, other)
 
 
 # --- ckanext-dcat's own dcat_ap_full, unconverted: its contact field is not a legacy field ---------

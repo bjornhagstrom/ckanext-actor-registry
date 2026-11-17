@@ -131,7 +131,7 @@ def test_an_empty_dcat_contact_point_falls_back_to_maintainer():
 
 
 def test_without_a_dcat_contact_point_the_fingerprint_is_the_one_from_before():
-    # Datasets linked before the dcat field was read must not all turn up as changed.
+    # Datasets skipped before the dcat field was read must keep their fingerprint.
     import hashlib
     values = ["Desk", "desk@example.org", "", ""]
     before = hashlib.sha256(json.dumps(values).encode("utf-8")).hexdigest()
@@ -160,8 +160,7 @@ def test_a_dcat_contact_point_with_only_a_translated_name_is_read(entry, expecte
 
 @pytest.mark.ckan_config("ckan.locale_default", "sv")
 def test_a_change_to_a_translated_name_changes_the_fingerprint_and_the_values_shown():
-    # The page lists what changed from the values shown; a change only in a language other
-    # than the default must show there too, not only in the hash (fable's review of 0.5.0).
+    # A change in any translation must count, not only the default language (fable's review of 0.5.0).
     before = _row(contact=json.dumps([{"name_translated": TRANSLATED, "email": "desk@example.org"}]))
     after = _row(contact=json.dumps([{"name_translated": dict(TRANSLATED, en="Data Desk"), "email": "desk@example.org"}]))
     assert cm.fingerprint(after) != cm.fingerprint(before)
@@ -231,6 +230,11 @@ def _contact_point(name="Open Data Desk", email="desk@example.org", active=True)
     return item
 
 
+def registry_contact(contact_id):
+    ckan_model.Session.expire_all()
+    return model.get_contact_point(contact_id)
+
+
 def _set_column(dataset_id, **values):
     """Write faulty data straight into the database, as old imports may have."""
     package = ckan_model.Package.get(dataset_id)
@@ -258,8 +262,7 @@ def test_survey_groups_by_email_and_counts_name_variants():
     assert desk["variants"] == [("Open Data Desk", 2), ("Opendata", 1)]
     assert desk["suggested_name"] == "Open Data Desk"
     assert gis["suggested_name"] == "GIS Support"
-    assert data["counts"] == {"old": 4, "linked": 0, "skipped": 0, "remaining": 4, "no_contact": 0,
-                              "changed": 0}
+    assert data["counts"] == {"old": 4, "linked": 0, "skipped": 0, "remaining": 4, "no_contact": 0}
 
 
 @_mark
@@ -280,13 +283,14 @@ def test_survey_counts_linked_no_contact_and_ignores_deleted_datasets():
     org = _org()
     contact = _contact_point()
     _dataset(org, maintainer="Desk", contact_point_ids=[contact.id])
+    # Linked in the form, never had free text: linked too (0.6.0).
+    _dataset(org, contact_point_ids=[contact.id])
     _dataset(org)
     deleted = _dataset(org, maintainer="Gone")
     helpers.call_action("package_delete", context={"user": sysadmin["name"]}, id=deleted["id"])
     data = cm.survey(sysadmin["name"])
     assert data["candidates"] == []
-    assert data["counts"] == {"old": 1, "linked": 1, "skipped": 0, "remaining": 0, "no_contact": 1,
-                              "changed": 0}
+    assert data["counts"] == {"old": 1, "linked": 2, "skipped": 0, "remaining": 0, "no_contact": 1}
 
 
 @_mark
@@ -508,21 +512,39 @@ def test_the_page_lists_candidates_and_the_overview(app):
     _dataset(org, title="Bathing sites", maintainer="Desk", maintainer_email="desk@example.org",
              author="Ann", author_email="ann@example.org")
     html = _get(app, sysadmin)
-    assert "Migrate to Actor Registry" in html
+    assert '<h1 class="page-heading">Contact points</h1>' in html and "Create contact points from the datasets" in html
     assert 'data-candidate="email:desk@example.org"' in html
     assert "Bathing sites" in html and "data-also-mentioned" in html
-    assert 'data-count="remaining"><strong>1</strong>' in html
+    assert 'data-count="free_text"><strong>1</strong>' in html
+
+
+@_page_mark
+def test_the_overview_counts_what_has_only_free_text_and_what_is_linked(app):
+    # Björn 2026-11-14: the total with free-text details never changes (the old values stay
+    # in hidden fields), so the overview shows what has ONLY free text, and what is linked.
+    sysadmin = factories.SysadminWithToken()
+    org = _org()
+    linked, skipped, _ = (_dataset(org, maintainer=f"Desk {n}", maintainer_email=f"desk{n}@example.org") for n in range(3))
+    cm.apply(sysadmin["name"], "create", [linked["id"]], name="Desk 0", email="desk0@example.org")
+    cm.apply(sysadmin["name"], "skip", [skipped["id"]])
+    html = _get(app, sysadmin)
+    assert 'data-count="free_text"><strong>2</strong>' in html
+    assert 'data-count="skipped">1' in html and 'data-count="linked">1' in html
+    assert 'data-count="old"' not in html and 'data-count="remaining"' not in html and 'data-count="changed"' not in html
 
 
 @_page_mark
 def test_access_to_the_page(app):
     editor, member = factories.UserWithToken(), factories.UserWithToken()
-    _org(users=[(editor, "editor"), (member, "member")])
+    org = _org(users=[(editor, "editor"), (member, "member")])
     _get(app, editor)
     _get(app, member, status=403)
     _get(app, None, status=403)
-    assert "/actor-registry/migrate" in _get(app, editor, url="/contactpoints")
-    assert "/actor-registry/migrate" not in _get(app, member, url="/contactpoints")
+    # An editor gets the tab while something of theirs is left to migrate (0.6.0); a member never does.
+    assert "/actor-registry/migrate" not in _get(app, editor, url="/contactpoints?list=1")
+    _dataset(org, maintainer="Desk", maintainer_email="desk@example.org")
+    assert "/actor-registry/migrate" in _get(app, editor, url="/contactpoints?list=1")
+    assert "/actor-registry/migrate" not in _get(app, member, url="/contactpoints?list=1")
 
 
 @_page_mark
@@ -550,35 +572,26 @@ def test_a_forbidden_post_is_refused(app):
              data={"dataset_id": "x"}, status=403)
 
 
-# --- Step 2: changes in the source after linking -------------------------------------------
+# --- Decisions stored by earlier versions ------------------------------------------------
 
 
-def _linked(org=None, **fields):
-    """A dataset linked through the migration, and its contact point."""
-    sysadmin = factories.Sysadmin()
-    fields = fields or {"maintainer": "Desk", "maintainer_email": "desk@example.org"}
-    dataset = _dataset(org or _org(), **fields)
-    _, _, contact = cm.apply(sysadmin["name"], "create", [dataset["id"]],
-                             name=fields.get("maintainer") or "Desk", email=fields.get("maintainer_email", ""))
-    return sysadmin, dataset, contact
-
-
-def _change(sysadmin, dataset, **fields):
-    helpers.call_action("package_patch", context={"user": sysadmin["name"]}, id=dataset["id"], **fields)
+def _store_kept(dataset):
+    """A "kept" decision, as versions before 0.6.0 stored it (Changed since linking)."""
+    cm._record(dataset["id"], cm.KEPT, {"source": "maintainer", "fingerprint": "old"}, None)
+    ckan_model.Session.commit()
 
 
 @_mark
-def test_a_change_after_linking_is_flagged_with_before_and_after():
-    sysadmin, dataset, contact = _linked()
-    assert cm.survey(sysadmin["name"])["changed"] == []
-    _change(sysadmin, dataset, maintainer_email="opendata@example.org")
+def test_a_kept_decision_from_an_earlier_version_is_tolerated():
+    sysadmin = factories.Sysadmin()
+    org, contact = _org(), _contact_point()
+    pending = _dataset(org, maintainer="Desk")
+    linked = _dataset(org, contact_point_ids=[contact.id])
+    _store_kept(pending)
+    _store_kept(linked)
     data = cm.survey(sysadmin["name"])
-    [item] = data["changed"]
-    assert data["counts"]["changed"] == 1
-    assert item["previous"]["maintainer_email"] == "desk@example.org"
-    assert item["values"]["maintainer_email"] == "opendata@example.org"
-    assert item["contact_point"].id == contact.id and item["contact_point_in_dataset"]
-    assert item["usage"] == 1
+    assert [item["id"] for c in data["candidates"] for item in c["datasets"]] == [pending["id"]]
+    assert data["counts"] == {"old": 2, "linked": 1, "skipped": 0, "remaining": 1, "no_contact": 0}
 
 
 @_mark
@@ -594,7 +607,7 @@ def test_dcat_contact_points_are_migrated_like_maintainer():
     [candidate] = data["candidates"]
     assert candidate["key"] == "email:desk@example.org"
     assert {item["source"] for item in candidate["datasets"]} == {"contact"}
-    assert data["counts"]["old"] == 3 and data["changed"] == []
+    assert data["counts"]["old"] == 3
 
     linked, failures, contact = cm.apply(sysadmin["name"], "create", [first["id"], second["id"]],
                                          name="Open Data Desk", email="desk@example.org")
@@ -603,10 +616,6 @@ def test_dcat_contact_points_are_migrated_like_maintainer():
     assert shown["contact_point_ids"] == [contact.id]
     assert json.loads(ckan_model.Package.get(first["id"]).extras["contact"]) == DCAT_DESK  # never changed
 
-    _set_column(first["id"], contact=json.dumps([{"name": "Open Data Desk", "email": "new@example.org"}]))
-    [item] = cm.survey(sysadmin["name"])["changed"]
-    assert item["previous"]["contact"] == "Open Data Desk <Desk@Example.org>"
-    assert item["values"]["contact"] == "Open Data Desk <new@example.org>"
 
 
 @_mark
@@ -632,190 +641,9 @@ def test_the_page_names_the_dcat_contact_point_as_the_source(app):
     assert "Also mentioned:" in html and "GIS Support" in html
 
 
-@_mark
-def test_a_whitespace_only_change_is_not_flagged():
-    sysadmin, dataset, _ = _linked()
-    _set_column(dataset["id"], maintainer="  Desk  ")
-    assert cm.survey(sysadmin["name"])["changed"] == []
-
-
-@_mark
-def test_datasets_linked_by_hand_are_never_flagged():
-    sysadmin = factories.Sysadmin()
-    contact = _contact_point()
-    dataset = _dataset(_org(), maintainer="Desk", contact_point_ids=[contact.id])
-    _change(sysadmin, dataset, maintainer="Someone else")
-    assert cm.survey(sysadmin["name"])["changed"] == []
-
-
-@_mark
-def test_keep_clears_the_flag_until_the_next_change():
-    sysadmin, dataset, contact = _linked()
-    _change(sysadmin, dataset, maintainer="Open Data Desk")
-    assert cm.resolve_change(sysadmin["name"], dataset["id"], "keep") is None
-    assert cm.survey(sysadmin["name"])["changed"] == []
-    assert registry_contact(contact.id).name == "Desk"
-    _change(sysadmin, dataset, maintainer="Data Desk")
-    assert len(cm.survey(sysadmin["name"])["changed"]) == 1
-
-
-def registry_contact(contact_id):
-    ckan_model.Session.expire_all()
-    return model.get_contact_point(contact_id)
-
-
-@_mark
-def test_update_changes_the_contact_point_for_every_dataset_using_it():
-    sysadmin = factories.Sysadmin()
-    org = _org()
-    first = _dataset(org, maintainer="Desk", maintainer_email="desk@example.org")
-    second = _dataset(org, maintainer="Desk", maintainer_email="desk@example.org")
-    _, _, contact = cm.apply(sysadmin["name"], "create", [first["id"], second["id"]], name="Desk",
-                             email="desk@example.org")
-    _change(sysadmin, first, maintainer="Open Data Desk", maintainer_email="opendata@example.org")
-    [item] = cm.survey(sysadmin["name"])["changed"]
-    assert item["usage"] == 2
-    cm.resolve_change(sysadmin["name"], first["id"], "update", name="Open Data Desk", email="OpenData@example.org")
-    updated = registry_contact(contact.id)
-    assert (updated.name, updated.email) == ("Open Data Desk", "opendata@example.org")
-    assert helpers.call_action("package_show", id=second["id"])["contact_point_ids"] == [contact.id]
-    assert cm.survey(sysadmin["name"])["changed"] == []
-
-
-@_mark
-@pytest.mark.parametrize("name, email, message", [
-    ("", "desk@example.org", "Name or role is required."),
-    ("Desk", "n/a", "valid email"),
-])
-def test_an_invalid_update_changes_nothing(name, email, message):
-    sysadmin, dataset, contact = _linked()
-    _change(sysadmin, dataset, maintainer="Open Data Desk")
-    with pytest.raises(cm.MigrationError, match=message):
-        cm.resolve_change(sysadmin["name"], dataset["id"], "update", name=name, email=email)
-    assert registry_contact(contact.id).name == "Desk"
-    assert len(cm.survey(sysadmin["name"])["changed"]) == 1
-
-
-@_mark
-def test_link_another_contact_point_replaces_only_the_migrated_one():
-    sysadmin, dataset, contact = _linked()
-    extra = _contact_point(name="Statistics", email="stats@example.org")
-    _change(sysadmin, dataset, contact_point_ids=[contact.id, extra.id])
-    target = _contact_point(name="GIS Support", email="gis@example.org")
-    _change(sysadmin, dataset, maintainer="GIS Support", maintainer_email="gis@example.org")
-    cm.resolve_change(sysadmin["name"], dataset["id"], "existing", contact_point_id=target.id)
-    assert helpers.call_action("package_show", id=dataset["id"])["contact_point_ids"] == [target.id, extra.id]
-    assert registry_contact(contact.id).name == "Desk"
-    assert cm.survey(sysadmin["name"])["changed"] == []
-
-
-@_mark
-def test_create_a_new_contact_point_from_the_new_details():
-    sysadmin, dataset, contact = _linked()
-    _change(sysadmin, dataset, maintainer="GIS Support", maintainer_email="gis@example.org")
-    new = cm.resolve_change(sysadmin["name"], dataset["id"], "create", name="GIS Support", email="gis@example.org")
-    assert new.id != contact.id
-    assert helpers.call_action("package_show", id=dataset["id"])["contact_point_ids"] == [new.id]
-
-
-@_mark
-def test_when_the_migrated_contact_point_was_removed_by_hand_update_is_refused():
-    sysadmin, dataset, contact = _linked()
-    other = _contact_point(name="Other", email="other@example.org")
-    _change(sysadmin, dataset, contact_point_ids=[other.id], maintainer="Changed")
-    [item] = cm.survey(sysadmin["name"])["changed"]
-    assert not item["contact_point_in_dataset"]
-    with pytest.raises(cm.MigrationError, match="no longer in use"):
-        cm.resolve_change(sysadmin["name"], dataset["id"], "update", name="Changed")
-    target = _contact_point(name="Target", email="target@example.org")
-    cm.resolve_change(sysadmin["name"], dataset["id"], "existing", contact_point_id=target.id)
-    assert helpers.call_action("package_show", id=dataset["id"])["contact_point_ids"] == [other.id, target.id]
-
-
-@_mark
-def test_an_inactive_contact_point_cannot_be_updated_but_can_be_replaced():
-    sysadmin, dataset, contact = _linked()
-    registry_contact(contact.id).active = False
-    ckan_model.Session.commit()
-    # The schema rejects a dataset that lists an inactive contact point, so
-    # the change can only have come in some other way (an import, the database).
-    _set_column(dataset["id"], maintainer="Changed")
-    with pytest.raises(cm.MigrationError):
-        cm.resolve_change(sysadmin["name"], dataset["id"], "update", name="Changed")
-    target = _contact_point(name="Target", email="target@example.org")
-    cm.resolve_change(sysadmin["name"], dataset["id"], "existing", contact_point_id=target.id)
-    assert helpers.call_action("package_show", id=dataset["id"])["contact_point_ids"] == [target.id]
-
-
-@_mark
-@pytest.mark.parametrize("action, kwargs", [
-    ("bogus", {}), ("existing", {"contact_point_id": ""}), ("existing", {"contact_point_id": "missing"}),
-    ("create", {"name": ""}),
-])
-def test_invalid_change_decisions_change_nothing(action, kwargs):
-    sysadmin, dataset, contact = _linked()
-    _change(sysadmin, dataset, maintainer="Changed")
-    count = ckan_model.Session.query(model.ContactPoint).count()
-    with pytest.raises(cm.MigrationError):
-        cm.resolve_change(sysadmin["name"], dataset["id"], action, **kwargs)
-    assert ckan_model.Session.query(model.ContactPoint).count() == count
-    assert helpers.call_action("package_show", id=dataset["id"])["contact_point_ids"] == [contact.id]
-
-
-@_mark
-def test_a_dataset_that_is_not_changed_or_not_editable_is_refused():
-    sysadmin, dataset, _ = _linked()
-    with pytest.raises(cm.MigrationError, match="no longer among the changed"):
-        cm.resolve_change(sysadmin["name"], dataset["id"], "keep")
-    _change(sysadmin, dataset, maintainer="Changed")
-    editor = factories.User()
-    _org(users=[(editor, "editor")])
-    with pytest.raises(cm.MigrationError, match="no longer among the changed"):
-        cm.resolve_change(editor["name"], dataset["id"], "keep")
-
-
-@_mark
-def test_decisions_without_stored_values_still_show_the_change():
-    sysadmin, dataset, _ = _linked()
-    ckan_model.Session.query(cm.MigrationDecision).update({"source_values": None})
-    ckan_model.Session.commit()
-    _change(sysadmin, dataset, maintainer="Changed")
-    [item] = cm.survey(sysadmin["name"])["changed"]
-    assert item["previous"] is None
-
-
-@_mark
-def test_usage_counting_survives_broken_stored_values():
-    sysadmin, dataset, contact = _linked()
-    broken = _dataset(_org(), maintainer="X")
-    _set_column(broken["id"], contact_point_ids="[not json")
-    assert cm.contact_point_usage()[contact.id] == 1
-
-
 @_page_mark
-def test_the_page_shows_and_resolves_a_change(app):
-    sysadmin = factories.SysadminWithToken()
-    org = _org()
-    dataset = _dataset(org, title="Bathing sites", maintainer="Desk", maintainer_email="desk@example.org")
-    headers = {"Authorization": sysadmin["token"]}
-    app.post("/actor-registry/migrate/apply", headers=headers,
-             data={"action": "create", "dataset_ids": [dataset["id"]], "name": "Desk", "email": "desk@example.org"})
-    helpers.call_action("package_patch", context={"user": sysadmin["name"]}, id=dataset["id"], maintainer="Open Data Desk")
-    html = _get(app, sysadmin)
-    assert f'data-changed-dataset="{dataset["id"]}"' in html
-    assert 'data-changed-field="maintainer"' in html and "<del>Desk</del>" in html
-    assert 'data-changed-field="maintainer_email"' not in html
-    html = app.post("/actor-registry/migrate/change", headers=headers, follow_redirects=True,
-                    data={"dataset_id": dataset["id"], "action": "keep"}).get_data(as_text=True)
-    assert "data-migration-changed" not in html
-
-
-# --- Broken stored values must not break the registry's own queries --------------------------
-
-
-@_page_mark
-@pytest.mark.parametrize("url", ["/actors", "/actors/unlinked-datasets?missing=contact_point",
-                                 "/actors/unlinked-datasets?missing=either", "/actor-registry/migrate"])
+@pytest.mark.parametrize("url", ["/actors", "/actor-registry/todo?missing=contact_point",
+                                 "/actor-registry/todo?missing=either", "/actor-registry/migrate"])
 def test_registry_pages_survive_a_broken_stored_value(app, url):
     sysadmin = factories.SysadminWithToken()
     dataset = _dataset(_org(), maintainer="X")

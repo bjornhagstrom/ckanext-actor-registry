@@ -1,11 +1,16 @@
 {#-
   For CKAN's own contact fields (author, author_email, maintainer,
   maintainer_email) while a catalogue moves to the registry. While the
-  migration is open, an ordinary text field. Once it is closed, the field is
-  not shown, but its value is sent along unchanged, so saving the form never
-  clears it. See "Migrate to Actor Registry" in the README.
+  migration is open and the dataset has no registry contact point, an
+  ordinary text field. Otherwise the field is not shown, as on the page and in
+  the export, but its value is sent along unchanged, so saving the form never
+  clears it. A hidden field whose stored value fails validation (an old
+  "n/a" in an email field) is shown again with its error, so the editor can
+  correct or clear it; otherwise no save of the dataset could go through.
+  See "Migrate to Actor Registry" in the README.
 -#}
-{%- if h.actor_registry_legacy_contact_fields_in_use() -%}
+{%- if (h.actor_registry_legacy_contact_fields_in_use() and not h.contactpoints_display(data.get('contact_point_ids')))
+      or (errors or {}).get(field.field_name) -%}
   {%- snippet 'scheming/form_snippets/text.html', field=field, data=data, errors=errors -%}
 {%- else -%}
   <input type="hidden" name="{{ field.field_name }}" value="{{ data.get(field.field_name) or '' }}" data-legacy-contact-hidden>

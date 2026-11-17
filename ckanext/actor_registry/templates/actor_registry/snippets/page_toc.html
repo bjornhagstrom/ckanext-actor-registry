@@ -1,0 +1,8 @@
+{#- The table of contents of a registry page, filled by page-toc.js from the headings of the main column, and shown only when
+    there are at least two. Placed first in the left column (actor_registry/base.html). -#}
+{% asset 'actor_registry/page-toc' %}
+{% asset 'actor_registry/page-toc-css' %}
+<nav class="module module-narrow module-shallow page-toc" data-page-toc aria-labelledby="page-toc-heading" hidden>
+  <h2 class="module-heading" id="page-toc-heading">{{ _('On this page') }}</h2>
+  <ul class="module-content py-2" data-page-toc-list></ul>
+</nav>

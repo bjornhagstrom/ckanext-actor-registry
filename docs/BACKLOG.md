@@ -5,6 +5,11 @@ should not be mistaken for gaps. Please open an issue before starting work on an
 
 ## Planned
 
+- **Choices without a page reload.** A filter, a tab or *Show inactive* reloads the whole page, and
+  the page flickers. Fetch and replace only the list (`fetch`, with `history.replaceState` for the
+  address), and save on *To do* the same way; without JavaScript the pages work as today. Keep
+  the leave question and the messages, and tell screen readers that the list was updated.
+
 - **Import and export command for registry data** (CSV or JSON). Useful for bulk editing,
   migration and backup outside the database. It should work directly against the model, for
   example as a `ckan` command or a stand-alone script, and **not** on top of a general Action
@@ -23,12 +28,6 @@ should not be mistaken for gaps. Please open an issue before starting work on an
   `id IN (SELECT package_id FROM package_member WHERE user_id = :user)`, only when the feature
   is enabled. It needs a test with a collaborator who is not an organization member, and
   `_viewer_visibility()` in `views.py` must also return the user's id.
-- **The worklist on the contact points page.** The *Publishers* page (`/actors`) has a worklist
-  of datasets that are missing a publisher and/or a contact point, with a *Missing:* choice
-  (both, publisher, contact point, either). The contact points page has no entry point to it;
-  linking to `/actors?missing=contact_point` from there, or showing the same list, would make
-  the "datasets without a contact point" view easier to find. The list logic is shared
-  (`model.linked_datasets`), so the change is in the templates.
 - **Screenshots and a short walkthrough** for the README (the image links are in place and
   marked "to be added").
 - **A startup test with the plugin disabled.** Start CKAN against a database that already

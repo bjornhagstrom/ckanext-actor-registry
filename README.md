@@ -66,22 +66,23 @@ permissions.
 
 Most catalogues start with contact details typed as free text into CKAN's own *Maintainer* and *Author*
 fields, or into the free-text *Contact points* field of ckanext-dcat's schemas, repeated on many datasets.
-The **Migrate to Actor Registry** page (`/actor-registry/migrate`) turns them into shared contact points:
+The **Create contact points from the datasets** tab of *Contact points* (`/actor-registry/migrate`, the migration) turns them into shared contact points:
 
 - it finds the contact details on the datasets you may edit and groups them by email address (or by name
   when there is no valid address), showing the different spellings in use;
 - for each group you create a contact point, link to an existing one, or skip (for example a personal
   address); single datasets can be left out for a later round;
-- the original fields are never changed. The page counts what is linked, skipped and remaining, and flags
-  datasets whose Maintainer or Author changed after they were linked;
+- the original fields are never changed. The page counts the datasets whose contact details are only in the
+  free-text fields (of which skipped) and the datasets linked to a contact point. Once a dataset has a
+  contact point, the old fields are hidden in its form too;
 - when you are done, a sysadmin closes the migration: the old fields are then hidden and no longer exported.
 
 Publishers are not migrated automatically. In an older catalogue the publisher is usually free text too, so
-you create the publishers once in the registry and choose them on the datasets. A **Cleanup** page then finds
+you create the publishers once in the registry and choose them on the datasets. The **Inactive or removed** tab of *To do* (`/actor-registry/cleanup`, the clean-up) then finds
 publishers and contact points that were deactivated but are still in use. The details are under
 [Activating on an existing installation with datasets](#activating-on-an-existing-installation-with-datasets).
 
-![The migration page: how many datasets have contact details, and how many are linked, skipped and remaining](docs/images/migrate-overview.jpg)
+![Contact points, tab Create contact points from the datasets (the migration): how many datasets have contact details only in free text, how many are skipped and how many are linked](docs/images/migrate-overview.jpg)
 
 ![One group of datasets that share an email address: the spellings used, the datasets, and the choice to create a contact point, link to an existing one or skip](docs/images/migrate-group.jpg)
 
@@ -89,9 +90,7 @@ publishers and contact points that were deactivated but are still in use. The de
 
 ![After two groups have been linked, the overview counts their datasets as linked](docs/images/migrate-linked.jpg)
 
-![Changed since linking: the old and the new Maintainer, and the choice to update the contact point, link to another one, create a new one or keep it as it is](docs/images/migrate-changed.jpg)
-
-![The Cleanup page: an inactive publisher that datasets still use, with a choice of replacement](docs/images/cleanup.jpg)
+![To do, tab Inactive or removed (the clean-up): an inactive publisher that datasets still use, with a choice of replacement](docs/images/cleanup.jpg)
 
 ## Publishers vs. CKAN organizations
 
@@ -122,7 +121,7 @@ dataset ownership.
 You do not have to use both registries. Which fields a dataset has is decided
 by the [ckanext-scheming](https://github.com/ckan/ckanext-scheming) schema you
 configure. The extension does not add or remove a field in the schema; the optional
-snippets for CKAN's own contact fields (see "Migrate to Actor Registry") can hide
+snippets for CKAN's own contact fields (see "Create contact points from the datasets (the migration)") can hide
 Maintainer and Author on forms and pages, and only if your schema uses them.
 
 **Why choose deliberately.** CKAN core stores contact details as free text on
@@ -168,8 +167,8 @@ not shown on the page, but still in the database and in the API. To keep old
 values while you migrate, keep the fields in your schema with this
 extension's legacy snippets (`ckan actor-registry schema` does this for
 Maintainer, Author and ckanext-dcat's contact point, as does
-`actor_registry_migration_schema.yaml` for Maintainer and Author): shown while the migration is open, then hidden
-but sent along with every save. Old values are **not** copied into the
+`actor_registry_migration_schema.yaml` for Maintainer and Author): shown while the migration is open and the
+dataset has no registry contact point, otherwise hidden but sent along with every save. Old values are **not** copied into the
 registry automatically (see "Activating on an existing installation with
 datasets" below).
 
@@ -191,7 +190,7 @@ and the export use the same resolution of publishers and contact points:
 
 - an inactive publisher or contact point is still what the dataset says until
   someone replaces it, so it is shown and exported (the forms no longer offer
-  it; see *Cleanup*);
+  it; see the clean-up, *To do* > *Inactive or removed*);
 - a merged publisher is replaced by the one it was merged into, on both;
 - a reference to a record that no longer exists is on neither;
 - CKAN's own Maintainer and Author are exported only as far as the page
@@ -209,7 +208,7 @@ Deliberate exceptions, decided and documented:
 
 - central registries for publishers and contact points;
 - **migration of existing contact details**: CKAN's free-text Maintainer and Author fields become shared
-  contact points, in rounds and without changing the originals, plus a cleanup page for deactivated records
+  contact points, in rounds and without changing the originals, plus a clean-up (a tab of *To do*) for deactivated records
   that are still in use;
 - stable URIs, identifiers (unique per identifier scheme) and optional
   controlled publisher types;
@@ -222,7 +221,8 @@ Deliberate exceptions, decided and documented:
 - the current user's three most recently used contact points shown first;
 - readable display on the dataset page (name and contact details, never internal
   IDs), and a page per publisher and contact point that lists its datasets;
-- a worklist of datasets that are missing a publisher and/or a contact point;
+- a *To do* page of datasets that are missing a publisher and/or a contact point, where
+  each one can be given what it lacks on its own row, or many in one go;
 - one shared validation layer (lengths, email, web addresses, URIs, phone
   numbers) and opt-in validators that keep datasets from pointing at records that
   no longer exist;
@@ -301,7 +301,7 @@ Contact points are a separate, parallel register. A contact point can optionally
 belong to an organization ("Belongs to organization"), but doesn't have to -- a
 shared mailbox or a role-based contact works just as well as a named person.
 
-![The contact points list, with name or role, email, status and the edit and delete buttons](docs/images/contactpoints-index.jpg)
+![Contact points, with the tabs for the list and Create contact points from the datasets, and the list with name or role, email, status and the edit and delete buttons](docs/images/contactpoints-index.jpg)
 
 ### Linking a dataset to the registry
 
@@ -368,10 +368,16 @@ worklist view:
 
 ![A dataset without a contact point shows an inline "Contact point missing." prompt with a picker, a "Create new contact point" button and Save](docs/images/dataset-no-actor-prompt.jpg)
 
-The same dataset also shows up on the registry's own worklist, so it can be
+The same dataset also shows up on the registry's *To do* page, so it can be
 found and fixed from either place:
 
-![The Publishers page listing "A very impressive dataset" under "Datasets missing both a publisher and a contact point"](docs/images/actors-worklist-entry.jpg)
+![The To do page listing "A very impressive dataset" under "Datasets missing both a publisher and a contact point": the bar to set the same on selected datasets, and a choice of publisher and of contact point, both missing](docs/images/actors-worklist-entry.jpg)
+
+On *To do*, each dataset you may edit has a choice of publisher and of contact point where one
+is missing, and an Edit link to that field of its form next to what is already set. A bar above and below
+the list holds what the datasets you tick should get, and one Save saves it all: every row's
+own choices and the bar's on the ticked rows. Every change goes through `package_patch`, and
+a dataset that already has a publisher is never overwritten.
 
 Saving resolves the warning immediately, without leaving the page:
 
@@ -416,11 +422,13 @@ Create or upgrade the extension's database tables:
 ckan -c /etc/ckan/default/ckan.ini db upgrade -p actor_registry
 ```
 
-Restart CKAN. Logged-in users can then manage publishers at `/actors` and contact
-points at `/contactpoints`. The registry pages share a navigation of their own (Publishers,
-Contact points and, for those who may migrate, Migration and Cleanup, with a small number when
-something waits). Administration gets one "Actor registry" tab for sysadmins; set
-`ckanext.actor_registry.admin_tab = false` if the portal links to `/actors` from its own header.
+Restart CKAN. Logged-in users can then fill in what datasets lack at `/actor-registry/todo`,
+manage publishers at `/actors` and contact points at `/contactpoints`. The registry pages share
+a navigation of their own (To do, Publishers and Contact points, with a small number when something
+waits). For those who may migrate, To do has a second tab for the clean-up and Contact points one
+for taking contact points from the datasets while the migration is open. Administration gets one
+"Actor registry" tab for sysadmins, leading to *To do*; set
+`ckanext.actor_registry.admin_tab = false` if the portal links to the registry from its own header.
 
 ## Scheming integration
 
@@ -479,7 +487,7 @@ upgrading the source. With a CKAN configuration, `ckan actor-registry schema
 SOURCE -o FILE` does the same. Point `scheming.dataset_schemas` at the copy
 (`file:///srv/app/dataset_schema.yaml`), use the profile
 `actor_registry_euro_dcat_ap_3` if you have ckanext-dcat, migrate the old
-values on the migration page, and close the migration there when you are done.
+values on the migration page (*Contact points* > *Create contact points from the datasets*), and close the migration there when you are done.
 [docs/INSTALLATION.md](docs/INSTALLATION.md) starts with a table of the choices
 to make.
 
@@ -533,7 +541,7 @@ depends on the complete dataset schema, validation and profile configuration.
 - per-user convenience data stores only CKAN user IDs, the most recent
   publisher ID and recently used contact point IDs;
 - the dataset lists on a publisher's or contact point's page, on their "Show all"
-  pages and in the `/actors` worklist only include private datasets that the
+  pages and on the *To do* page only include private datasets that the
   visitor may see: sysadmins, and members of the dataset's organization. The
   totals shown follow the same rule, so a private dataset is never revealed by
   a count. FYI: a user who was given access to a single private dataset through
@@ -561,7 +569,9 @@ above). Three features exist specifically to help you find and fix these
 datasets afterwards; none runs automatically, so plan to use them as a
 one-time cleanup pass after activation.
 
-**Migrate to Actor Registry (`/actor-registry/migrate`).** If your datasets
+**Create contact points from the datasets: the migration (`/actor-registry/migrate`).** A tab of *Contact points* while the migration is
+open: shown while datasets wait (and then *Contact points* opens on it) or skipped ones are left, and always for a sysadmin, since
+datasets harvested or imported later may need it; with only skipped ones left it opens on them. If your datasets
 already hold contact details in CKAN's own free-text fields, this page turns
 them into shared contact points. It reads ckanext-dcat's free-text contact
 point (the field `contact`) when a dataset has one, because ckanext-dcat
@@ -573,14 +583,13 @@ address), showing the spellings used and any existing contact point with the
 same address. For each group you create a contact point, link to an existing
 one, or skip; clear the datasets that belong elsewhere and they stay for a
 later round. One email address may back several contact points. The page
-shows how many datasets are linked, skipped and remaining.
+shows how many datasets still have their contact details only in the old
+free-text fields (and how many of those you skipped), and how many are linked.
 
-While the old fields are still in use, editors may keep changing them. When
-Maintainer, Author or ckanext-dcat's contact point (including a translation of
-its name) changes on a dataset after it was linked, the page lists
-it under *Changed since linking*, with the old and new values, and you choose:
-update the contact point (for every dataset that uses it), link this dataset
-to another contact point, create a new one, or keep it as it is.
+As soon as a dataset has a contact point, its old fields are hidden in the
+form too, as on the page and in the export; their values stay stored. A
+skipped dataset comes back among the remaining ones when its old contact
+details change.
 
 **Closing the migration.** When you are done, a sysadmin closes the migration
 on the same page. The old contact fields (Maintainer, Author and, in a schema
@@ -589,13 +598,14 @@ are then hidden in forms and on dataset pages, for everyone including
 sysadmins, and are no longer exported; their values stay stored, and saving a
 dataset keeps them. It takes effect at
 once, without a restart, and the migration can be reopened. If datasets are
-still without a contact point, or have unhandled changes, the page says how
-many and asks you to confirm. Closing sets
+still without a contact point, the page says how many and asks you to
+confirm. Closing sets
 `ckanext.actor_registry.legacy_contact_fields` to false at runtime (see
 [Installation](docs/INSTALLATION.md#ckans-own-contact-fields-in-the-dcat-export)).
 
 Hiding needs one thing in your schema: give the old fields the extension's
-snippets for old fields, which show them while the migration is open:
+snippets for old fields, which show them while the migration is open and the
+dataset has no contact point from the registry:
 `legacy_contact.html` for CKAN's own fields and `legacy_dcat_contact.html` for
 ckanext-dcat's `contact`. `ckan actor-registry schema` sets both for you; by
 hand, it looks like this:
@@ -623,16 +633,22 @@ sysadmins all of them. Every decision is logged in the
 `actor_registry_migration_decision` table (run `ckan db upgrade -p
 actor_registry`).
 
-**A worklist on `/actors`.** The registry management page (*Publishers*) lists
-the active datasets that are missing something, with a direct link to each one.
-By default it shows the datasets missing *both* a publisher *and* any contact
-point ("Datasets missing both a publisher and a contact point (N)"), which
-surfaces the datasets nobody has touched yet. The *Missing:* buttons above the
-list widen or change that: *Publisher* (every dataset without a publisher),
-*Contact point* (every dataset without a contact point) or *Either* (missing at
-least one of the two). The page shows the first ten with the total and a "Show
-all" link to a paginated list, and private datasets only appear for people who
-may see them.
+**A *To do* page (`/actor-registry/todo`).** The first page of the registry's
+menu lists the active datasets that are missing something, with a direct link to
+each one. By default it shows the datasets missing *either* a publisher or a
+contact point; the *Show datasets that lack* buttons narrow that to *Both* (the
+datasets nobody has touched yet), *Publisher* or *Contact point*. A search and
+filters on tags (a dataset has all the chosen ones) and organisations (it
+belongs to one of them) find datasets on one theme; a tag or organisation applies
+as soon as it is chosen. On each row the user may edit they choose what it lacks,
+and they can tick many rows and choose in the bar above or below the list what
+they should all get; one Save saves both, a row's own choice first. What is
+missing stands out, and what is set has an Edit link to the dataset's form;
+*Create new…* in a list adds a publisher or contact point there and then.
+Nothing already set is overwritten, leaving the page with something ticked or
+chosen but not saved asks first, and a save or a filter comes back to the list,
+not to the top of the page. The list is paginated, and private datasets only
+appear for people who may see them.
 
 **An inline fix on the dataset's own page.** Opening any dataset that is
 missing a publisher and/or a contact point shows a warning box near the top
@@ -649,7 +665,7 @@ field, and for a publisher only when the schema requires one.
 stops new use of it: it is no longer offered in the forms, and choosing it
 anyway gives a message that names it. Datasets that already use it keep it and
 can still be saved; the form shows it marked *inactive* instead of dropping
-it. The *Cleanup* page (`/actor-registry/cleanup`, a tab, also hinted on the
+it. The clean-up (`/actor-registry/cleanup`, the *Inactive or removed* tab of *To do*, also hinted on the
 registry pages) lists the inactive records still in use, and datasets that
 point to records that no longer exist, and replaces or removes such a
 reference on the datasets you may edit (editors their own, sysadmins all; a

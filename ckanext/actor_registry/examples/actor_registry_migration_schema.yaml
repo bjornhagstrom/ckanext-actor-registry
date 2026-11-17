@@ -68,7 +68,7 @@ dataset_fields:
   display_snippet: legacy_contact.html
 
 - field_name: maintainer_email
-  label: Maintainer email
+  label: Maintainer Email
   form_snippet: legacy_contact.html
   display_snippet: legacy_contact.html
 
@@ -78,7 +78,7 @@ dataset_fields:
   display_snippet: legacy_contact.html
 
 - field_name: author_email
-  label: Author email
+  label: Author Email
   form_snippet: legacy_contact.html
   display_snippet: legacy_contact.html
 

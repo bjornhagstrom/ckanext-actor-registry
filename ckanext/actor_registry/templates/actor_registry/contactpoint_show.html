@@ -1,7 +1,7 @@
 {% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ item.name }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index') }}">{{ _('Contact points') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index', list=1) }}">{{ _('Contact points') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}
 {# No sidebar: CKAN then gives the page its full width (no-nav). #}
 {% block secondary %}{% endblock %}
 {% block primary_content_inner %}

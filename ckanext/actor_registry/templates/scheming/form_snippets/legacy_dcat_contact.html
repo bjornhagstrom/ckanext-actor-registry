@@ -1,13 +1,16 @@
 {#-
   For ckanext-dcat's free-text contact point (the repeating field "contact")
   while a catalogue moves to the registry, in a schema made by
-  `ckan actor-registry schema`. While the migration is open, dcat's ordinary
-  repeating fields. Once it is closed, they are not shown, but every stored
-  value is sent along unchanged, so saving the form never clears them (CKAN
-  removes a stored value that a save does not send). Like legacy_contact.html
-  for CKAN's own contact fields.
+  `ckan actor-registry schema`. While the migration is open and the dataset
+  has no registry contact point, dcat's ordinary repeating fields. Otherwise
+  they are not shown, as on the page and in the export, but every stored value
+  is sent along unchanged, so saving the form never clears them (CKAN removes a
+  stored value that a save does not send). If a stored value fails
+  validation, the fields are shown again with the error, so the editor can
+  correct it. Like legacy_contact.html for CKAN's own contact fields.
 -#}
-{%- if h.actor_registry_legacy_contact_fields_in_use() -%}
+{%- if (h.actor_registry_legacy_contact_fields_in_use() and not h.contactpoints_display(data.get('contact_point_ids')))
+      or (errors or {}).get(field.field_name) -%}
   {%- snippet 'scheming/form_snippets/repeating_subfields.html', field=field, data=data, errors=errors,
       licenses=licenses, entity_type=entity_type, object_type=object_type -%}
 {%- else -%}

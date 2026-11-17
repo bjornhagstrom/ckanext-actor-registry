@@ -1,0 +1,14 @@
+/* To do (0.6.0) has no left column, and core's main column keeps three quarters of the width without one: give it all of it,
+   so the table with a choice per field fits on a laptop screen. */
+.registry-wide > .primary { flex: 0 0 100%; max-width: 100%; width: 100%; }
+/* Core puts a colon after every label; the bars and the filters read as a sentence without one. */
+[data-assign-bar] label::after, [data-todo-filters] label::after { content: none; }
+/* The row's lists stay narrow (a contact point's option carries its email), so the table fits in about 700 px; the chosen text is cut by the browser, the full one shows when the list opens. */
+[data-assign-row] .form-select-sm { max-width: 11rem; }
+[data-assign-row] .todo-title { min-width: 10rem; }
+/* What a dataset lacks stands out from what it has, without colouring the whole row. */
+.table td.todo-missing { background-color: var(--bs-warning-bg-subtle, #fff3cd); box-shadow: inset 3px 0 0 var(--bs-warning, #ffc107); }
+/* The messages of a save are at the list; when the page comes back further down, they float in view for a while. */
+.todo-messages-float { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 1050; width: min(40rem, 92vw);
+  box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .2); }
+.todo-messages-float .alert { margin-bottom: .5rem; }

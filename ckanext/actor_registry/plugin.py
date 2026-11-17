@@ -71,6 +71,7 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
             "actor_registry_can_migrate": helpers.can_migrate,
             "actor_registry_cleanup_count": helpers.cleanup_count,
             "actor_registry_migration_remaining_count": helpers.migration_remaining_count,
+            "actor_registry_todo_count": helpers.todo_count,
             "actor_registry_nav_item": helpers.nav_item,
             "actor_registry_admin_tab": helpers.admin_tab_enabled,
             "actor_registry_legacy_contact_fields_in_use": helpers.legacy_contact_fields_in_use,
