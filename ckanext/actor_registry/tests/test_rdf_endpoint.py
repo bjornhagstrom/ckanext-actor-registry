@@ -182,3 +182,24 @@ def test_export_conforms_to_official_dcat_ap_3_shapes(
         abort_on_first=False,
     )
     assert conforms, report
+
+
+@pytest.mark.ckan_config("ckan.locale_default", "en")
+def test_names_in_other_languages_are_exported_with_their_language():
+    actor, contact = _create_registry_records()
+    actor.set_translations({"sv": {"name": "Skellefteå kommun (sv)"}, "pt_BR": {"name": "Município de Skellefteå"}})
+    contact.set_translations({"sv": {"name": "Kontaktcenter (sv)"}})
+    ckan_model.Session.commit()
+    sysadmin = factories.Sysadmin()
+    context = {"user": sysadmin["name"]}
+    organization = helpers.call_action("organization_create", context=context, name=f"rdf-{uuid.uuid4().hex}")
+    dataset = helpers.call_action(
+        "package_create", context=context, name=f"rdf-{uuid.uuid4().hex}", title="Flera språk",
+        notes="Flera språk.", owner_org=organization["id"], publisher_actor_id=actor.id, contact_point_ids=[contact.id])
+    graph = _parse(helpers.call_action("dcat_dataset_show", context=context, id=dataset["id"], format="ttl"), "turtle")
+    # The default name tagged with the default language, and every other language with its BCP 47 tag.
+    assert set(graph.objects(URIRef(actor.uri), FOAF.name)) == {
+        Literal("Skellefteå kommun", lang="en"), Literal("Skellefteå kommun (sv)", lang="sv"),
+        Literal("Município de Skellefteå", lang="pt-BR")}
+    assert set(graph.objects(URIRef(contact.uri), VCARD.fn)) == {
+        Literal("Kontaktcenter", lang="en"), Literal("Kontaktcenter (sv)", lang="sv")}

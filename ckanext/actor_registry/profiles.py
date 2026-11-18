@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from ckanext.dcat.profiles import DCT, FOAF, EuropeanDCATAP3Profile, SKOS
 from rdflib import BNode, Literal, Namespace, RDF, URIRef
 
-from ckanext.actor_registry import helpers
+from ckanext.actor_registry import helpers, language
 from ckanext.actor_registry.helpers import legacy_contact_fields_in_use
 from ckanext.actor_registry.rdf import telephone_uri
 
@@ -80,6 +80,12 @@ class ActorRegistryEuropeanDCATAP3Profile(EuropeanDCATAP3Profile):
 
         dataset_dict = dict(dataset_dict)
 
+        def names(item):
+            # Every language the record has a name in, as ckanext-dcat reads it (one foaf:name or vcard:fn per
+            # language, 0.7.0). A record without translations gets no key, so its export is as before.
+            translated = {language.bcp47(lang): name for lang, name in (item.get("name_translated") or {}).items()}
+            return {"name_translated": translated} if translated else {}
+
         if contacts:
             dataset_dict["contact"] = [
                 {
@@ -88,6 +94,7 @@ class ActorRegistryEuropeanDCATAP3Profile(EuropeanDCATAP3Profile):
                     "url": item["url"],
                     "uri": item["uri"],
                     "phone": item["phone"],
+                    **names(item),
                 }
                 for item in contacts
             ]
@@ -98,6 +105,7 @@ class ActorRegistryEuropeanDCATAP3Profile(EuropeanDCATAP3Profile):
                 "name": item["name"], "identifier": item["identifier"],
                 "uri": item["uri"], "url": item["url"],
                 "email": item["email"], "type": item["type"],
+                **names(item),
             }]
 
         return dataset_dict

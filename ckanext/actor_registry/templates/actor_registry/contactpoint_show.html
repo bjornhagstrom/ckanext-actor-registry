@@ -1,13 +1,13 @@
 {% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
-{% block subtitle %}{{ item.name }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index', list=1) }}">{{ _('Contact points') }}</a></li><li class="active">{{ item.name }}</li>{% endblock %}
+{% block subtitle %}{{ item.display_name }}{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index', list=1) }}">{{ _('Contact points') }}</a></li><li class="active">{{ item.display_name }}</li>{% endblock %}
 {# No sidebar: CKAN then gives the page its full width (no-nav). #}
 {% block secondary %}{% endblock %}
 {% block primary_content_inner %}
-  <h1 class="page-heading">{{ item.name }}</h1>
+  <h1 class="page-heading">{{ item.display_name }}</h1>
   <dl>
-  {% if actor %}<dt>{{ _('Belongs to organization') }}</dt><dd><a href="{{ h.url_for('actor_registry.actors_show', item_id=actor.id) }}">{{ actor.name }}</a></dd>{% endif %}
+  {% if actor %}<dt>{{ _('Belongs to organization') }}</dt><dd><a href="{{ h.url_for('actor_registry.actors_show', item_id=actor.id) }}">{{ actor.display_name }}</a></dd>{% endif %}
   {% if item.email %}<dt>{{ _('Email') }}</dt><dd><a href="mailto:{{ item.email }}">{{ item.email }}</a></dd>{% endif %}
   {% if item.phone %}<dt>{{ _('Phone') }}</dt><dd><a href="{{ h.contactpoints_tel_uri(item.phone) }}">{{ item.phone }}</a></dd>{% endif %}
   {% if item.url %}<dt>{{ _('URL') }}</dt><dd>{% if h.is_url(item.url) %}<a href="{{ item.url }}" rel="noopener">{{ item.url }}</a>{% else %}{{ item.url }}{% endif %}</dd>{% endif %}

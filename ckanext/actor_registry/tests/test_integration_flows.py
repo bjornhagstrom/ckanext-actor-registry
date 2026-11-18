@@ -94,6 +94,29 @@ def test_dataset_new_form_has_publisher_and_contact_point_fields(app):
     assert 'data-field="actor_id"' in html and "data-actor-id" in html
 
 
+@pytest.mark.ckan_config("ckan.locale_default", "en")
+def test_the_form_shows_names_in_the_page_language_and_keeps_the_default_name_for_the_quick_edit(app):
+    """The option text is the name in the page's language; data-name holds the default name, which the quick edit
+    fills in, so that saving it never replaces the default name with a translation (0.7.0)."""
+    from bs4 import BeautifulSoup
+    actor_id, contact_id = _actor("City Board"), _contact("Front desk")
+    for cls, record_id, name in ((model.Actor, actor_id, "Stadsnämnden"), (model.ContactPoint, contact_id, "Kundtjänst")):
+        record = ckan_model.Session.get(cls, record_id)
+        record.set_translations({"sv": {"name": name}})
+    ckan_model.Session.commit()
+    user = factories.SysadminWithToken()
+    page = BeautifulSoup(app.get("/sv/dataset/new", headers=_headers(user)).get_data(as_text=True), "html.parser")
+    publisher = page.select_one(f'#field-publisher_actor_id option[value="{actor_id}"]')
+    contact = page.select_one(f'#field-contact_point_ids option[value="{contact_id}"]')
+    assert publisher.get_text(strip=True) == "Stadsnämnden" and publisher["data-name"] == "City Board"
+    assert contact.get_text(strip=True) == "Kundtjänst" and contact["data-name"] == "Front desk"
+    # The quick panels offer the name per language, from inputs the dataset form never sends itself.
+    assert len(page.select('input[data-translation="sv"]:not([name])')) == 2
+    import json
+    assert json.loads(publisher["data-translations"])["sv"]["name"] == "Stadsnämnden"
+    assert json.loads(contact["data-translations"])["sv"]["name"] == "Kundtjänst"
+
+
 # --- Clearing an optional publisher ----------------------------------------------------
 
 

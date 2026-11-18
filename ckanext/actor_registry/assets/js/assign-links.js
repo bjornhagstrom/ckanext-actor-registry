@@ -274,7 +274,7 @@
             return body.actor || body.contact_point;
           });
         }).then(function (item) {
-          var text = item.name + (kind === 'contact_point' && item.email ? ' (' + item.email + ')' : '');
+          var text = (item.display_name || item.name) + (kind === 'contact_point' && item.email ? ' (' + item.email + ')' : '');
           list(form, 'select[data-assign-kind="' + kind + '"]').forEach(function (select) {
             var option = document.createElement('option');
             option.value = item.id;

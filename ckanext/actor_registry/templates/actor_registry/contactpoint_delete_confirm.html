@@ -1,9 +1,9 @@
 {% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ _('Delete contact point') }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index', list=1) }}">{{ _('Contact points') }}</a></li><li><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=item.id) }}">{{ item.name }}</a></li><li class="active">{{ _('Delete') }}</li>{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.contactpoints_index', list=1) }}">{{ _('Contact points') }}</a></li><li><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=item.id) }}">{{ item.display_name }}</a></li><li class="active">{{ _('Delete') }}</li>{% endblock %}
 {% block primary_content_inner %}
-<h1 class="page-heading">{{ _('Delete "{name}"?').format(name=item.name) }}</h1>
+<h1 class="page-heading">{{ _('Delete "{name}"?').format(name=item.display_name) }}</h1>
 
 {% if not item.active %}
 <div class="alert alert-warning">
@@ -12,7 +12,7 @@
 {% endif %}
 
 {% if owning_actor %}
-<div class="alert alert-info">{{ _('This contact point belongs to {actor}. That publisher is not affected by deleting this contact point.').format(actor=owning_actor.name) }}</div>
+<div class="alert alert-info">{{ _('This contact point belongs to {actor}. That publisher is not affected by deleting this contact point.').format(actor=owning_actor.display_name) }}</div>
 {% endif %}
 
 {% if linked_datasets.total > 0 %}

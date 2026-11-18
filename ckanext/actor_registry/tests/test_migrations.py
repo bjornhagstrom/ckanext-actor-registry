@@ -50,7 +50,7 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
     ckan_model.Session.commit()
 
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_009 (head)"
+    assert current_revision("actor_registry") == "actor_registry_010 (head)"
 
     tables = _table_names()
     assert {
@@ -85,7 +85,7 @@ def test_upgrade_from_contactpoints_prototype_preserves_existing_contact():
 
     # Running the current migration again must be harmless during restarts.
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_009 (head)"
+    assert current_revision("actor_registry") == "actor_registry_010 (head)"
 
 
 def test_migration_006_fails_clearly_on_pre_existing_duplicate_identifiers():
@@ -124,7 +124,7 @@ def test_migration_006_fails_clearly_on_pre_existing_duplicate_identifiers():
     ckan_model.Session.rollback()
 
     # Neither duplicate row was dropped, and the migration did not silently advance.
-    assert current_revision("actor_registry") != "actor_registry_009 (head)"
+    assert current_revision("actor_registry") != "actor_registry_010 (head)"
     remaining = ckan_model.Session.execute(
         text("SELECT count(*) FROM actor_registry_actor WHERE identifier = '5566778899'")
     ).scalar()
@@ -142,7 +142,7 @@ def test_migration_007_decision_log_can_be_removed_and_added_again():
     assert current_revision("actor_registry") == "actor_registry_006"
     assert not has_table()
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_009 (head)"
+    assert current_revision("actor_registry") == "actor_registry_010 (head)"
     assert has_table()
 
 
@@ -199,7 +199,17 @@ def test_migration_009_drops_the_page_language_from_uris_the_registry_made():
     ckan_model.Session.commit()
 
     _run_migrations("actor_registry", "head", forward=True)
-    assert current_revision("actor_registry") == "actor_registry_009 (head)"
+    assert current_revision("actor_registry") == "actor_registry_010 (head)"
     for key, (table, row_id, _before, after) in rows.items():
         uri = ckan_model.Session.execute(text(f"SELECT uri FROM {table} WHERE id = :id"), {"id": row_id}).scalar()
         assert uri == after, key
+
+
+def test_migration_010_translation_tables_can_be_removed_and_added_again():
+    tables = {"actor_registry_actor_translation", "actor_registry_contact_point_translation"}
+    assert tables <= _table_names()
+    _run_migrations("actor_registry", "actor_registry_009", forward=False)
+    assert not tables & _table_names()
+    _run_migrations("actor_registry", "head", forward=True)
+    assert current_revision("actor_registry") == "actor_registry_010 (head)"
+    assert tables <= _table_names()

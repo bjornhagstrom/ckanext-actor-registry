@@ -5,7 +5,7 @@ from markupsafe import Markup
 
 import ckan.plugins.toolkit as toolkit
 
-from ckanext.actor_registry import model
+from ckanext.actor_registry import language, model
 from ckanext.actor_registry.rdf import telephone_uri
 
 
@@ -14,7 +14,7 @@ def contactpoints_choices(field=None):
     # already has one can still be saved; actor_registry_contactpoints_exist
     # stops new use of them, with a message that names them.
     return [
-        {"value": item.id, "label": item.name}
+        {"value": item.id, "label": item.display_name}
         for item in model.all_contact_points(include_inactive=True)
     ]
 
@@ -28,7 +28,8 @@ def contactpoints_unavailable(selected):
         if item is None:
             result.append({"id": contact_id, "name": "", "state": "missing"})
         elif not item.active:
-            result.append({"id": contact_id, "name": item.name, "state": "inactive"})
+            result.append({"id": contact_id, "name": item.display_name, "default_name": item.name, "state": "inactive",
+                           "record": item.as_dict()})
     return result
 
 
@@ -52,12 +53,12 @@ def actors_choices(field=None):
     # Inactive publishers are valid choices for Scheming, so a dataset that
     # already has one can still be saved; actor_registry_actor_exists stops
     # new use of them. The form lists only active ones.
-    return [{"value": item.id, "label": item.name} for item in model.all_actors(include_inactive=True)]
+    return [{"value": item.id, "label": item.display_name} for item in model.all_actors(include_inactive=True)]
 
 
 def active_actors_choices():
     """Active publishers only, for pickers that offer new choices."""
-    return [{"value": item.id, "label": item.name} for item in model.all_actors()]
+    return [{"value": item.id, "label": item.display_name} for item in model.all_actors()]
 
 
 def actor_unavailable(selected):
@@ -69,7 +70,8 @@ def actor_unavailable(selected):
     if item is None:
         return {"id": selected, "name": "", "state": "missing"}
     if not item.active:
-        return {"id": selected, "name": item.name, "state": "inactive"}
+        return {"id": selected, "name": item.display_name, "default_name": item.name, "state": "inactive",
+                "record": item.as_dict()}
     return None
 
 
@@ -239,3 +241,13 @@ def nav_item(endpoint, prefix, label, icon, count=0, pills=False):
 def admin_tab_enabled():
     """Whether Administration (/ckan-admin) has one tab that leads to the registry."""
     return toolkit.asbool(toolkit.config.get("ckanext.actor_registry.admin_tab", True))
+
+
+def default_language():
+    """The portal's default language code, the language of a record's default name (0.7.0)."""
+    return language.default_language()
+
+
+def translation_languages():
+    """``[(code, name)]``: the languages a name can be translated into in the dataset form's quick panels (0.7.0)."""
+    return [(code, language.language_name(code)) for code in language.offered_languages()]

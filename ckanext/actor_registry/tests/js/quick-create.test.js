@@ -84,3 +84,7 @@ assert.match(source, /option\.dataset\.actorId = contact\.actor_id/);
 // Stored values are not trusted to be http(s): only such values (and mailto:/tel:) become
 // links in the previews; anything else (e.g. javascript:) is shown as plain text.
 assert.match(source, /\/\^\(https\?:\|mailto:\|tel:\)\/i\.test\(href\)/);
+
+// Editing fills in the default name (data-name), not the text shown, which is the name in the page's language (0.7.0).
+assert.match(source, /\[data-field="name"\]'\)\.value = option\.dataset\.name !== undefined && option\.dataset\.name !== ''/);
+assert.match(source, /existing\.dataset\.name = contact\.name/);

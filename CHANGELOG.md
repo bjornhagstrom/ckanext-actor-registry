@@ -5,6 +5,40 @@ is based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-18
+
+Upgrade from 0.6.0: install the package, run `ckan db upgrade -p actor_registry` (migration 010, two new tables) and
+restart CKAN.
+
+### Added
+
+- Names in several languages. A publisher's or contact point's name, and a publisher's description, can be given in
+  each language the portal offers besides its default one: one field per language in the form and in the dataset
+  form's quick panels, labelled with its code (*SV Name*, *EN Name*) as ckanext-fluent does. A quick panel sends
+  only the names the editor changed. Pages, lists, pickers
+  and the dataset page show the visitor's language, falling back to the default name; the DCAT export carries every
+  language with its language tag (`foaf:name`, `vcard:fn`). Merging two publishers offers a choice per language.
+  A record without translations is shown and exported as before. `as_dict()` has the new keys `display_name`,
+  `translations` and `name_translated` (and `display_description` for a publisher); the existing keys are unchanged.
+  A language code is stored as CKAN writes it (`pt-BR` is kept as `pt_BR`), and a translation in the default language
+  is not kept: the default name is the name in that language, also in the export.
+
+### Changed
+
+- `actor_registry_actor_merge` takes `translations`, a choice per language, and the contact point migration also matches
+  a contact point on a name in another language.
+- *To do*: arrow keys in the tag and organisation lists no longer apply a filter at every step (some browsers change
+  a closed list's value at once); a choice made with the keyboard applies on Enter or when the list is left.
+
+### Fixed
+
+- Editing a selected publisher or contact point that had become inactive, from the dataset form's quick panel,
+  emptied its details: kind, identifier, identifier scheme and URL of a publisher, email, phone, URL and organization
+  of a contact point. The form now carries the record's details for such a choice too.
+- A network error in a quick panel showed the browser's own message in English; it is now shown in the page's language.
+- The merge page showed a publisher's stored kind (`organization`); it now shows its label.
+- `__version__` in the package said 0.5.0; it now follows the release.
+
 ## [0.6.0] - 2026-11-17
 
 Upgrade from 0.5.0: take a backup, install the package, run `ckan db upgrade -p actor_registry` (migration 009, which cannot
@@ -481,7 +515,8 @@ Published as source only (the initial standalone snapshot); no release or tag wa
   deliberately deprioritized rather than deferred -- see
   `docs/BACKLOG.md` and `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/bjornhagstrom/ckanext-actor-registry/compare/v0.4.0...v0.4.1

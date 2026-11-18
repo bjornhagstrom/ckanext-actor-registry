@@ -36,6 +36,14 @@ def test_normalise_email(raw, expected):
     assert cm.normalise_email(raw) == expected
 
 
+def _unavailable_option(html, state, text):
+    """The selected option the form keeps for a choice it cannot offer, as ``(attributes, text)``."""
+    from bs4 import BeautifulSoup
+    option = BeautifulSoup(html, "html.parser").find("option", attrs={"data-unavailable": state})
+    assert option is not None and option.has_attr("selected") and option.get_text() == text
+    return option
+
+
 def _row(**fields):
     return dict({field: "" for field in cm.SOURCE_FIELDS}, **fields)
 
@@ -714,10 +722,18 @@ def test_a_contact_point_that_no_longer_exists_is_explained():
 def test_the_form_shows_an_inactive_contact_point_instead_of_dropping_it(app):
     sysadmin = factories.SysadminWithToken()
     contact = _contact_point(name="Old Desk")
+    contact.phone, contact.url = "+46910000000", "https://example.org/desk"
+    contact.set_translations({"sv": {"name": "Gamla disken"}})
+    ckan_model.Session.commit()
     dataset = _dataset(_org(), contact_point_ids=[contact.id])
     _deactivate(contact)
     html = _get(app, sysadmin, url=f"/dataset/edit/{dataset['name']}")
-    assert f'<option value="{contact.id}" selected data-unavailable="inactive">Old Desk (inactive)</option>' in html
+    option = _unavailable_option(html, "inactive", "Old Desk (inactive)")
+    assert option["value"] == contact.id and option["data-name"] == "Old Desk"
+    # It carries its details, so that a quick edit keeps them instead of emptying them (0.7.0).
+    assert (option["data-email"], option["data-phone"], option["data-url"]) == (
+        "desk@example.org", "+46910000000", "https://example.org/desk")
+    assert json.loads(option["data-translations"]) == {"sv": {"name": "Gamla disken"}}
     assert 'data-contactpoint-unavailable="inactive"' in html
     assert "“Old Desk” is inactive. It stays on this dataset" in html
 
@@ -728,7 +744,7 @@ def test_the_form_shows_a_missing_contact_point(app):
     dataset = _dataset(_org())
     _set_column(dataset["id"], contact_point_ids='["gone-123"]')
     html = _get(app, sysadmin, url=f"/dataset/edit/{dataset['name']}")
-    assert 'data-unavailable="missing">Unknown contact point (gone-123)</option>' in html
+    assert _unavailable_option(html, "missing", "Unknown contact point (gone-123)")["data-name"] == ""
     assert "Remove it from the list before you save." in html
 
 

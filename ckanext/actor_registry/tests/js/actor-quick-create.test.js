@@ -86,3 +86,8 @@ assert.match(
   require('node:fs').readFileSync(require('node:path').join(__dirname, '../../assets/js/actor-quick-create.js'), 'utf8'),
   /\^https\?:\\\/\\\/\/i\.test\(option\.dataset\.url\)/
 );
+
+// Editing fills in the default name (data-name), not the text shown, which is the name in the page's language (0.7.0).
+const actorSource = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../assets/js/actor-quick-create.js'), 'utf8');
+assert.match(actorSource, /\[data-field="name"\]'\)\.value = option\.dataset\.name !== undefined && option\.dataset\.name !== ''/);
+assert.match(actorSource, /existing\.dataset\.name = actor\.name/);

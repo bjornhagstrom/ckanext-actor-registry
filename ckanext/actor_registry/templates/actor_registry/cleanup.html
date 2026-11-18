@@ -14,7 +14,7 @@
     {% set suggested = entry.merged_into.id if entry.merged_into else '' %}
     <select class="form-select form-select-sm w-auto" name="new_id" aria-label="{{ _('Replace with') }}" required>
       <option value="" disabled {% if not suggested %}selected{% endif %}>{{ _('Choose…') }}</option>
-      {% for record in records %}<option value="{{ record.id }}" {% if record.id == suggested %}selected{% endif %}>{{ record.name }}</option>{% endfor %}
+      {% for record in records %}<option value="{{ record.id }}" {% if record.id == suggested %}selected{% endif %}>{{ record.display_name }}</option>{% endfor %}
       <option value="__remove__">{{ label_remove }}</option>
     </select>
     <button type="submit" class="btn btn-primary btn-sm">{% trans count=entry.datasets|length %}Replace on {{ count }} dataset{% pluralize %}Replace on {{ count }} datasets{% endtrans %}</button>
@@ -47,8 +47,8 @@
             {% for entry in entries %}
               <tr data-cleanup-entry="{{ entry.id }}">
                 <td>
-                  <a href="{{ h.url_for('actor_registry.actors_show' if kind == 'publisher' else 'actor_registry.contactpoints_show', item_id=entry.id) }}">{{ entry.record.name }}</a>
-                  {% if entry.merged_into %}<br><small class="text-muted">{{ _('Merged into {name}').format(name=entry.merged_into.name) }}</small>{% endif %}
+                  <a href="{{ h.url_for('actor_registry.actors_show' if kind == 'publisher' else 'actor_registry.contactpoints_show', item_id=entry.id) }}">{{ entry.record.display_name }}</a>
+                  {% if entry.merged_into %}<br><small class="text-muted">{{ _('Merged into {name}').format(name=entry.merged_into.display_name) }}</small>{% endif %}
                 </td>
                 <td>
                   {% if entry.datasets|length == entry.total %}{{ entry.total }}{% else %}{{ _('{mine} of {total} (the ones you may edit)').format(mine=entry.datasets|length, total=entry.total) }}{% endif %}

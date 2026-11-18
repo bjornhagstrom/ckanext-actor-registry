@@ -1,9 +1,9 @@
 {% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% block subtitle %}{{ _('Delete publisher') }}{% endblock %}
-{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li><a href="{{ h.url_for('actor_registry.actors_show', item_id=item.id) }}">{{ item.name }}</a></li><li class="active">{{ _('Delete') }}</li>{% endblock %}
+{% block breadcrumb_content %}<li><a href="{{ h.url_for('actor_registry.actors_index') }}">{{ _('Publishers') }}</a></li><li><a href="{{ h.url_for('actor_registry.actors_show', item_id=item.id) }}">{{ item.display_name }}</a></li><li class="active">{{ _('Delete') }}</li>{% endblock %}
 {% block primary_content_inner %}
-<h1 class="page-heading">{{ _('Delete "{name}"?').format(name=item.name) }}</h1>
+<h1 class="page-heading">{{ _('Delete "{name}"?').format(name=item.display_name) }}</h1>
 
 {% if not item.active %}
 <div class="alert alert-warning">
@@ -35,12 +35,12 @@
 
 {% if has_owned_contacts %}
 <h2>{{ _('Contact points owned by this publisher') }}</h2>
-<ul class="dataset-list">{% for contact in owned_contact_points %}<li><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=contact.id) }}">{{ contact.name }}</a></li>{% endfor %}</ul>
+<ul class="dataset-list">{% for contact in owned_contact_points %}<li><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=contact.id) }}">{{ contact.display_name }}</a></li>{% endfor %}</ul>
 {% endif %}
 
 {% if has_chained %}
 <h2>{{ _('Publishers previously merged into this one') }}</h2>
-<ul class="dataset-list">{% for chained in chained_actors %}<li>{{ chained.name }}</li>{% endfor %}</ul>
+<ul class="dataset-list">{% for chained in chained_actors %}<li>{{ chained.display_name }}</li>{% endfor %}</ul>
 {% endif %}
 
 <form method="post" class="dataset-form">

@@ -221,7 +221,7 @@ def identifier_error(scheme, identifier, active=True, exclude_ids=()):
     if clash and clash.id not in set(exclude_ids):
         return toolkit._(
             'The identifier "{identifier}" with scheme "{scheme}" is already used by the publisher "{name}".'
-        ).format(identifier=identifier, scheme=scheme, name=clash.name)
+        ).format(identifier=identifier, scheme=scheme, name=clash.display_name)
     return None
 
 

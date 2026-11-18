@@ -150,12 +150,12 @@
               <select class="form-select form-select-sm" name="contact_point_id" aria-label="{{ _('Existing contact point') }}">
                 {% if candidate.matches %}
                   <optgroup label="{{ _('Same email or name') }}">
-                    {% for item in candidate.matches %}<option value="{{ item.id }}">{{ item.name }}{% if item.email %} ({{ item.email }}){% endif %}</option>{% endfor %}
+                    {% for item in candidate.matches %}<option value="{{ item.id }}">{{ item.display_name }}{% if item.email %} ({{ item.email }}){% endif %}</option>{% endfor %}
                   </optgroup>
                 {% endif %}
                 <optgroup label="{{ _('All contact points') }}">
                   {% if not candidate.matches %}<option value="">{{ _('Select contact point…') }}</option>{% endif %}
-                  {% for item in all_contact_points %}<option value="{{ item.id }}">{{ item.name }}{% if item.email %} ({{ item.email }}){% endif %}</option>{% endfor %}
+                  {% for item in all_contact_points %}<option value="{{ item.id }}">{{ item.display_name }}{% if item.email %} ({{ item.email }}){% endif %}</option>{% endfor %}
                 </optgroup>
               </select>
             </div>

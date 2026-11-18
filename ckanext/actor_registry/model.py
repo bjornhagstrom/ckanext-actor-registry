@@ -4,6 +4,9 @@ from ckan import model
 from ckan.plugins import toolkit
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, bindparam, inspect, text
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT as PG_TEXT
+from sqlalchemy.orm import relationship
+
+from ckanext.actor_registry import language
 
 
 # The two scheming fields the registry links datasets through, and ckanext-dcat's
@@ -73,7 +76,95 @@ def extra_present(key):
     )
 
 
-class Actor(toolkit.BaseModel):
+class ActorTranslation(toolkit.BaseModel):
+    """A publisher's name and description in one more language (0.7.0)."""
+
+    __tablename__ = "actor_registry_actor_translation"
+
+    actor_id = Column(String(36), ForeignKey("actor_registry_actor.id", ondelete="CASCADE"), primary_key=True)
+    lang = Column(String(20), primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+
+
+class ContactPointTranslation(toolkit.BaseModel):
+    """A contact point's name in one more language (0.7.0)."""
+
+    __tablename__ = "actor_registry_contact_point_translation"
+
+    contact_point_id = Column(String(36), ForeignKey("contactpoints_contact_point.id", ondelete="CASCADE"),
+                              primary_key=True)
+    lang = Column(String(20), primary_key=True)
+    name = Column(String(255), nullable=False)
+
+
+class _Translated:
+    """Names per language for a record with ``translations`` (see ``language``)."""
+
+    def translation(self, lang):
+        lang = language.normalise(lang)
+        for row in self.translations:
+            if language.normalise(row.lang) == lang:
+                return row
+        return None
+
+    def shown_translation(self):
+        """The translation for the page's language (or its base language), or None."""
+        current = language.current_language()
+        if language.shows_default(current):
+            return None
+        for code in language.candidates(current):
+            row = self.translation(code)
+            if row is not None and row.name:
+                return row
+        return None
+
+    @property
+    def display_name(self):
+        """The name in the page's language, or the default name."""
+        row = self.shown_translation()
+        return row.name if row else self.name
+
+    def name_translated(self):
+        """``{language: name}`` with the default name in the default language, or {} without translations,
+        so that a record without translations is exported exactly as before."""
+        # A translation in the default language (stored before the portal changed its default) never replaces
+        # the default name.
+        names = {row.lang: row.name for row in self.translations if row.name and not language.shows_default(row.lang)}
+        if not names:
+            return {}
+        names[language.default_language()] = self.name
+        return names
+
+    def set_translations(self, values):
+        """Replace the translations with ``{language: {"name": ..., "description": ...}}``; a language without
+        a name is removed."""
+        # pt-BR and pt_BR are one language; the default language has the default name and no translation.
+        wanted = {language.normalise(lang): fields for lang, fields in values.items()
+                  if str(fields.get("name") or "").strip() and not language.shows_default(language.normalise(lang))}
+        for row in list(self.translations):
+            if row.lang not in wanted:
+                self.translations.remove(row)
+        for lang, fields in wanted.items():
+            row = self.translation(lang)
+            if row is None:
+                row = self._translation_class(lang=lang, name="")
+                self.translations.append(row)
+            row.name = str(fields["name"]).strip()
+            if hasattr(row, "description"):
+                row.description = str(fields.get("description") or "").strip() or None
+
+    def translations_dict(self):
+        result = {}
+        for row in sorted(self.translations, key=lambda r: r.lang):
+            entry = {"name": row.name}
+            if hasattr(row, "description"):
+                entry["description"] = row.description or ""
+            result[row.lang] = entry
+        return result
+
+
+class Actor(_Translated, toolkit.BaseModel):
     """An organization or person that can fulfil metadata roles."""
 
     __tablename__ = "actor_registry_actor"
@@ -94,9 +185,19 @@ class Actor(toolkit.BaseModel):
     )
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
     modified = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    translations = relationship(ActorTranslation, cascade="all, delete-orphan", lazy="selectin",
+                                passive_deletes=True)
+    _translation_class = ActorTranslation
+
+    @property
+    def display_description(self):
+        row = self.shown_translation()
+        return (row.description if row and row.description else None) or self.description or ""
 
     def as_dict(self):
         return {
+            "display_name": self.display_name, "display_description": self.display_description,
+            "translations": self.translations_dict(), "name_translated": self.name_translated(),
             "id": self.id, "name": self.name, "kind": self.actor_kind,
             "type": self.actor_type or "", "identifier": self.identifier or "",
             "identifier_scheme": self.identifier_scheme or "", "uri": self.uri,
@@ -106,7 +207,7 @@ class Actor(toolkit.BaseModel):
         }
 
 
-class ContactPoint(toolkit.BaseModel):
+class ContactPoint(_Translated, toolkit.BaseModel):
     __tablename__ = "contactpoints_contact_point"
 
     id = Column(String(36), primary_key=True)
@@ -121,9 +222,14 @@ class ContactPoint(toolkit.BaseModel):
     modified = Column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+    translations = relationship(ContactPointTranslation, cascade="all, delete-orphan", lazy="selectin",
+                                passive_deletes=True)
+    _translation_class = ContactPointTranslation
 
     def as_dict(self):
         return {
+            "display_name": self.display_name,
+            "translations": self.translations_dict(), "name_translated": self.name_translated(),
             "id": self.id,
             "actor_id": self.actor_id or "",
             "name": self.name,
@@ -149,7 +255,7 @@ def all_contact_points(include_inactive=False):
     query = model.Session.query(ContactPoint)
     if not include_inactive:
         query = query.filter(ContactPoint.active.is_(True))
-    return query.order_by(ContactPoint.name.asc()).all()
+    return by_display_name(query.order_by(ContactPoint.name.asc()).all())
 
 
 def get_actor(actor_id):
@@ -184,7 +290,15 @@ def all_actors(include_inactive=False):
     query = model.Session.query(Actor)
     if not include_inactive:
         query = query.filter(Actor.active.is_(True))
-    return query.order_by(Actor.name.asc()).all()
+    return by_display_name(query.order_by(Actor.name.asc()).all())
+
+
+def by_display_name(items):
+    """Records in the order of the names the page shows. In the default language that is the database's order of
+    the default names, unchanged; in another language the translated names decide (0.7.0)."""
+    if language.shows_default(language.current_language()) or not any(item.translations for item in items):
+        return items
+    return sorted(items, key=lambda item: (item.display_name or "").casefold())
 
 
 def find_active_actor_by_identifier(identifier_scheme, identifier, exclude_actor_id=None):
@@ -212,7 +326,7 @@ def actors_merged_into(actor_id):
     the caller needs to know about it up front rather than after the
     fact.
     """
-    return (
+    return by_display_name(
         model.Session.query(Actor)
         .filter(Actor.merged_into_id == actor_id)
         .order_by(Actor.name.asc())

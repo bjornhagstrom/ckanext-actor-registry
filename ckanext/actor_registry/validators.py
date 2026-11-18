@@ -35,7 +35,7 @@ def actor_registry_actor_exists(value, context):
         raise toolkit.Invalid(toolkit._(
             "The publisher “{name}” is inactive and can no longer be chosen. "
             "Choose an active publisher."
-        ).format(name=actor.name))
+        ).format(name=actor.display_name))
     return value
 
 
@@ -61,6 +61,6 @@ def actor_registry_contactpoints_exist(value, context):
             raise toolkit.Invalid(toolkit._(
                 "The contact point “{name}” is inactive and can no longer be chosen. "
                 "Choose an active contact point."
-            ).format(name=item.name))
+            ).format(name=item.display_name))
     return value
     return value

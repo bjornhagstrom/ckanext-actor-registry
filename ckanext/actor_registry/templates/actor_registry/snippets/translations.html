@@ -1,0 +1,43 @@
+{# The name (and a publisher's description) in the languages the portal offers besides its default one (0.7.0).
+   Shown as the dataset form shows its languages (ckanext-fluent): one field per language, labelled with the language
+   code ("SV Name", "EN Name"), the default language first. Without other languages on offer the form is as before. #}
+
+{# "SV " before the default field's label when other languages are offered, so that it reads like the others. #}
+{% macro default_code(languages) -%}
+{% if languages %}{{ h.actor_registry_default_language()|upper }} {% endif %}
+{%- endmacro %}
+
+{# lang="…" on a default field when other languages are offered, so that it is read in its language. #}
+{% macro default_lang(languages) -%}
+{% if languages %} lang="{{ h.actor_registry_default_language()|replace('_', '-') }}"{% endif %}
+{%- endmacro %}
+
+{# The label of a field in one language, as ckanext-fluent writes it. #}
+{% macro code(language_code) -%}
+{{ language_code|upper }}
+{%- endmacro %}
+
+{% macro names(languages, translations, label=none, prefix='translation') %}
+{% if languages %}
+<input type="hidden" name="translations_form" value="1">
+{% for language_code, language_name in languages %}
+{% set entry = translations.get(language_code) or {} %}
+<div class="form-group"><label class="form-label" for="{{ prefix }}-name-{{ language_code }}" title="{{ language_name }}">{{ code(language_code) }} {{ label or _('Name') }}</label><input class="form-control" id="{{ prefix }}-name-{{ language_code }}" name="translation_name-{{ language_code }}" lang="{{ language_code|replace('_', '-') }}" maxlength="255" value="{{ entry.name or '' }}"></div>
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{% macro descriptions(languages, translations, prefix='translation') %}
+{% for language_code, language_name in languages %}
+{% set entry = translations.get(language_code) or {} %}
+<div class="form-group"><label class="form-label" for="{{ prefix }}-description-{{ language_code }}" title="{{ language_name }}">{{ code(language_code) }} {{ _('Description') }}</label><textarea class="form-control" id="{{ prefix }}-description-{{ language_code }}" name="translation_description-{{ language_code }}" lang="{{ language_code|replace('_', '-') }}" rows="4">{{ entry.description or '' }}</textarea></div>
+{% endfor %}
+{% endmacro %}
+
+{# The same names for the quick panels in the dataset form. The inputs have no name attribute (data-translation
+   instead), so that the dataset form never sends them; the panel's script does. #}
+{% macro quick_names(prefix, label=none) %}
+{% for language_code, language_name in h.actor_registry_translation_languages() %}
+<div class="form-group"><label class="form-label" for="{{ prefix }}-name-{{ language_code }}" title="{{ language_name }}">{{ code(language_code) }} {{ label or _('Name') }}</label><input class="form-control" id="{{ prefix }}-name-{{ language_code }}" data-translation="{{ language_code }}" lang="{{ language_code|replace('_', '-') }}" maxlength="255"></div>
+{% endfor %}
+{% endmacro %}

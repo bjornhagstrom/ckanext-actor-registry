@@ -59,3 +59,35 @@ tag.fire('change');
 timers.splice(0).forEach((f) => f());
 assert.strictEqual(submitted, 1);
 assert.strictEqual(tag.value, '');
+
+// Arrow keys step through the list without applying it; Enter applies, and so does leaving the list.
+keep = false;
+tag.value = '';
+tag.fire('keydown', { key: 'ArrowDown', preventDefault() {} });
+tag.value = 'water';
+tag.fire('change');
+tag.fire('keydown', { key: 'ArrowDown', preventDefault() {} });
+tag.value = 'air';
+tag.fire('change');
+timers.splice(0).forEach((f) => f());
+const before = submitted;
+let prevented = false;
+tag.fire('keydown', { key: 'Enter', preventDefault() { prevented = true; } });
+timers.splice(0).forEach((f) => f());
+assert.strictEqual(submitted, before + 1);
+assert.strictEqual(prevented, true);
+assert.deepStrictEqual(sent, ['air']);
+tag.fire('keydown', { key: 'ArrowUp', preventDefault() {} });
+tag.value = 'water';
+tag.fire('change');
+assert.strictEqual(submitted, before + 1);
+tag.fire('blur');
+timers.splice(0).forEach((f) => f());
+assert.strictEqual(submitted, before + 2);
+// A mouse choice after a key still applies at once.
+tag.fire('keydown', { key: 'ArrowDown', preventDefault() {} });
+tag.fire('mousedown');
+tag.value = 'soil';
+tag.fire('change');
+timers.splice(0).forEach((f) => f());
+assert.strictEqual(submitted, before + 3);

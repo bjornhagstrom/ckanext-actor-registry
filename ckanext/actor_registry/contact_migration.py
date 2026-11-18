@@ -396,7 +396,9 @@ def _matches(candidate, contact_points):
     if candidate["email"]:
         return [item for item in contact_points if (item.email or "").lower() == candidate["email"]]
     names = {name.casefold() for name, _count in candidate["names"].items()}
-    return [item for item in contact_points if item.name.casefold() in names]
+    # A contact point also matches by a name in another language (0.7.0).
+    return [item for item in contact_points
+            if item.name.casefold() in names or any(row.name.casefold() in names for row in item.translations)]
 
 
 # --- Applying a decision -----------------------------------------------------------------

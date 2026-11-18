@@ -5,8 +5,8 @@
 <h1 class="page-heading">{{ _('Merge publishers') }}</h1>
 <p>{{ _('Choose which publisher should remain and which value should apply for each field. The publisher not kept is not deleted -- it is marked inactive and points to the remaining record, and its page keeps responding with a clear pointer.') }}</p>
 <div class="alert alert-info">
-  <strong>{{ actor_a.name }}</strong>: {% trans count=linked_a.publisher|length %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}<br>
-  <strong>{{ actor_b.name }}</strong>: {% trans count=linked_b.publisher|length %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}
+  <strong>{{ actor_a.display_name }}</strong>: {% trans count=linked_a.publisher|length %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}<br>
+  <strong>{{ actor_b.display_name }}</strong>: {% trans count=linked_b.publisher|length %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}
 </div>
 <form method="post" class="dataset-form">
 {{ h.csrf_input() }}
@@ -15,22 +15,23 @@
 
 <div class="form-group">
   <label class="form-label">{{ _('Which publisher should remain?') }} *</label>
-  <div class="form-check"><input class="form-check-input" type="radio" name="keep_id" id="keep-a" value="{{ actor_a.id }}" checked><label class="form-check-label radio" for="keep-a">{{ actor_a.name }}</label></div>
-  <div class="form-check"><input class="form-check-input" type="radio" name="keep_id" id="keep-b" value="{{ actor_b.id }}"><label class="form-check-label radio" for="keep-b">{{ actor_b.name }}</label></div>
-  <p class="help-block">{{ _('The remaining record keeps its id and persistent URI unchanged.') }} {{ actor_a.name }}: <code>{{ actor_a.uri }}</code>. {{ actor_b.name }}: <code>{{ actor_b.uri }}</code>.</p>
+  <div class="form-check"><input class="form-check-input" type="radio" name="keep_id" id="keep-a" value="{{ actor_a.id }}" checked><label class="form-check-label radio" for="keep-a">{{ actor_a.display_name }}</label></div>
+  <div class="form-check"><input class="form-check-input" type="radio" name="keep_id" id="keep-b" value="{{ actor_b.id }}"><label class="form-check-label radio" for="keep-b">{{ actor_b.display_name }}</label></div>
+  <p class="help-block">{{ _('The remaining record keeps its id and persistent URI unchanged.') }} {{ actor_a.display_name }}: <code>{{ actor_a.uri }}</code>. {{ actor_b.display_name }}: <code>{{ actor_b.uri }}</code>.</p>
 </div>
 
 <table class="table table-bordered">
-<thead><tr><th>{{ _('Field') }}</th><th>{{ actor_a.name }}</th><th>{{ actor_b.name }}</th><th>{{ _('Custom value') }}</th></tr></thead>
+<thead><tr><th>{{ _('Field') }}</th><th>{{ actor_a.display_name }}</th><th>{{ actor_b.display_name }}</th><th>{{ _('Custom value') }}</th></tr></thead>
 <tbody>
+{% set kinds = {'organization': _('Organization'), 'person': _('Person')} %}
 {% for field_name in fields %}
-{% set value_a = actor_a[field_name] or '' %}
-{% set value_b = actor_b[field_name] or '' %}
+{% set value_a = values_a[field_name] or '' %}
+{% set value_b = values_b[field_name] or '' %}
 {% set default_side = 'b' if (not value_a and value_b) else 'a' %}
 <tr>
 <td>{{ field_labels[field_name] }}</td>
-<td><div class="form-check"><input class="form-check-input" type="radio" name="field_{{ field_name }}" id="field-{{ field_name }}-a" value="a" {% if default_side == 'a' %}checked{% endif %}><label class="form-check-label radio" for="field-{{ field_name }}-a">{{ value_a or _('(empty)') }}</label></div></td>
-<td><div class="form-check"><input class="form-check-input" type="radio" name="field_{{ field_name }}" id="field-{{ field_name }}-b" value="b" {% if default_side == 'b' %}checked{% endif %}><label class="form-check-label radio" for="field-{{ field_name }}-b">{{ value_b or _('(empty)') }}</label></div></td>
+<td><div class="form-check"><input class="form-check-input" type="radio" name="field_{{ field_name }}" id="field-{{ field_name }}-a" value="a" {% if default_side == 'a' %}checked{% endif %}><label class="form-check-label radio" for="field-{{ field_name }}-a">{{ (kinds.get(value_a, value_a) if field_name == 'actor_kind' else value_a) or _('(empty)') }}</label></div></td>
+<td><div class="form-check"><input class="form-check-input" type="radio" name="field_{{ field_name }}" id="field-{{ field_name }}-b" value="b" {% if default_side == 'b' %}checked{% endif %}><label class="form-check-label radio" for="field-{{ field_name }}-b">{{ (kinds.get(value_b, value_b) if field_name == 'actor_kind' else value_b) or _('(empty)') }}</label></div></td>
 <td><input class="form-control form-control-sm" type="text" name="override_{{ field_name }}" placeholder="{{ _('Type to override the choice on the left') }}"></td>
 </tr>
 {% endfor %}

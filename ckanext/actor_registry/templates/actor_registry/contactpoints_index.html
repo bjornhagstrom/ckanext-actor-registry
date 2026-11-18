@@ -19,7 +19,7 @@
     <tbody>
       {% for item in items %}
         <tr>
-          <td><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=item.id) }}">{{ item.name }}</a></td><td>{{ item.email or '–' }}</td>
+          <td><a href="{{ h.url_for('actor_registry.contactpoints_show', item_id=item.id) }}">{{ item.display_name }}</a></td><td>{{ item.email or '–' }}</td>
           <td>{{ _('Active') if item.active else _('Inactive') }}</td>
           <td class="text-end">{% snippet 'actor_registry/snippets/row_actions.html', edit_url=h.url_for('actor_registry.contactpoints_edit', item_id=item.id), delete_url=(h.url_for('actor_registry.contactpoints_delete', item_id=item.id) if c.userobj and c.userobj.sysadmin else '') %}</td>
         </tr>

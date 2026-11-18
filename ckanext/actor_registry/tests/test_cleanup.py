@@ -2,6 +2,7 @@
 field keeps an inactive publisher with clear messages, and the clean-up page
 lists such references and replaces them on the datasets the user may edit."""
 
+import json
 import uuid
 
 import pytest
@@ -12,6 +13,7 @@ from ckan.tests import factories, helpers
 
 from ckanext.actor_registry import cleanup
 from ckanext.actor_registry import model
+from ckanext.actor_registry.tests.test_contact_migration import _unavailable_option
 from ckanext.actor_registry.tests.test_contact_migration import (
     _contact_point, _dataset, _get, _mark, _org, _page_mark, _set_column)
 
@@ -73,10 +75,18 @@ def test_choosing_an_inactive_or_missing_publisher_names_it():
 def test_the_form_shows_an_inactive_publisher_and_does_not_offer_it_to_others(app):
     sysadmin = factories.SysadminWithToken()
     actor = _actor(name="Old Board")
+    actor.identifier, actor.identifier_scheme, actor.url = "212000-1234", "orgnr", "https://example.org/board"
+    actor.set_translations({"sv": {"name": "Gamla nämnden"}})
+    ckan_model.Session.commit()
     dataset = _dataset(_org(), publisher_actor_id=actor.id)
     _deactivate(actor)
     form = _get(app, sysadmin, f"/dataset/edit/{dataset['name']}")
-    assert f'<option value="{actor.id}" selected data-unavailable="inactive">Old Board (inactive)</option>' in form
+    option = _unavailable_option(form, "inactive", "Old Board (inactive)")
+    assert option["value"] == actor.id and option["data-name"] == "Old Board"
+    # It carries its details, so that a quick edit keeps them instead of emptying them (0.7.0).
+    assert (option["data-kind"], option["data-identifier"], option["data-identifier-scheme"], option["data-url"]) == (
+        "organization", "212000-1234", "orgnr", "https://example.org/board")
+    assert json.loads(option["data-translations"])["sv"]["name"] == "Gamla nämnden"
     assert 'data-publisher-unavailable="inactive"' in form
     new_form = _get(app, sysadmin, "/dataset/new")
     assert "Old Board" not in new_form
@@ -92,7 +102,7 @@ def test_the_form_shows_a_missing_publisher(app):
     from ckan.lib.search import rebuild
     rebuild(dataset["id"])
     form = _get(app, sysadmin, f"/dataset/edit/{dataset['name']}")
-    assert 'data-unavailable="missing">Unknown publisher (gone-1)</option>' in form
+    assert _unavailable_option(form, "missing", "Unknown publisher (gone-1)")["data-name"] == ""
 
 
 # --- The clean-up survey --------------------------------------------------------------------

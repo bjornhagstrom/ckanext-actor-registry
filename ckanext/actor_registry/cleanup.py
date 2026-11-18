@@ -72,7 +72,7 @@ def survey(user):
 
     def visible(entries):
         rows = [entry for entry in entries.values() if all_datasets or entry["datasets"]]
-        return sorted(rows, key=lambda entry: ((entry["record"].name.casefold() if entry["record"] else ""),
+        return sorted(rows, key=lambda entry: ((entry["record"].display_name.casefold() if entry["record"] else ""),
                                                entry["kind"], entry["id"]))
 
     result = {"publishers": visible(publishers), "contact_points": visible(contact_points),

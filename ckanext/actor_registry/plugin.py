@@ -75,6 +75,8 @@ class ActorRegistryPlugin(plugins.SingletonPlugin):
             "actor_registry_nav_item": helpers.nav_item,
             "actor_registry_admin_tab": helpers.admin_tab_enabled,
             "actor_registry_legacy_contact_fields_in_use": helpers.legacy_contact_fields_in_use,
+            "actor_registry_translation_languages": helpers.translation_languages,
+            "actor_registry_default_language": helpers.default_language,
         }
 
     def get_validators(self):

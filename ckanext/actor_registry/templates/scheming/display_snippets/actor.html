@@ -6,10 +6,10 @@
 {%- set actor = h.actor_display(data[field.field_name]) -%}
 {%- if actor -%}
   <div class="publisher">
-    <a href="{{ h.url_for('actor_registry.actors_show', item_id=actor.id) }}">{{ actor.name }}</a>
+    <a href="{{ h.url_for('actor_registry.actors_show', item_id=actor.id) }}">{{ actor.display_name or actor.name }}</a>
     {%- if actor.type %}<br>{% if actor.type.startswith(('http://', 'https://')) %}<a href="{{ actor.type }}" rel="noopener">{{ actor.type }}</a>{% else %}{{ actor.type }}{% endif %}{% endif -%}
     {%- if actor.url %}<br>{% if h.is_url(actor.url) %}<a href="{{ actor.url }}" rel="noopener">{{ actor.url }}</a>{% else %}{{ actor.url }}{% endif %}{% endif -%}
     {%- if actor.email %}<br><a href="mailto:{{ actor.email }}">{{ actor.email }}</a>{% endif -%}
-    {%- if actor.description %}<br>{{ actor.description }}{% endif -%}
+    {%- if actor.display_description %}<br>{{ actor.display_description }}{% endif -%}
   </div>
 {%- endif -%}

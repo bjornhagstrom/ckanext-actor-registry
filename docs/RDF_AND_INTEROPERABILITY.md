@@ -59,5 +59,6 @@ need the authoritative vocabulary graph to obtain `skos:prefLabel` values.
 4. For RDF harvesting, reconcile by stable URI and show conflicts to an
    administrator. Do not automatically turn every harvested embedded contact
    into a global registry record.
-5. Consider additional agent roles and multilingual names only after publisher
-   and contact interoperability is stable.
+5. Consider additional agent roles once publisher and contact interoperability
+   is stable. (Names in several languages came in 0.7.0: one `foaf:name` or
+   `vcard:fn` per language, with its language tag.)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-17 13:12+0100\n"
+"POT-Creation-Date: 2026-11-17 17:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -18,37 +18,51 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: ckanext/actor_registry/actions.py:52 ckanext/actor_registry/actions.py:54
-#: ckanext/actor_registry/actions.py:181 ckanext/actor_registry/actions.py:248
+#: ckanext/actor_registry/actions.py:59 ckanext/actor_registry/actions.py:64
+msgid "Translations must map each language to its name and description."
+msgstr "Översättningarna ska ange namn och beskrivning per språk."
+
+#: ckanext/actor_registry/actions.py:69 ckanext/actor_registry/views.py:194
+#, python-brace-format
+msgid "The name in {language} is too long (at most {limit} characters)."
+msgstr "Namnet på {language} är för långt (högst {limit} tecken)."
+
+#: ckanext/actor_registry/actions.py:73 ckanext/actor_registry/views.py:197
+#, python-brace-format
+msgid "The description in {language} needs a name in {language} too."
+msgstr "Beskrivningen på {language} behöver också ett namn på {language}."
+
+#: ckanext/actor_registry/actions.py:76 ckanext/actor_registry/actions.py:78
+#: ckanext/actor_registry/actions.py:210 ckanext/actor_registry/actions.py:277
 msgid "Required."
 msgstr "Måste anges."
 
-#: ckanext/actor_registry/actions.py:56
+#: ckanext/actor_registry/actions.py:80
 msgid "Cannot merge a publisher with itself."
 msgstr "Kan inte slå ihop en utgivare med sig själv."
 
-#: ckanext/actor_registry/actions.py:60
+#: ckanext/actor_registry/actions.py:84
 #, python-brace-format
 msgid "Unknown fields: {fields}"
 msgstr "Okända fält: {fields}"
 
-#: ckanext/actor_registry/actions.py:63
+#: ckanext/actor_registry/actions.py:87
 msgid "Name cannot be empty."
 msgstr "Namn kan inte vara tomt."
 
-#: ckanext/actor_registry/actions.py:71
+#: ckanext/actor_registry/actions.py:95
 msgid "The publisher to keep was not found, or is already inactive."
 msgstr "Den kvarvarande utgivaren hittades inte eller är redan inaktiv."
 
-#: ckanext/actor_registry/actions.py:75
+#: ckanext/actor_registry/actions.py:99
 msgid "The publisher to merge was not found, or is already inactive."
 msgstr "Utgivaren som ska slås ihop hittades inte eller är redan inaktiv."
 
-#: ckanext/actor_registry/actions.py:185 ckanext/actor_registry/views.py:745
+#: ckanext/actor_registry/actions.py:214 ckanext/actor_registry/views.py:840
 msgid "The publisher was not found."
 msgstr "Utgivaren hittades inte."
 
-#: ckanext/actor_registry/actions.py:252 ckanext/actor_registry/views.py:347
+#: ckanext/actor_registry/actions.py:281 ckanext/actor_registry/views.py:431
 msgid "The contact point was not found."
 msgstr "Kontaktpunkten hittades inte."
 
@@ -85,7 +99,7 @@ msgid "There is nothing to replace on the datasets you may edit."
 msgstr "Det finns inget att byta på de datamängder du får redigera."
 
 #: ckanext/actor_registry/cleanup.py:135 ckanext/actor_registry/cleanup.py:237
-#: ckanext/actor_registry/contact_migration.py:505
+#: ckanext/actor_registry/contact_migration.py:507
 msgid "You may not edit this dataset."
 msgstr "Du får inte redigera den här datamängden."
 
@@ -98,7 +112,7 @@ msgid "Choose an active publisher."
 msgstr "Välj en aktiv utgivare."
 
 #: ckanext/actor_registry/cleanup.py:189
-#: ckanext/actor_registry/contact_migration.py:522
+#: ckanext/actor_registry/contact_migration.py:524
 msgid "Choose an active contact point."
 msgstr "Välj en aktiv kontaktpunkt."
 
@@ -118,22 +132,22 @@ msgstr "Den här sortens datamängd har inget fält för kontaktpunkt."
 msgid "The dataset was not found."
 msgstr "Datamängden hittades inte."
 
-#: ckanext/actor_registry/contact_migration.py:443
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:32
-#: ckanext/actor_registry/views.py:314 ckanext/actor_registry/views.py:323
-#: ckanext/actor_registry/views.py:350 ckanext/actor_registry/views.py:414
+#: ckanext/actor_registry/contact_migration.py:445
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:33
+#: ckanext/actor_registry/views.py:396 ckanext/actor_registry/views.py:407
+#: ckanext/actor_registry/views.py:434 ckanext/actor_registry/views.py:500
 msgid "Name or role is required."
 msgstr "Namn eller funktion måste anges."
 
-#: ckanext/actor_registry/contact_migration.py:468
+#: ckanext/actor_registry/contact_migration.py:470
 msgid "Choose what to do with the selected datasets."
 msgstr "Välj vad som ska göras med de valda datamängderna."
 
-#: ckanext/actor_registry/contact_migration.py:478
+#: ckanext/actor_registry/contact_migration.py:480
 msgid "Select at least one dataset that still needs a contact point."
 msgstr "Välj minst en datamängd som fortfarande behöver en kontaktpunkt."
 
-#: ckanext/actor_registry/contact_migration.py:574
+#: ckanext/actor_registry/contact_migration.py:576
 msgid ""
 "Some datasets still have no contact point. Confirm that you want to close"
 " the migration anyway."
@@ -215,23 +229,33 @@ msgstr ""
 "Kontaktpunkten ”{name}” är inaktiv och kan inte längre väljas. Välj en "
 "aktiv kontaktpunkt."
 
-#: ckanext/actor_registry/views.py:211
+#: ckanext/actor_registry/views.py:62
+#, python-brace-format
+msgid "Name in {language}"
+msgstr "Namn på {language}"
+
+#: ckanext/actor_registry/views.py:63
+#, python-brace-format
+msgid "Description in {language}"
+msgstr "Beskrivning på {language}"
+
+#: ckanext/actor_registry/views.py:288
 #, python-brace-format
 msgid "Tag: {name}"
 msgstr "Tagg: {name}"
 
-#: ckanext/actor_registry/views.py:212
+#: ckanext/actor_registry/views.py:289
 #, python-brace-format
 msgid "Organization: {name}"
 msgstr "Organisation: {name}"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:131
-#: ckanext/actor_registry/templates/actor_registry/todo.html:134
-#: ckanext/actor_registry/views.py:220
+#: ckanext/actor_registry/templates/actor_registry/todo.html:132
+#: ckanext/actor_registry/templates/actor_registry/todo.html:135
+#: ckanext/actor_registry/views.py:297
 msgid "Missing"
 msgstr "Saknas"
 
-#: ckanext/actor_registry/views.py:223
+#: ckanext/actor_registry/views.py:300
 msgid "Inactive or removed"
 msgstr "Inaktiva eller borttagna"
 
@@ -245,124 +269,124 @@ msgstr "Inaktiva eller borttagna"
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:6
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:7
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:47
-#: ckanext/actor_registry/views.py:233
+#: ckanext/actor_registry/views.py:310
 msgid "Contact points"
 msgstr "Kontaktpunkter"
 
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:6
-#: ckanext/actor_registry/views.py:243
+#: ckanext/actor_registry/views.py:320
 msgid "Create contact points from the datasets"
 msgstr "Skapa kontaktpunkter från datamängderna"
 
-#: ckanext/actor_registry/views.py:309 ckanext/actor_registry/views.py:331
-#: ckanext/actor_registry/views.py:360 ckanext/actor_registry/views.py:421
-#: ckanext/actor_registry/views.py:707 ckanext/actor_registry/views.py:729
-#: ckanext/actor_registry/views.py:757 ckanext/actor_registry/views.py:825
+#: ckanext/actor_registry/views.py:388 ckanext/actor_registry/views.py:415
+#: ckanext/actor_registry/views.py:444 ckanext/actor_registry/views.py:507
+#: ckanext/actor_registry/views.py:798 ckanext/actor_registry/views.py:824
+#: ckanext/actor_registry/views.py:852 ckanext/actor_registry/views.py:922
 msgid "The URI is already used by a publisher or contact point."
 msgstr "URI:n används redan av en utgivare eller kontaktpunkt."
 
-#: ckanext/actor_registry/views.py:310 ckanext/actor_registry/views.py:425
+#: ckanext/actor_registry/views.py:392 ckanext/actor_registry/views.py:513
 msgid "The URI is already used by a contact point."
 msgstr "URI:n används redan av en kontaktpunkt."
 
-#: ckanext/actor_registry/views.py:311
+#: ckanext/actor_registry/views.py:393
 msgid "The contact point has been created."
 msgstr "Kontaktpunkten har skapats."
 
-#: ckanext/actor_registry/views.py:338 ckanext/actor_registry/views.py:368
-#: ckanext/actor_registry/views.py:736 ckanext/actor_registry/views.py:765
+#: ckanext/actor_registry/views.py:422 ckanext/actor_registry/views.py:452
+#: ckanext/actor_registry/views.py:831 ckanext/actor_registry/views.py:860
 msgid "The URI is already in use."
 msgstr "URI:n används redan."
 
-#: ckanext/actor_registry/views.py:426
+#: ckanext/actor_registry/views.py:514
 msgid "The contact point has been updated."
 msgstr "Kontaktpunkten har uppdaterats."
 
-#: ckanext/actor_registry/views.py:448
+#: ckanext/actor_registry/views.py:538
 #, python-brace-format
 msgid "The contact point \"{name}\" has been permanently deleted."
 msgstr "Kontaktpunkten \"{name}\" har tagits bort permanent."
 
-#: ckanext/actor_registry/views.py:482
+#: ckanext/actor_registry/views.py:572
 msgid "Both"
 msgstr "Båda"
 
 #: ckanext/actor_registry/templates/actor_registry/cleanup.html:74
 #: ckanext/actor_registry/templates/actor_registry/todo.html:42
 #: ckanext/actor_registry/templates/actor_registry/todo.html:117
-#: ckanext/actor_registry/views.py:483
+#: ckanext/actor_registry/views.py:573
 msgid "Publisher"
 msgstr "Utgivare"
 
 #: ckanext/actor_registry/templates/actor_registry/cleanup.html:74
 #: ckanext/actor_registry/templates/actor_registry/todo.html:43
 #: ckanext/actor_registry/templates/actor_registry/todo.html:117
-#: ckanext/actor_registry/views.py:484
+#: ckanext/actor_registry/views.py:574
 msgid "Contact point"
 msgstr "Kontaktpunkt"
 
-#: ckanext/actor_registry/views.py:485
+#: ckanext/actor_registry/views.py:575
 msgid "Either"
 msgstr "Någon av dem"
 
-#: ckanext/actor_registry/views.py:499
+#: ckanext/actor_registry/views.py:589
 #, python-brace-format
 msgid "Datasets missing both a publisher and a contact point ({n})"
 msgstr "Datamängder som saknar både utgivare och kontaktpunkt ({n})"
 
-#: ckanext/actor_registry/views.py:500
+#: ckanext/actor_registry/views.py:590
 #, python-brace-format
 msgid "Datasets without a publisher ({n})"
 msgstr "Datamängder utan utgivare ({n})"
 
-#: ckanext/actor_registry/views.py:501
+#: ckanext/actor_registry/views.py:591
 #, python-brace-format
 msgid "Datasets without a contact point ({n})"
 msgstr "Datamängder utan kontaktpunkt ({n})"
 
-#: ckanext/actor_registry/views.py:502
+#: ckanext/actor_registry/views.py:592
 #, python-brace-format
 msgid "Datasets missing a publisher or a contact point ({n})"
 msgstr "Datamängder som saknar utgivare eller kontaktpunkt ({n})"
 
-#: ckanext/actor_registry/views.py:608
+#: ckanext/actor_registry/views.py:698
 #, python-brace-format
 msgid "{name} is now the publisher of {count} dataset."
 msgid_plural "{name} is now the publisher of {count} datasets."
 msgstr[0] "{name} är nu utgivare för {count} datamängd."
 msgstr[1] "{name} är nu utgivare för {count} datamängder."
 
-#: ckanext/actor_registry/views.py:612
+#: ckanext/actor_registry/views.py:702
 #, python-brace-format
 msgid "{name} is now the contact point of {count} dataset."
 msgid_plural "{name} is now the contact point of {count} datasets."
 msgstr[0] "{name} är nu kontaktpunkt för {count} datamängd."
 msgstr[1] "{name} är nu kontaktpunkt för {count} datamängder."
 
-#: ckanext/actor_registry/views.py:616
+#: ckanext/actor_registry/views.py:706
 #, python-brace-format
 msgid "{count} dataset already had a publisher and kept it."
 msgid_plural "{count} datasets already had a publisher and kept it."
 msgstr[0] "{count} datamängd hade redan en utgivare och behöll den."
 msgstr[1] "{count} datamängder hade redan en utgivare och behöll den."
 
-#: ckanext/actor_registry/views.py:621
+#: ckanext/actor_registry/views.py:711
 #, python-brace-format
 msgid "{count} dataset already had a contact point and kept it."
 msgid_plural "{count} datasets already had a contact point and kept it."
 msgstr[0] "{count} datamängd hade redan en kontaktpunkt och behöll den."
 msgstr[1] "{count} datamängder hade redan en kontaktpunkt och behöll den."
 
-#: ckanext/actor_registry/views.py:625 ckanext/actor_registry/views.py:1121
+#: ckanext/actor_registry/views.py:715 ckanext/actor_registry/views.py:1230
 #, python-brace-format
 msgid "Could not update {title}: {message}"
 msgstr "Kunde inte uppdatera {title}: {message}"
 
-#: ckanext/actor_registry/views.py:673
+#: ckanext/actor_registry/views.py:763
 msgid "Choose in the box what the selected datasets should get."
 msgstr "Välj i rutan vad de markerade datamängderna ska få."
 
-#: ckanext/actor_registry/views.py:674
+#: ckanext/actor_registry/views.py:764
 msgid ""
 "Nothing to save. Choose on a row, or select datasets and choose in the "
 "box."
@@ -370,96 +394,96 @@ msgstr ""
 "Inget att spara. Välj på en rad, eller markera datamängder och välj i "
 "rutan."
 
-#: ckanext/actor_registry/views.py:687
+#: ckanext/actor_registry/views.py:777
 msgid "A dataset that no longer lacks what this list shows leaves it."
 msgstr ""
 "En datamängd som inte längre saknar det som listan visar försvinner ur "
 "den."
 
-#: ckanext/actor_registry/views.py:690
+#: ckanext/actor_registry/views.py:780
 #, python-brace-format
 msgid "{count} selected dataset got nothing: nothing was chosen in the box."
 msgid_plural "{count} selected datasets got nothing: nothing was chosen in the box."
 msgstr[0] "{count} markerad datamängd fick inget, eftersom inget var valt i rutan."
 msgstr[1] "{count} markerade datamängder fick inget, eftersom inget var valt i rutan."
 
-#: ckanext/actor_registry/views.py:708 ckanext/actor_registry/views.py:829
+#: ckanext/actor_registry/views.py:802 ckanext/actor_registry/views.py:928
 msgid "The URI is already used by a publisher."
 msgstr "URI:n används redan av en utgivare."
 
-#: ckanext/actor_registry/views.py:709
+#: ckanext/actor_registry/views.py:803
 msgid "The publisher has been created."
 msgstr "Utgivaren har skapats."
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:21
-#: ckanext/actor_registry/views.py:712 ckanext/actor_registry/views.py:721
-#: ckanext/actor_registry/views.py:748 ckanext/actor_registry/views.py:818
+#: ckanext/actor_registry/views.py:806 ckanext/actor_registry/views.py:816
+#: ckanext/actor_registry/views.py:843 ckanext/actor_registry/views.py:915
 msgid "Name is required."
 msgstr "Namn måste anges."
 
-#: ckanext/actor_registry/views.py:830
+#: ckanext/actor_registry/views.py:929
 msgid "The publisher has been updated."
 msgstr "Utgivaren har uppdaterats."
 
-#: ckanext/actor_registry/views.py:858
+#: ckanext/actor_registry/views.py:959
 #, python-brace-format
 msgid "The publisher \"{name}\" has been permanently deleted."
 msgstr "Utgivaren \"{name}\" har tagits bort permanent."
 
-#: ckanext/actor_registry/views.py:895
+#: ckanext/actor_registry/views.py:996
 msgid "Select exactly two different publishers to merge."
 msgstr "Välj exakt två olika utgivare att slå ihop."
 
-#: ckanext/actor_registry/views.py:901
+#: ckanext/actor_registry/views.py:1002
 msgid "One or both publishers were not found, or are already inactive."
 msgstr "En eller båda utgivarna hittades inte eller är redan inaktiva."
 
-#: ckanext/actor_registry/views.py:907
+#: ckanext/actor_registry/views.py:1008
 msgid "You must choose which publisher should remain."
 msgstr "Du måste välja vilken utgivare som ska vara kvar."
 
-#: ckanext/actor_registry/views.py:925
+#: ckanext/actor_registry/views.py:1032
 #, python-brace-format
 msgid "Could not merge the publishers: {0}"
 msgstr "Kunde inte slå ihop utgivarna: {0}"
 
-#: ckanext/actor_registry/views.py:927
+#: ckanext/actor_registry/views.py:1034
 msgid "The publishers have been merged."
 msgstr "Utgivarna har slagits ihop."
 
-#: ckanext/actor_registry/views.py:978
+#: ckanext/actor_registry/views.py:1087
 #, python-brace-format
 msgid "Could not save the publisher link: {0}"
 msgstr "Kunde inte spara utgivarkopplingen: {0}"
 
-#: ckanext/actor_registry/views.py:982
+#: ckanext/actor_registry/views.py:1091
 msgid "The publisher link has been saved."
 msgstr "Utgivarkopplingen har sparats."
 
-#: ckanext/actor_registry/views.py:1047
+#: ckanext/actor_registry/views.py:1156
 #, python-brace-format
 msgid "{count} dataset skipped."
 msgid_plural "{count} datasets skipped."
 msgstr[0] "{count} datamängd hoppades över."
 msgstr[1] "{count} datamängder hoppades över."
 
-#: ckanext/actor_registry/views.py:1051
+#: ckanext/actor_registry/views.py:1160
 #, python-brace-format
 msgid "{count} dataset linked to {name}."
 msgid_plural "{count} datasets linked to {name}."
 msgstr[0] "{count} datamängd kopplades till {name}."
 msgstr[1] "{count} datamängder kopplades till {name}."
 
-#: ckanext/actor_registry/views.py:1054
+#: ckanext/actor_registry/views.py:1163
 #, python-brace-format
 msgid "Could not link {title}: {message}"
 msgstr "Kunde inte koppla {title}: {message}"
 
-#: ckanext/actor_registry/views.py:1063
+#: ckanext/actor_registry/views.py:1172
 msgid "The dataset is back among the remaining ones."
 msgstr "Datamängden finns åter bland dem som återstår."
 
-#: ckanext/actor_registry/views.py:1076
+#: ckanext/actor_registry/views.py:1185
 msgid ""
 "The migration is closed. The old contact fields are hidden and no longer "
 "exported."
@@ -467,7 +491,7 @@ msgstr ""
 "Migreringen är avslutad. De gamla kontaktfälten döljs och exporteras inte"
 " längre."
 
-#: ckanext/actor_registry/views.py:1085
+#: ckanext/actor_registry/views.py:1194
 msgid ""
 "The migration is open again. The old contact fields are shown and "
 "exported as before."
@@ -475,7 +499,7 @@ msgstr ""
 "Migreringen är öppen igen. De gamla kontaktfälten visas och exporteras "
 "som förut."
 
-#: ckanext/actor_registry/views.py:1118
+#: ckanext/actor_registry/views.py:1227
 #, python-brace-format
 msgid "{count} dataset updated."
 msgid_plural "{count} datasets updated."
@@ -583,13 +607,13 @@ msgid "Publishers previously merged into this one"
 msgstr "Utgivare som tidigare slagits ihop med den här"
 
 #: ckanext/actor_registry/templates/actor_registry/actor_delete_confirm.html:49
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:19
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:21
 #: ckanext/actor_registry/templates/actor_registry/actors_merge.html:41
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_delete_confirm.html:34
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:17
-#: ckanext/actor_registry/templates/actor_registry/todo.html:160
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:19
+#: ckanext/actor_registry/templates/actor_registry/todo.html:161
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:88
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:89
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -598,16 +622,16 @@ msgid "Yes, permanently delete this publisher"
 msgstr "Ja, ta bort den här utgivaren permanent"
 
 #: ckanext/actor_registry/templates/actor_registry/actor_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:6
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:7
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:8
-#: ckanext/actor_registry/templates/actor_registry/todo.html:145
+#: ckanext/actor_registry/templates/actor_registry/todo.html:146
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:17
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
 msgid "New publisher"
 msgstr "Ny utgivare"
 
 #: ckanext/actor_registry/templates/actor_registry/actor_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:6
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:7
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:18
 msgid "Edit publisher"
 msgstr "Redigera utgivare"
@@ -620,56 +644,57 @@ msgstr "Ny"
 #: ckanext/actor_registry/templates/actor_registry/actor_form.html:3
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:3
 #: ckanext/actor_registry/templates/actor_registry/snippets/row_actions.html:10
-#: ckanext/actor_registry/templates/actor_registry/todo.html:121
+#: ckanext/actor_registry/templates/actor_registry/todo.html:122
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:10
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:23
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:24
 msgid "Edit"
 msgstr "Redigera"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:9
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:23
 #: ckanext/actor_registry/templates/actor_registry/cleanup.html:45
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:27
-#: ckanext/actor_registry/templates/actor_registry/todo.html:152
+#: ckanext/actor_registry/templates/actor_registry/snippets/translations.html:14
+#: ckanext/actor_registry/templates/actor_registry/todo.html:153
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
 msgid "Name"
 msgstr "Namn"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:19
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:23
-#: ckanext/actor_registry/templates/actor_registry/todo.html:154
+#: ckanext/actor_registry/templates/actor_registry/todo.html:155
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:11
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
 msgid "Kind"
 msgstr "Slag"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:19
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:24
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:27
 #: ckanext/actor_registry/templates/actor_registry/todo.html:67
-#: ckanext/actor_registry/templates/actor_registry/todo.html:154
+#: ckanext/actor_registry/templates/actor_registry/todo.html:155
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:13
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
 msgid "Organization"
 msgstr "Organisation"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:19
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:24
-#: ckanext/actor_registry/templates/actor_registry/todo.html:154
+#: ckanext/actor_registry/templates/actor_registry/todo.html:155
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:12
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
 msgid "Person"
 msgstr "Person"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:12
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:20
 msgid "Type"
 msgstr "Typ"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:12
 msgid ""
 "Optional URI to a concept in a controlled vocabulary. A URI is required "
 "for full DCAT-AP 3 validation. No organization-specific types are "
@@ -679,7 +704,7 @@ msgstr ""
 "full DCAT-AP 3-validering. Inga organisationsspecifika typer är "
 "hårdkodade."
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:12
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:13
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:21
 #: ckanext/actor_registry/templates/actor_registry/actors_index.html:23
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:14
@@ -687,60 +712,61 @@ msgstr ""
 msgid "Identifier"
 msgstr "Identifierare"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:13
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
 msgid "Identifier scheme"
 msgstr "Identifierarsystem"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:13
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
 msgid "For example a business registration number, ROR or LEI"
 msgstr "Exempelvis organisationsnummer, ROR eller LEI"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:15
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:16
 msgid "Persistent URI"
 msgstr "Beständig URI"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:14
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:15
 msgid "Leave blank when creating to get a URI from the catalog."
 msgstr "Lämna tomt vid skapande för att få en URI från katalogen."
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:15
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:16
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:23
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:14
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:13
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:16
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:26
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:86
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:27
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:87
 msgid "URL"
 msgstr "Webbadress"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:16
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:17
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:24
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:12
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:13
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:11
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:18
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:27
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:140
-#: ckanext/actor_registry/templates/actor_registry/todo.html:156
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:24
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:84
+#: ckanext/actor_registry/templates/actor_registry/todo.html:157
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:25
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:85
 msgid "Email"
 msgstr "E-post"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:17
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:18
 #: ckanext/actor_registry/templates/actor_registry/actor_show.html:25
+#: ckanext/actor_registry/templates/actor_registry/snippets/translations.html:15
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:15
 msgid "Description"
 msgstr "Beskrivning"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:18
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:16
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:20
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:18
 msgid "Active and selectable"
 msgstr "Aktiv och valbar"
 
-#: ckanext/actor_registry/templates/actor_registry/actor_form.html:19
+#: ckanext/actor_registry/templates/actor_registry/actor_form.html:21
 msgid "Save publisher"
 msgstr "Spara utgivare"
 
@@ -1134,51 +1160,52 @@ msgid "Yes, permanently delete this contact point"
 msgstr "Ja, ta bort den här kontaktpunkten permanent"
 
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:6
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:7
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:9
-#: ckanext/actor_registry/templates/actor_registry/todo.html:146
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:28
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:77
+#: ckanext/actor_registry/templates/actor_registry/todo.html:147
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:29
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:78
 msgid "New contact point"
 msgstr "Ny kontaktpunkt"
 
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:2
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:6
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:29
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:7
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:30
 msgid "Edit contact point"
 msgstr "Redigera kontaktpunkt"
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:10
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:17
 #: ckanext/actor_registry/templates/actor_registry/contactpoints_index.html:18
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:135
-#: ckanext/actor_registry/templates/actor_registry/todo.html:152
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:82
+#: ckanext/actor_registry/templates/actor_registry/todo.html:153
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:83
 msgid "Name or role"
 msgstr "Namn eller funktion"
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:12
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:10
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:83
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:84
 msgid "Belongs to organization"
 msgstr "Tillhör organisation"
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:11
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:83
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:12
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:84
 msgid "No link"
 msgstr "Ingen koppling"
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:13
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:14
 #: ckanext/actor_registry/templates/actor_registry/contactpoint_show.html:12
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:25
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:85
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:26
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:86
 msgid "Phone"
 msgstr "Telefon"
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:15
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:16
 msgid "Leave blank when creating the record to get a URI from the catalog."
 msgstr "Lämna tomt när du skapar posten för att få en URI från katalogen."
 
-#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:17
+#: ckanext/actor_registry/templates/actor_registry/contactpoint_form.html:19
 msgid "Save contact point"
 msgstr "Spara kontaktpunkt"
 
@@ -1288,7 +1315,7 @@ msgstr "Författare nämns också:"
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:15
 #: ckanext/actor_registry/templates/actor_registry/migrate.html:36
 #: ckanext/actor_registry/templates/actor_registry/snippets/dataset_list.html:10
-#: ckanext/actor_registry/templates/actor_registry/todo.html:125
+#: ckanext/actor_registry/templates/actor_registry/todo.html:126
 msgid "Private"
 msgstr "Privat"
 
@@ -1789,54 +1816,54 @@ msgstr "Öppna respektive datamängd och lägg till det som saknas."
 msgid "Select"
 msgstr "Markera"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:123
+#: ckanext/actor_registry/templates/actor_registry/todo.html:124
 #, python-brace-format
 msgid "Select {title}"
 msgstr "Markera {title}"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:126
+#: ckanext/actor_registry/templates/actor_registry/todo.html:127
 msgid "Not saved"
 msgstr "Inte sparat"
 
 #: ckanext/actor_registry/templates/actor_registry/snippets/dataset_list.html:11
-#: ckanext/actor_registry/templates/actor_registry/todo.html:127
+#: ckanext/actor_registry/templates/actor_registry/todo.html:128
 #, python-brace-format
 msgid "Updated {date}"
 msgstr "Uppdaterad {date}"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:129
-#: ckanext/actor_registry/templates/actor_registry/todo.html:132
+#: ckanext/actor_registry/templates/actor_registry/todo.html:130
+#: ckanext/actor_registry/templates/actor_registry/todo.html:133
 msgid "No such field"
 msgstr "Inget sådant fält"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:130
-#: ckanext/actor_registry/templates/actor_registry/todo.html:133
+#: ckanext/actor_registry/templates/actor_registry/todo.html:131
+#: ckanext/actor_registry/templates/actor_registry/todo.html:134
 msgid "Set"
 msgstr "Finns"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:131
+#: ckanext/actor_registry/templates/actor_registry/todo.html:132
 #, python-brace-format
 msgid "Publisher of {title}"
 msgstr "Utgivare för {title}"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:134
+#: ckanext/actor_registry/templates/actor_registry/todo.html:135
 #, python-brace-format
 msgid "Contact point of {title}"
 msgstr "Kontaktpunkt för {title}"
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:148
+#: ckanext/actor_registry/templates/actor_registry/todo.html:149
 msgid "It could not be saved. Reload the page and try again."
 msgstr "Det gick inte att spara. Ladda om sidan och försök igen."
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:158
+#: ckanext/actor_registry/templates/actor_registry/todo.html:159
 msgid "You can add more details on its own page later."
 msgstr "Du kan lägga till fler uppgifter på dess egen sida senare."
 
-#: ckanext/actor_registry/templates/actor_registry/todo.html:159
+#: ckanext/actor_registry/templates/actor_registry/todo.html:160
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:19
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:36
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:30
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:87
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:31
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:88
 msgid "Save and select"
 msgstr "Spara och välj"
 
@@ -1939,19 +1966,19 @@ msgid "On this page"
 msgstr "På den här sidan"
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:20
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:31
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:32
 msgid "Save changes"
 msgstr "Spara ändringar"
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:22
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:33
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:34
 msgid "Your session has expired. Open a new tab, log in again and try again."
 msgstr ""
 "Din inloggning har gått ut. Öppna en ny flik, logga in igen och försök på"
 " nytt."
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:23
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:34
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:35
 msgid "The server responded unexpectedly. Reload the page and try again."
 msgstr "Servern svarade oväntat. Ladda om sidan och försök igen."
 
@@ -1968,7 +1995,7 @@ msgid "Select publisher…"
 msgstr "Välj utgivare…"
 
 #: ckanext/actor_registry/templates/scheming/form_snippets/actors_multiple_select.html:31
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:62
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:63
 msgid "inactive"
 msgstr "inaktiv"
 
@@ -2021,36 +2048,36 @@ msgstr ""
 "Att redigera här uppdaterar utgivaren överallt den används, inte bara i "
 "den här datamängden."
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:27
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:69
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:28
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:70
 msgid "Select a contact point to see its details here."
 msgstr "Välj en kontaktpunkt för att se kontaktuppgifterna här."
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:35
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:36
 msgid "The contact point could not be saved."
 msgstr "Kontaktpunkten kunde inte sparas."
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:50
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:51
 msgid "Search and select contact point…"
 msgstr "Sök och välj kontaktpunkt…"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:52
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:53
 msgid "Recently used"
 msgstr "Senast använda"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:56
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:57
 msgid "Other contact points (A-Z)"
 msgstr "Övriga kontaktpunkter (A–Ö)"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:56
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:57
 msgid "All contact points (A-Z)"
 msgstr "Alla kontaktpunkter (A–Ö)"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:62
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:63
 msgid "Unknown contact point"
 msgstr "Okänd kontaktpunkt"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:67
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:68
 #, python-brace-format
 msgid ""
 "“{name}” is inactive. It stays on this dataset, but it can no longer be "
@@ -2059,7 +2086,7 @@ msgstr ""
 "”{name}” är inaktiv. Den ligger kvar på datamängden men kan inte längre "
 "väljas; byt till en aktiv kontaktpunkt när du kan."
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:67
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:68
 msgid ""
 "A contact point that no longer exists is selected. Remove it from the "
 "list before you save."
@@ -2067,15 +2094,15 @@ msgstr ""
 "En kontaktpunkt som inte längre finns är vald. Ta bort den ur listan "
 "innan du sparar."
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:72
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:73
 msgid "Manage contact points"
 msgstr "Hantera kontaktpunkter"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:74
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:75
 msgid "Create new contact point"
 msgstr "Skapa ny kontaktpunkt"
 
-#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:89
+#: ckanext/actor_registry/templates/scheming/form_snippets/contactpoints_multiple_select.html:90
 msgid ""
 "Editing here updates the contact point everywhere it is used, not just in"
 " this dataset."

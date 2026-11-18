@@ -101,11 +101,33 @@
       render();
       if (!toggle || !panel || !form || !save) return;
 
+      // The name in other languages (0.7.0): the option carries them as JSON, the panel's inputs as data-translation.
+      function fillTranslations(option) {
+        var names = {};
+        try { names = JSON.parse((option && option.dataset.translations) || '{}') || {}; } catch (ignored) { names = {}; }
+        form.querySelectorAll('[data-translation]').forEach(function (input) {
+          var entry = names[input.dataset.translation];
+          input.value = (entry && entry.name) || '';
+          input.dataset.loaded = input.value;
+        });
+      }
+      // Only the names the editor changed: a name changed meanwhile on another page, or one the panel could not
+      // show, stays as it is.
+      function appendTranslations(payload) {
+        var changed = Array.prototype.filter.call(form.querySelectorAll('[data-translation]'), function (input) {
+          return input.value !== (input.dataset.loaded || '');
+        });
+        if (!changed.length) return;
+        payload.append('translations_form', '1');
+        changed.forEach(function (input) { payload.append('translation_name-' + input.dataset.translation, input.value); });
+      }
+
       function resetToCreateMode() {
         delete panel.dataset.editingId;
         if (panelTitle) panelTitle.textContent = i18n.createTitle;
         save.textContent = i18n.saveCreate;
         form.querySelectorAll('[data-field]').forEach(function (field) { field.value = ''; });
+        fillTranslations(null);
       }
 
       function openForEdit(option) {
@@ -113,7 +135,11 @@
         panel.dataset.editingId = option.value;
         if (panelTitle) panelTitle.textContent = i18n.editTitle;
         save.textContent = i18n.saveEdit;
-        form.querySelector('[data-field="name"]').value = option.textContent.trim();
+        // The default name, not the text shown: that is the name in the page's language, and saving it would
+        // replace the default name with a translation (0.7.0).
+        form.querySelector('[data-field="name"]').value = option.dataset.name !== undefined && option.dataset.name !== ''
+          ? option.dataset.name : option.textContent.trim();
+        fillTranslations(option);
         form.querySelector('[data-field="email"]').value = option.dataset.email || '';
         form.querySelector('[data-field="phone"]').value = option.dataset.phone || '';
         form.querySelector('[data-field="url"]').value = option.dataset.url || '';
@@ -155,6 +181,7 @@
         save.disabled = true;
         var payload = new FormData();
         form.querySelectorAll('[data-field]').forEach(function (field) { payload.append(field.dataset.field, field.value); });
+        appendTranslations(payload);
         var csrf = form.querySelector('input[name="_csrf_token"]');
         if (csrf) payload.append('_csrf_token', csrf.value);
         var editingId = panel.dataset.editingId || '';
@@ -181,14 +208,18 @@
           if (editingId) {
             var existing = select.querySelector('option[value="' + CSS.escape(editingId) + '"]');
             if (existing) {
-              existing.textContent = contact.name;
+              existing.textContent = contact.display_name || contact.name;
+              existing.dataset.name = contact.name || '';
+              existing.dataset.translations = JSON.stringify(contact.translations || {});
               existing.dataset.email = contact.email || '';
               existing.dataset.phone = contact.phone || '';
               existing.dataset.url = contact.url || '';
               existing.dataset.actorId = contact.actor_id || '';
             }
           } else {
-            var option = new Option(contact.name, contact.id, true, true);
+            var option = new Option(contact.display_name || contact.name, contact.id, true, true);
+            option.dataset.name = contact.name || '';
+            option.dataset.translations = JSON.stringify(contact.translations || {});
             option.dataset.email = contact.email || '';
             option.dataset.phone = contact.phone || '';
             option.dataset.url = contact.url || '';
@@ -201,7 +232,9 @@
           panel.hidden = true;
           toggle.hidden = false;
         }).catch(function (problem) {
-          error.textContent = problem.message;
+          // fetch fails with a TypeError when the server cannot be reached ("Failed to fetch", in English): say it
+          // in the page's language instead.
+          error.textContent = problem instanceof TypeError ? i18n.saveFailed : problem.message;
           error.hidden = false;
         }).finally(function () { save.disabled = false; });
       });

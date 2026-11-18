@@ -8,7 +8,7 @@ from ckan.plugins import toolkit
 from flask import Blueprint, abort, g, jsonify, redirect, request
 from sqlalchemy.exc import IntegrityError
 
-from ckanext.actor_registry import cleanup, contact_migration, helpers
+from ckanext.actor_registry import cleanup, contact_migration, helpers, language
 from ckanext.actor_registry import model as registry_model
 from ckanext.actor_registry import validation
 from ckanext.actor_registry.actions import MERGEABLE_FIELDS
@@ -26,12 +26,42 @@ MERGE_FIELD_LABELS = {
 }
 
 
-def _merge_field_labels():
+def _merge_languages(*actors):
+    """The languages either publisher has a translation in, the portal's own first (0.7.0)."""
+    found = {row.lang for actor in actors for row in actor.translations}
+    offered = [code for code in language.offered_languages() if code in found]
+    return offered + sorted(found - set(offered))
+
+
+def _merge_fields(actor_a, actor_b):
+    """The rows of the merge table: the publisher's fields, then name and description per language
+    (``name@sv``, ``description@sv``)."""
+    fields = list(MERGEABLE_FIELDS)
+    for code in _merge_languages(actor_a, actor_b):
+        fields += ["name@" + code, "description@" + code]
+    return fields
+
+
+def _merge_values(actor):
+    values = {name: getattr(actor, name) or "" for name in MERGEABLE_FIELDS}
+    for code, entry in actor.translations_dict().items():
+        values["name@" + code] = entry.get("name") or ""
+        values["description@" + code] = entry.get("description") or ""
+    return values
+
+
+def _merge_field_labels(actor_a=None, actor_b=None):
     # Translated lazily, at request time -- see the note in
     # claude/i18n-plan.md-derived work: a module-level dict built at
     # import time would bake in whatever locale happened to be active
     # when the app first loaded the module, not the current visitor's.
-    return {key: toolkit._(value) for key, value in MERGE_FIELD_LABELS.items()}
+    labels = {key: toolkit._(value) for key, value in MERGE_FIELD_LABELS.items()}
+    if actor_a is not None:
+        for code in _merge_languages(actor_a, actor_b):
+            name = language.language_name(code)
+            labels["name@" + code] = toolkit._("Name in {language}").format(language=name)
+            labels["description@" + code] = toolkit._("Description in {language}").format(language=name)
+    return labels
 
 
 blueprint = Blueprint("actor_registry", __name__)
@@ -127,6 +157,58 @@ def _actor_values(item=None):
         "description": request.form.get("description", getattr(item, "description", "") or "").strip(),
         "active": request.form.get("active", "") == "on",
     }
+
+def _form_language_codes(item=None):
+    """The languages of the form's Translations: the ones the portal offers besides its default one, then any other
+    language the record already has a name in (shown so that it can be seen and removed)."""
+    codes = language.offered_languages()
+    if isinstance(item, (Actor, ContactPoint)):
+        codes += sorted(row.lang for row in item.translations if row.lang not in codes)
+    return codes
+
+
+def _translation_languages(item=None):
+    """``[(code, name)]`` for the form's Translations."""
+    return [(code, language.language_name(code)) for code in _form_language_codes(item)]
+
+
+def _translation_values(item=None, with_description=False):
+    """The translations a form sent, laid over the record's own, or None when the form had no Translations (the
+    quick dialogs): then they are left as they are."""
+    if request.form.get("translations_form") != "1":
+        return None
+    values = item.translations_dict() if item is not None else {}
+    for code in _form_language_codes(item):
+        # Only the languages the form sent: the quick panels in the dataset form send names for the offered
+        # languages and no descriptions, and what they do not show stays as it was.
+        if "translation_name-" + code not in request.form:
+            continue
+        entry = dict(values.get(code) or {})
+        entry["name"] = request.form.get("translation_name-" + code, "").strip()
+        if with_description and "translation_description-" + code in request.form:
+            entry["description"] = request.form.get("translation_description-" + code, "").strip()
+        values[code] = entry
+    return values
+
+
+def _translation_error(values):
+    """The first problem with the translations a form sent, or None."""
+    for code, entry in (values or {}).items():
+        name = language.language_name(code)
+        if len(entry.get("name") or "") > 255:
+            return toolkit._("The name in {language} is too long (at most {limit} characters).").format(
+                language=name, limit=255)
+        if (entry.get("description") or "") and not entry.get("name"):
+            return toolkit._("The description in {language} needs a name in {language} too.").format(language=name)
+    return None
+
+
+def _form_translations(item, posted):
+    """What the form's Translations show: what was sent, or the record's own."""
+    if posted is not None:
+        return posted
+    return item.translations_dict() if isinstance(item, (Actor, ContactPoint)) else {}
+
 
 PREVIEW_SIZE = 10
 LIST_PAGE_SIZE = 20
@@ -247,8 +329,8 @@ def _contact_point_tabs():
 
 def _names(rows):
     """The names of the publishers and contact points set on the rows, for To do (0.6.0)."""
-    actors = {item.id: item.name for item in all_actors(True)}
-    contact_points = {item.id: item.name for item in all_contact_points(True)}
+    actors = {item.id: item.display_name for item in all_actors(True)}
+    contact_points = {item.id: item.display_name for item in all_contact_points(True)}
     for row in rows:
         row["publisher_name"] = actors.get(row.get("publisher_id"), "")
         row["contact_point_names"] = [contact_points.get(item, "") for item in row.get("contact_point_ids", [])]
@@ -300,20 +382,26 @@ def contactpoints_index():
 def contactpoints_new():
     _require_login()
     values = _contact_values()
+    translations = _translation_values()
     if request.method == "POST" and values["name"]:
         item_id = str(uuid.uuid4())
         values["uri"] = values["uri"] or toolkit.url_for("actor_registry.contactpoints_show", item_id=item_id, _external=True, locale="default")
-        field_error = _contact_error(values)
+        field_error = _contact_error(values) or _translation_error(translations)
         if field_error:
             toolkit.h.flash_error(field_error)
         elif _registry_uri_conflict(values["uri"]):
             toolkit.h.flash_error(toolkit._("The URI is already used by a publisher or contact point."))
-        elif _commit(ContactPoint(id=item_id, **values), toolkit._("The URI is already used by a contact point.")):
-            toolkit.h.flash_success(toolkit._("The contact point has been created."))
-            return redirect(toolkit.url_for("actor_registry.contactpoints_index", list=1))
+        else:
+            item = ContactPoint(id=item_id, **values)
+            item.set_translations(translations or {})
+            if _commit(item, toolkit._("The URI is already used by a contact point.")):
+                toolkit.h.flash_success(toolkit._("The contact point has been created."))
+                return redirect(toolkit.url_for("actor_registry.contactpoints_index", list=1))
     elif request.method == "POST":
         toolkit.h.flash_error(toolkit._("Name or role is required."))
-    return toolkit.render("actor_registry/contactpoint_form.html", extra_vars={"item": values, "actors": all_actors(), "is_new": True})
+    return toolkit.render("actor_registry/contactpoint_form.html", extra_vars={
+        "item": values, "actors": all_actors(), "is_new": True,
+        "languages": _translation_languages(), "translations": translations or {}})
 
 
 @blueprint.route("/contactpoints/quick-create", methods=["POST"])
@@ -330,7 +418,12 @@ def contactpoints_quick_create():
         return jsonify({"success": False, "error": field_error}), 409
     if _registry_uri_conflict(values["uri"]):
         return jsonify({"success": False, "error": toolkit._("The URI is already used by a publisher or contact point.")}), 409
+    translations = _translation_values()
+    translation_error = _translation_error(translations)
+    if translation_error:
+        return jsonify({"success": False, "error": translation_error}), 400
     item = ContactPoint(id=item_id, **values)
+    item.set_translations(translations or {})
     try:
         ckan_model.Session.add(item)
         ckan_model.Session.commit()
@@ -359,8 +452,14 @@ def contactpoints_quick_edit(item_id):
         return jsonify({"success": False, "error": field_error}), 409
     if _registry_uri_conflict(values["uri"], item):
         return jsonify({"success": False, "error": toolkit._("The URI is already used by a publisher or contact point.")}), 409
+    translations = _translation_values(item)
+    translation_error = _translation_error(translations)
+    if translation_error:
+        return jsonify({"success": False, "error": translation_error}), 400
     for key, value in values.items():
         setattr(item, key, value)
+    if translations is not None:
+        item.set_translations(translations)
     try:
         ckan_model.Session.add(item)
         ckan_model.Session.commit()
@@ -409,12 +508,14 @@ def contactpoints_edit(item_id):
     item = get_contact_point(item_id)
     if not item:
         abort(404)
+    translations = None
     if request.method == "POST":
         values = _contact_values(item)
+        translations = _translation_values(item)
         if not values["name"]:
             toolkit.h.flash_error(toolkit._("Name or role is required."))
         else:
-            field_error = _contact_error(values, item)
+            field_error = _contact_error(values, item) or _translation_error(translations)
             has_conflict = bool(field_error) or bool(_registry_uri_conflict(values["uri"], item))
             if field_error:
                 toolkit.h.flash_error(field_error)
@@ -423,10 +524,14 @@ def contactpoints_edit(item_id):
             else:
                 for key, value in values.items():
                     setattr(item, key, value)
+                if translations is not None:
+                    item.set_translations(translations)
             if not has_conflict and _commit(item, toolkit._("The URI is already used by a contact point.")):
                 toolkit.h.flash_success(toolkit._("The contact point has been updated."))
                 return redirect(toolkit.url_for("actor_registry.contactpoints_index", list=1))
-    return toolkit.render("actor_registry/contactpoint_form.html", extra_vars={"item": item, "actors": all_actors(), "is_new": False})
+    return toolkit.render("actor_registry/contactpoint_form.html", extra_vars={
+        "item": item, "actors": all_actors(), "is_new": False,
+        "languages": _translation_languages(item), "translations": _form_translations(item, translations)})
 
 
 @blueprint.route("/contactpoints/<item_id>/delete", methods=["GET", "POST"])
@@ -600,7 +705,7 @@ def _flash_assignments(results):
     for result in results:
         for kind, record in (("publisher", result["actor"]), ("contact_point", result["contact_point"])):
             if result["changed"][kind]:
-                name, count = changed[kind].get(record.id, (record.name, 0))
+                name, count = changed[kind].get(record.id, (record.display_name, 0))
                 changed[kind][record.id] = (name, count + len(result["changed"][kind]))
             skipped[kind] += len(result["skipped"][kind])
         failures += result["failures"]
@@ -698,20 +803,25 @@ def todo_assign():
 def actors_new():
     _require_login()
     values = _actor_values()
+    translations = _translation_values(with_description=True)
     if request.method == "POST" and values["name"]:
         item_id = str(uuid.uuid4())
         values["uri"] = values["uri"] or toolkit.url_for("actor_registry.actors_show", item_id=item_id, _external=True, locale="default")
-        identifier_error = _actor_error(values)
+        identifier_error = _actor_error(values) or _translation_error(translations)
         if identifier_error:
             toolkit.h.flash_error(identifier_error)
         elif _registry_uri_conflict(values["uri"]):
             toolkit.h.flash_error(toolkit._("The URI is already used by a publisher or contact point."))
-        elif _commit(Actor(id=item_id, **values), toolkit._("The URI is already used by a publisher.")):
-            toolkit.h.flash_success(toolkit._("The publisher has been created."))
-            return redirect(toolkit.url_for("actor_registry.actors_index"))
+        else:
+            item = Actor(id=item_id, **values)
+            item.set_translations(translations or {})
+            if _commit(item, toolkit._("The URI is already used by a publisher.")):
+                toolkit.h.flash_success(toolkit._("The publisher has been created."))
+                return redirect(toolkit.url_for("actor_registry.actors_index"))
     elif request.method == "POST":
         toolkit.h.flash_error(toolkit._("Name is required."))
-    return toolkit.render("actor_registry/actor_form.html", extra_vars={"item": values, "is_new": True})
+    return toolkit.render("actor_registry/actor_form.html", extra_vars={
+        "item": values, "is_new": True, "languages": _translation_languages(), "translations": translations or {}})
 
 
 @blueprint.route("/actors/quick-create", methods=["POST"])
@@ -728,7 +838,12 @@ def actors_quick_create():
         return jsonify({"success": False, "error": identifier_error}), 409
     if _registry_uri_conflict(values["uri"]):
         return jsonify({"success": False, "error": toolkit._("The URI is already used by a publisher or contact point.")}), 409
+    translations = _translation_values(with_description=True)
+    translation_error = _translation_error(translations)
+    if translation_error:
+        return jsonify({"success": False, "error": translation_error}), 400
     item = Actor(id=item_id, **values)
+    item.set_translations(translations or {})
     try:
         ckan_model.Session.add(item)
         ckan_model.Session.commit()
@@ -756,8 +871,14 @@ def actors_quick_edit(item_id):
         return jsonify({"success": False, "error": identifier_error}), 409
     if _registry_uri_conflict(values["uri"], item):
         return jsonify({"success": False, "error": toolkit._("The URI is already used by a publisher or contact point.")}), 409
+    translations = _translation_values(item, with_description=True)
+    translation_error = _translation_error(translations)
+    if translation_error:
+        return jsonify({"success": False, "error": translation_error}), 400
     for key, value in values.items():
         setattr(item, key, value)
+    if translations is not None:
+        item.set_translations(translations)
     try:
         ckan_model.Session.add(item)
         ckan_model.Session.commit()
@@ -813,12 +934,14 @@ def actors_edit(item_id):
     item = get_actor(item_id)
     if not item:
         abort(404)
+    translations = None
     if request.method == "POST":
         values = _actor_values(item)
+        translations = _translation_values(item, with_description=True)
         if not values["name"]:
             toolkit.h.flash_error(toolkit._("Name is required."))
         else:
-            identifier_error = _actor_error(values, item)
+            identifier_error = _actor_error(values, item) or _translation_error(translations)
             has_conflict = bool(identifier_error) or bool(_registry_uri_conflict(values["uri"], item))
             if identifier_error:
                 toolkit.h.flash_error(identifier_error)
@@ -827,10 +950,14 @@ def actors_edit(item_id):
             else:
                 for key, value in values.items():
                     setattr(item, key, value)
+                if translations is not None:
+                    item.set_translations(translations)
             if not has_conflict and _commit(item, toolkit._("The URI is already used by a publisher.")):
                 toolkit.h.flash_success(toolkit._("The publisher has been updated."))
                 return redirect(toolkit.url_for("actor_registry.actors_index"))
-    return toolkit.render("actor_registry/actor_form.html", extra_vars={"item": item, "is_new": False})
+    return toolkit.render("actor_registry/actor_form.html", extra_vars={
+        "item": item, "is_new": False, "languages": _translation_languages(item),
+        "translations": _form_translations(item, translations)})
 
 
 def _parse_merge_ids(raw):
@@ -862,7 +989,7 @@ def actors_delete(item_id):
 
     linked_datasets = {"publisher": _linked_datasets("publisher", [item_id])}
 
-    owned_contact_points = (
+    owned_contact_points = registry_model.by_display_name(
         ckan_model.Session.query(ContactPoint)
         .filter(ContactPoint.actor_id == item_id)
         .order_by(ContactPoint.name.asc())
@@ -908,19 +1035,25 @@ def actors_merge():
             toolkit.h.flash_error(toolkit._("You must choose which publisher should remain."))
         else:
             merge_id = actor_b_id if keep_id == actor_a_id else actor_a_id
-            fields = {}
-            for field_name in MERGEABLE_FIELDS:
+            values_a, values_b = _merge_values(actor_a), _merge_values(actor_b)
+            chosen = {}
+            for field_name in _merge_fields(actor_a, actor_b):
                 override = request.form.get("override_" + field_name, "").strip()
                 if override:
-                    fields[field_name] = override
+                    chosen[field_name] = override
                 else:
                     side = request.form.get("field_" + field_name)
-                    source = actor_b if side == "b" else actor_a
-                    fields[field_name] = getattr(source, field_name) or ""
+                    chosen[field_name] = (values_b if side == "b" else values_a).get(field_name) or ""
+            fields = {name: chosen[name] for name in MERGEABLE_FIELDS}
+            translations = {}
+            for field_name, value in chosen.items():
+                if "@" in field_name:
+                    key, lang = field_name.split("@", 1)
+                    translations.setdefault(lang, {})[key] = value
             try:
                 toolkit.get_action("actor_registry_actor_merge")(
                     {"user": g.user},
-                    {"keep_id": keep_id, "merge_id": merge_id, "fields": fields},
+                    {"keep_id": keep_id, "merge_id": merge_id, "fields": fields, "translations": translations},
                 )
             except (toolkit.ValidationError, toolkit.ObjectNotFound) as error:
                 toolkit.h.flash_error(toolkit._("Could not merge the publishers: {0}").format(error))
@@ -935,8 +1068,10 @@ def actors_merge():
         extra_vars={
             "actor_a": actor_a,
             "actor_b": actor_b,
-            "fields": MERGEABLE_FIELDS,
-            "field_labels": _merge_field_labels(),
+            "fields": _merge_fields(actor_a, actor_b),
+            "values_a": _merge_values(actor_a),
+            "values_b": _merge_values(actor_b),
+            "field_labels": _merge_field_labels(actor_a, actor_b),
             "linked_a": linked_a,
             "linked_b": linked_b,
         },
@@ -1050,7 +1185,7 @@ def migrate_apply():
         elif done:
             toolkit.h.flash_success(toolkit.ungettext(
                 "{count} dataset linked to {name}.", "{count} datasets linked to {name}.", len(done)
-            ).format(count=len(done), name=contact_point.name))
+            ).format(count=len(done), name=contact_point.display_name))
         for title, message in failures:
             toolkit.h.flash_error(toolkit._("Could not link {title}: {message}").format(title=title, message=message))
     page = request.form.get("page", "1")

@@ -5,11 +5,11 @@
 {% extends "actor_registry/base.html" %}
 {% import 'actor_registry/snippets/dataset_list.html' as dl with context %}
 {% if kind == 'actor' %}
-  {% set title = item.name %}
+  {% set title = item.display_name %}
   {% set detail_url = h.url_for('actor_registry.actors_show', item_id=item.id) %}
   {% set heading %}{% trans count=data.total %}Publisher for {{ count }} dataset{% pluralize %}Publisher for {{ count }} datasets{% endtrans %}{% endset %}
 {% else %}
-  {% set title = item.name %}
+  {% set title = item.display_name %}
   {% set detail_url = h.url_for('actor_registry.contactpoints_show', item_id=item.id) %}
   {% set heading %}{% trans count=data.total %}Linked to {{ count }} dataset{% pluralize %}Linked to {{ count }} datasets{% endtrans %}{% endset %}
 {% endif %}

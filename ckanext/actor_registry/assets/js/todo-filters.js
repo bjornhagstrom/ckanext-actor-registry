@@ -16,7 +16,11 @@
       setTimeout(function () { empty.forEach(function (select) { select.disabled = false; }); }, 0);
     });
     selects.forEach(function (select) {
-      select.addEventListener('change', function () {
+      // Arrow keys in a closed list change its value at once in some browsers (Windows), one step at a time; such a
+      // choice applies on Enter or when the list is left, not on every step (0.7.0).
+      var keyed = false;
+      function apply() {
+        keyed = false;
         if (!select.value) return;
         var stayed = function (event) {
           form.removeEventListener('submit', stayed);
@@ -25,7 +29,17 @@
         form.addEventListener('submit', stayed);
         if (typeof form.requestSubmit === 'function') form.requestSubmit();
         else { form.removeEventListener('submit', stayed); form.submit(); }
+      }
+      select.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          if (select.value) { event.preventDefault(); apply(); }
+        } else if (event.key !== 'Tab') {
+          keyed = true;
+        }
       });
+      select.addEventListener('mousedown', function () { keyed = false; });
+      select.addEventListener('change', function () { if (!keyed) apply(); });
+      select.addEventListener('blur', function () { if (keyed && select.value) apply(); else keyed = false; });
     });
   }
 

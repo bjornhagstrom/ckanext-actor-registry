@@ -204,6 +204,9 @@ Deliberate exceptions, decided and documented:
 - **No publisher:** the page shows no publisher (the organization is already
   shown on the page), while ckanext-dcat exports the organization as
   `dct:publisher`.
+- **Names in several languages (0.7.0):** the page shows a publisher's or contact
+  point's name in the visitor's language (the default name when there is no
+  translation), while the export carries every language, each with its language tag.
 ## Features
 
 - central registries for publishers and contact points;
@@ -229,6 +232,8 @@ Deliberate exceptions, decided and documented:
 - Scheming helpers, form and display snippets, and a localised example schema;
 - an English interface with Swedish (`sv`, `sv_SE`) translations, and a simple way to add your own
   language (see "Languages" below);
+- names of publishers and contact points, and a publisher's description, in every language the portal
+  offers, shown in the visitor's language; the names are exported in every language with their language tags;
 - optional DCAT integration: publishers become `foaf:Agent` values and contact
   points become `vcard:Kind` values;
 - optional `vcard:hasTelephone` serialization for the European DCAT-AP 3
@@ -243,6 +248,20 @@ create it from the template with `pybabel init`, translate it and compile it, an
 automatically. A partial translation is fine, because text that is not translated stays in English. See
 [Translations](docs/TRANSLATIONS.md). Field labels in your own Scheming schema are translated in the schema, per
 language.
+
+The interface language is not the same thing as the language of the registry's own records. A publisher's or
+contact point's name is written in the portal's default language (`ckan.locale_default`), and may be given in each
+other language the portal offers (`ckan.locales_offered`, less `ckan.locales_filtered_out`): the form shows one
+field per language, labelled with its code (*SV Name*, *EN Name*), as ckanext-fluent does in the dataset form, and
+so do the quick panels in the dataset form; a publisher's description too (shown on its page; the export has no description of a publisher).
+`ckan.locales_offered` must be set: when it is empty CKAN offers every language it has, and the form then has
+only the default name. A language the portal no longer offers keeps its translation, which is still exported, and the
+record's form shows it so that it can be changed or removed. A page shows the visitor's language, falling back from a regional variant to its language
+(`sv_SE` to `sv`) and then to the default name; lists are sorted by the names shown. The DCAT export carries
+the default name tagged with the default language and every translation with its own tag (`pt_BR` as `pt-BR`), as
+one `foaf:name` or `vcard:fn` each. A record without translations is exported exactly as before. When two
+publishers are merged, the merge page offers a choice per language; through the action, the survivor keeps its
+own languages and gets the ones it lacks.
 
 ## Data model and DCAT-AP mapping
 

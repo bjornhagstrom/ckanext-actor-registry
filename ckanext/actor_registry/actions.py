@@ -2,7 +2,7 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model as ckan_model
 
 from ckanext.actor_registry import model as registry_model
-from ckanext.actor_registry import validation
+from ckanext.actor_registry import language, validation
 
 # Fields that a merge can choose a value for. "uri" is deliberately excluded:
 # the surviving actor's URI is its RDF identity and is never a merge choice
@@ -28,6 +28,11 @@ def actor_registry_actor_merge(context, data_dict):
       - fields (dict, optional): final field values to write onto the
         surviving actor, keyed by field name (see MERGEABLE_FIELDS). Any
         field not present keeps the surviving actor's current value.
+      - translations (dict, optional, 0.7.0): the surviving actor's names
+        and descriptions in other languages, ``{language: {"name",
+        "description"}}``; a language without a name is removed. Without
+        it the survivor keeps its own and gets the languages it lacks from
+        the merged actor.
 
     Effects (see aktorsregister-sammanslagning-plan.md, "Design:
     sammanslagning" #6, for the full rationale):
@@ -46,8 +51,29 @@ def actor_registry_actor_merge(context, data_dict):
     keep_id = data_dict.get("keep_id")
     merge_id = data_dict.get("merge_id")
     fields = data_dict.get("fields") or {}
+    translations = data_dict.get("translations")
 
     errors = {}
+    if translations is not None:
+        if not isinstance(translations, dict):
+            errors["translations"] = [toolkit._("Translations must map each language to its name and description.")]
+        else:
+            for lang, entry in translations.items():
+                texts = (entry.get("name"), entry.get("description")) if isinstance(entry, dict) else ()
+                if not language.valid_code(lang) or not isinstance(entry, dict) or \
+                        any(text is not None and not isinstance(text, str) for text in texts):
+                    errors.setdefault("translations", []).append(
+                        toolkit._("Translations must map each language to its name and description."))
+                    continue
+                name = str(entry.get("name") or "").strip()
+                if len(name) > 255:
+                    errors.setdefault("translations", []).append(
+                        toolkit._("The name in {language} is too long (at most {limit} characters).").format(
+                            language=lang, limit=255))
+                if str(entry.get("description") or "").strip() and not name:
+                    errors.setdefault("translations", []).append(
+                        toolkit._("The description in {language} needs a name in {language} too.").format(
+                            language=lang))
     if not keep_id:
         errors["keep_id"] = [toolkit._("Required.")]
     if not merge_id:
@@ -106,6 +132,11 @@ def actor_registry_actor_merge(context, data_dict):
     for field_name in MERGEABLE_FIELDS:
         if field_name in fields:
             setattr(keep, field_name, fields[field_name])
+
+    if translations is None:
+        translations = merge.translations_dict()
+        translations.update(keep.translations_dict())
+    keep.set_translations(translations)
 
     moved_contact_points = (
         session.query(registry_model.ContactPoint)
@@ -185,7 +216,7 @@ def actor_registry_actor_delete(context, data_dict):
         raise toolkit.ObjectNotFound(toolkit._("The publisher was not found."))
 
     session = ckan_model.Session
-    name = actor.name
+    name = actor.display_name
 
     linked = registry_model.datasets_for_actor(actor_id)
     cleared_dataset_ids = []
@@ -252,7 +283,7 @@ def actor_registry_contactpoint_delete(context, data_dict):
         raise toolkit.ObjectNotFound(toolkit._("The contact point was not found."))
 
     session = ckan_model.Session
-    name = contact_point.name
+    name = contact_point.display_name
 
     linked_dataset_ids = registry_model.datasets_for_contact_point(contact_point_id)
     updated_dataset_ids = []

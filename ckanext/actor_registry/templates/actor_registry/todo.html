@@ -23,13 +23,13 @@
 {% block secondary %}{% endblock %}
 {% block wrapper_class %} registry-wide{% endblock %}
 
-{% macro contact_point_label(item) -%}{{ item.name }}{% if item.email %} ({{ item.email }}){% endif %}{%- endmacro %}
+{% macro contact_point_label(item) -%}{{ item.display_name }}{% if item.email %} ({{ item.email }}){% endif %}{%- endmacro %}
 
 {% macro choices(name, id, label, items, kind, label_hidden=false, small=false, option_label=none) -%}
 <label for="{{ id }}" class="{{ 'visually-hidden' if label_hidden else 'form-label mb-0' }}">{{ label }}</label>
 <select id="{{ id }}" name="{{ name }}" class="form-select{{ ' form-select-sm' if small else '' }} w-auto" data-assign-kind="{{ kind }}"{% if not small %} data-assign-choice="{{ name.rsplit('_', 1)[0] }}"{% endif %}>
   <option value="">{{ _('Choose…') }}</option>
-  {% for item in items %}<option value="{{ item.id }}">{{ option_label(item) if option_label else item.name }}</option>{% endfor %}
+  {% for item in items %}<option value="{{ item.id }}">{{ option_label(item) if option_label else item.display_name }}</option>{% endfor %}
 </select>
 {%- endmacro %}
 
